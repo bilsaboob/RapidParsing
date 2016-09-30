@@ -4,13 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RapidPliant.Runtime.Earley.Lex.Util
+namespace RapidPliant.Runtime.Earley.Automata.Lex
 {
-    public class LexDfaStatesProcessQueue
+    public class LexDfaFactory
     {
-        public bool IsEmpty { get; set; }
-
-        public LexDfaState Dequeue()
+        public ILexDfa CreateLexDfa(ILexNfa lexNfa)
         {
             return null;
         }

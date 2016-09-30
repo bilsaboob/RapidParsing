@@ -4,9 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RapidPliant.Runtime.Earley.Lex.Util
+namespace RapidPliant.Runtime.Util
 {
-    public class LexDfaTransitionsCollection
+    public class LinkedList<T>
+    {
+    }
+
+    public class LinkedNode<T>
     {
     }
 }

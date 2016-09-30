@@ -41,7 +41,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\LinkedList.cs" />
     <Compile Include="Util\LookupDictionary.cs" />
+    <Compile Include="Util\RapidLinkedList.cs" />
+    <Compile Include="Util\RapidList.cs" />
     <Compile Include="Util\SharedPool.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

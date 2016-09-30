@@ -40,13 +40,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Automata\Earley\EarleyDfa.cs" />
+    <Compile Include="Automata\Earley\EarleyNfa.cs" />
+    <Compile Include="Automata\Lex\LexDfa.cs" />
+    <Compile Include="Automata\Lex\LexNfa.cs" />
+    <Compile Include="Automata\Lex\LexNfaFactory.cs" />
+    <Compile Include="Automata\Lex\LexDfaFactory.cs" />
     <Compile Include="Grammar\EarleyGrammar.cs" />
-    <Compile Include="Lex\RegexDfa.cs" />
-    <Compile Include="Lex\Util\LexDfaProductionsProcessQueue.cs" />
-    <Compile Include="Lex\Util\LexDfaStatesProcessQueue.cs" />
-    <Compile Include="Lex\Util\LexDfaProductionsCollection.cs" />
-    <Compile Include="Lex\Util\LexDfaStatesCollection.cs" />
-    <Compile Include="Lex\Util\LexDfaTransitionsCollection.cs" />
+    <Compile Include="Grammar\IEarleyLexRule.cs" />
+    <Compile Include="Grammar\Symbol.cs" />
+    <Compile Include="Lexing\Lexeme.cs" />
+    <Compile Include="Lexing\ILexExpression.cs" />
+    <Compile Include="Lexing\LexPatternExpression.cs" />
+    <Compile Include="Lexing\LexPatternParser.cs" />
+    <Compile Include="Parsing\EarleyParseEngine.cs" />
+    <Compile Include="Parsing\EarleyParseRunner.cs" />
+    <Compile Include="Parsing\EarleyState.cs" />
+    <Compile Include="Parsing\IToken.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Regex\Regex.cs" />
   </ItemGroup>
@@ -55,11 +65,16 @@
       <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
       <Name>RapidPliant.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
+      <Project>{D045878A-7813-4480-9DC5-2A37C60346E2}</Project>
+      <Name>RapidPliant.Grammar</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RapidPliant.Runtime\RapidPliant.Runtime.csproj">
       <Project>{7E1B0F34-2E20-439D-921D-008D2323FB8C}</Project>
       <Name>RapidPliant.Runtime</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
