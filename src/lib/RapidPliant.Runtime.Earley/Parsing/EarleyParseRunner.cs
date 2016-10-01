@@ -133,7 +133,7 @@ namespace RapidPliant.Runtime.Earley.Parsing
             }
         }
 
-        private void CreateNewLexemeIfNotExists(IEarleyLexRule lexRule)
+        private void CreateNewLexemeIfNotExists(ILexRule lexRule)
         {
             //Create a new lexeme for the specified lex rule if not already exists!
             var lexeme = lexRule.LexemeFactory.Create();

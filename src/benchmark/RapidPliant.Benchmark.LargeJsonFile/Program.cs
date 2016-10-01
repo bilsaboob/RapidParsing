@@ -11,7 +11,7 @@ namespace RapidPliant.Benchmark.LargeJsonFile
     {
         static void Main(string[] args)
         {
-            var debug = false;
+            var debug = true;
             ParseBenchmarkRunner.Run<LargeJsonFileBenchmark>(debug);
         }
     }

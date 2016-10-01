@@ -89,6 +89,14 @@
     <Analyzer Include="..\..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\lib\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
+      <Project>{D045878A-7813-4480-9DC5-2A37C60346E2}</Project>
+      <Name>RapidPliant.Grammar</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Runtime.Earley\RapidPliant.Runtime.Earley.csproj">
+      <Project>{F80C3D9E-8732-4019-B17B-2AD78F33A261}</Project>
+      <Name>RapidPliant.Runtime.Earley</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RapidPliant.Benchmark\RapidPliant.Benchmark.csproj">
       <Project>{E16848D6-673C-44BD-8658-AA354565C664}</Project>
       <Name>RapidPliant.Benchmark</Name>

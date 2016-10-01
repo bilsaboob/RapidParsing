@@ -3,20 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Runtime.Earley.Lexing;
 
-namespace RapidPliant.Grammar
+namespace RapidPliant.Runtime.Earley.Grammar
 {
-    public interface IGrammar
-    {
-        IEnumerable<ILexRule> GetLexRules();
-    }
-
     public interface ILexRule
     {
         int LocalIndex { get; set; }
-    }
 
-    public interface IExprRule
-    {
+        ILexemeFactory LexemeFactory { get; set; }
     }
 }

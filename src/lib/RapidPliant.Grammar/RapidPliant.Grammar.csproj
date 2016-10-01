@@ -40,8 +40,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IGrammar.cs" />
+    <Compile Include="Expression\Expr.cs" />
+    <Compile Include="Expression\LexExpr.cs" />
+    <Compile Include="Expression\NullExpr.cs" />
+    <Compile Include="Expression\RuleExpr.cs" />
+    <Compile Include="GrammarModel.cs" />
+    <Compile Include="GrammarRuleModelBuilder.cs" />
+    <Compile Include="IGrammarModel.cs" />
+    <Compile Include="JsonGrammarModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimpleJsonGrammarModel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RapidPliant.Common\RapidPliant.Common.csproj">
+      <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
+      <Name>RapidPliant.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

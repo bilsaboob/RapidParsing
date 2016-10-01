@@ -47,7 +47,7 @@
     <Compile Include="Automata\Lex\LexNfaFactory.cs" />
     <Compile Include="Automata\Lex\LexDfaFactory.cs" />
     <Compile Include="Grammar\EarleyGrammar.cs" />
-    <Compile Include="Grammar\IEarleyLexRule.cs" />
+    <Compile Include="Grammar\ILexRule.cs" />
     <Compile Include="Grammar\Symbol.cs" />
     <Compile Include="Lexing\Lexeme.cs" />
     <Compile Include="Lexing\ILexExpression.cs" />

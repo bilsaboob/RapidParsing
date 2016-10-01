@@ -5,11 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using RapidPliant.Grammar;
+using RapidPliant.Runtime.Earley.Grammar;
 
 namespace RapidPliant.Benchmark
 {
     public abstract class ParseBenchmarkBase : IParseBenchmark
     {
+        protected IGrammarModel GrammarModel { get; set; }
         protected object Grammar { get; set; }
         protected object Parser { get; set; }
         protected object Engine { get; set; }
@@ -18,6 +21,7 @@ namespace RapidPliant.Benchmark
         [Setup]
         public void Setup()
         {
+            GrammarModel = CreateGrammarModel();
             Grammar = CreateGrammar();
         }
         
@@ -38,7 +42,9 @@ namespace RapidPliant.Benchmark
             //Do the parsing
         }
 
-        protected abstract object CreateGrammar();
+        protected abstract IGrammarModel CreateGrammarModel();
+        protected abstract IEarleyGrammar CreateGrammar();
+
         protected abstract object CreateEngine();
         protected abstract object CreateParser();
         protected abstract TextReader GetInput();

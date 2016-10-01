@@ -34,7 +34,7 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
 
     public interface IEarleyDfaTransitionsByLexRules
     {
-        IEarleyLexRule[] AllLexRules { get; set; }
+        ILexRule[] AllLexRules { get; set; }
     }
 
     public interface IEarleyDfaTransitionsByNonTerminal
