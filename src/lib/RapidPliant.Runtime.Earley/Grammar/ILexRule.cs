@@ -13,4 +13,9 @@ namespace RapidPliant.Runtime.Earley.Grammar
 
         ILexemeFactory LexemeFactory { get; set; }
     }
+
+    public interface IParseRule
+    {
+        int LocalIndex { get; set; }
+    }
 }

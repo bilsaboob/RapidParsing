@@ -45,10 +45,10 @@
     <Compile Include="Expression\NullExpr.cs" />
     <Compile Include="Expression\RuleExpr.cs" />
     <Compile Include="GrammarModel.cs" />
-    <Compile Include="GrammarRuleModelBuilder.cs" />
     <Compile Include="IGrammarModel.cs" />
     <Compile Include="JsonGrammarModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimpleGrammarModel.cs" />
     <Compile Include="SimpleJsonGrammarModel.cs" />
   </ItemGroup>
   <ItemGroup>

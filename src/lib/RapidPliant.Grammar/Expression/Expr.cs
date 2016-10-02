@@ -7,42 +7,32 @@ using System.Threading.Tasks;
 
 namespace RapidPliant.Grammar.Expression
 {
-    public partial class Expr
+    public partial class Expr : IExpr
     {
-        protected IGrammarModel Grammar { get; set; }
-        
         public Expr()
         {
-            Grammar = null;
-            IsInitialize = false;
-            Alterations = new ExprAlterations();
-            IsBuilder = true;
         }
 
-        public bool IsBuilder { get; set; }
+        public string Name { get; set; }
 
-        public bool IsInitialize { get; private set; }
+        public ExprOptions Options { get; set; }
 
-        public ExprAlterations Alterations { get; private set; }
-        
-        public void AddExpr(Expr expr)
+        public bool CanBeSimplified
         {
-            Alterations.AddExpr(expr);
-        }
+            get
+            {
+                var opt = Options;
+                if (opt == null)
+                    return true;
 
-        public void AddAlteration(ExprAlteration alteration)
-        {
-            Alterations.AddAlteration(alteration);
-        }
+                if (opt.IsOptional)
+                    return false;
 
-        public virtual IRuleModel ToRuleModel()
-        {
-            return null;
-        }
+                if (opt.IsMany)
+                    return false;
 
-        public virtual ILexModel ToLexModel()
-        {
-            return null;
+                return true;
+            }
         }
 
         public override string ToString()
@@ -52,35 +42,26 @@ namespace RapidPliant.Grammar.Expression
             return sb.ToString();
         }
 
+        public virtual string ToStringRef()
+        {
+            return Name;
+        }
+
         public virtual void ToString(StringBuilder sb)
         {
-            var isFirst = true;
-            foreach (var alt in Alterations)
-            {
-                if (!isFirst)
-                    sb.Append(" | ");
-
-                isFirst = false;
-
-                var needParens = alt.Count > 1;
-                if (needParens)
-                {
-                    sb.Append("(");
-                }
-
-                alt.ToString(sb);
-
-                if (needParens)
-                {
-                    sb.Append(")");
-                }
-            }
         }
     }
 
-    public partial class Expr
+    public class ExprOptions
     {
+        public bool IsOptional { get; set; }
+        public bool IsMany { get; set; }
+        public int MinCount { get; set; }
+        public int MaxCount { get; set; }
+    }
 
+    public partial class Expr : IExpr
+    {
         #region And
         public static Expr operator +(Expr lhs, Expr rhs)
         {
@@ -88,11 +69,19 @@ namespace RapidPliant.Grammar.Expression
         }
         public static Expr operator +(Expr lhs, char rhs)
         {
-            return AddWithAnd(lhs, new LexTerminalModel(rhs));
+            return AddWithAnd(lhs, new LexTerminalExpr(rhs));
         }
         public static Expr operator +(char lhs, Expr rhs)
         {
-            return AddWithAnd(new LexTerminalModel(lhs), rhs);
+            return AddWithAnd(new LexTerminalExpr(lhs), rhs);
+        }
+        public static Expr operator +(Expr lhs, string rhs)
+        {
+            return AddWithAnd(lhs, CreateLexExpr(rhs));
+        }
+        public static Expr operator +(string lhs, Expr rhs)
+        {
+            return AddWithAnd(CreateLexExpr(lhs), rhs);
         }
         #endregion
 
@@ -103,238 +92,257 @@ namespace RapidPliant.Grammar.Expression
         }
         public static Expr operator |(Expr lhs, char rhs)
         {
-            return AddWithOr(lhs, new LexTerminalModel(rhs));
+            return AddWithOr(lhs, new LexTerminalExpr(rhs));
         }
         public static Expr operator |(char lhs, Expr rhs)
         {
-            return AddWithOr(new LexTerminalModel(lhs), rhs);
+            return AddWithOr(new LexTerminalExpr(lhs), rhs);
         }
         public static Expr operator |(Expr lhs, string rhs)
         {
-            ILexModel rhsLexModel;
-            if (rhs.Length == 1)
-            {
-                rhsLexModel = new LexTerminalModel(rhs[0]);
-            }
-            else
-            {
-                rhsLexModel = new LexSpellingModel(rhs);
-            }
-            return AddWithOr(lhs, rhsLexModel);
+            return AddWithOr(lhs, CreateLexExpr(rhs));
         }
         public static Expr operator |(string lhs, Expr rhs)
         {
-            ILexModel lhsLexModel;
-            if (lhs.Length == 1)
-            {
-                lhsLexModel = new LexTerminalModel(lhs[0]);
-            }
-            else
-            {
-                lhsLexModel = new LexSpellingModel(lhs);
-            }
-            return AddWithOr(lhsLexModel, rhs);
+            return AddWithOr(CreateLexExpr(lhs), rhs);
         }
+
         #endregion
 
         #region AddWithOr
-        private static Expr AddWithOr(ILexModel lhs, Expr rhsExpr)
+        protected static Expr AddWithOr(Expr lhsExpr, Expr rhsExpr)
         {
-            return AddWithOr(new LexExpr(lhs), rhsExpr);
+            var altExpr = GetAlteration(lhsExpr);
+            altExpr.AddExpr(rhsExpr);
+            return altExpr;
         }
-        private static Expr AddWithOr(Expr lhsExpr, ILexModel rhs)
-        {
-            return AddWithOr(lhsExpr, new LexExpr(rhs));
-        }
-        private static Expr AddWithOr(Expr lhsExpr, Expr rhsExpr)
-        {
-            var expr = GetBuilderExpr(lhsExpr);
-
-            if (rhsExpr.IsBuilder)
-            {
-                //Append the alterations as they are
-                foreach (var rhsAlteration in rhsExpr.Alterations)
-                {
-                    expr.AddAlteration(rhsAlteration);
-                }
-            }
-            else
-            {
-                expr.Alterations.BeginNewAlteration();
-                expr.AddExpr(rhsExpr);
-            }
-            
-            return expr;
-        }
+        
         #endregion
 
         #region AddWithAnd
-        private static Expr AddWithAnd(ILexModel lhs, Expr rhsExpr)
+        protected static Expr AddWithAnd(Expr lhsExpr, Expr rhsExpr)
         {
-            return AddWithAnd(new LexExpr(lhs), rhsExpr);
-        }
-        private static Expr AddWithAnd(Expr lhsExpr, ILexModel rhs)
-        {
-            return AddWithAnd(lhsExpr, new LexExpr(rhs));
-        }
-        private static Expr AddWithAnd(Expr lhsExpr, Expr rhsExpr)
-        {
-            var expr = GetBuilderExpr(lhsExpr);
-            expr.AddExpr(rhsExpr);
-            return expr;
+            var prodExpr = GetProduction(lhsExpr);
+            prodExpr.AddExpr(rhsExpr);
+            return prodExpr;
         }
 
-        private static Expr GetBuilderExpr(Expr expr)
-        {
-            if (expr.IsBuilder)
-                return expr;
+        #endregion
 
-            var builderExpr = new Expr();
-            builderExpr.AddExpr(expr);
-            return builderExpr;
+        #region helpers
+
+        private static ProductionExpr GetProduction(Expr expr)
+        {
+            var prodExpr = expr as ProductionExpr;
+            if (prodExpr == null)
+            {
+                prodExpr = new ProductionExpr();
+                prodExpr.AddExpr(expr);
+            }
+            return prodExpr; 
+        }
+
+        private static AlterationExpr GetAlteration(Expr expr)
+        {
+            var altExpr = expr as AlterationExpr;
+            if (altExpr == null)
+            {
+                altExpr = new AlterationExpr();
+                altExpr.AddExpr(expr);
+            }
+            return altExpr;
+        }
+
+        private static Expr CreateLexExpr(string str)
+        {
+            LexExpr lexExpr;
+            if (str.Length == 1)
+            {
+                lexExpr = new LexTerminalExpr(str[0]);
+            }
+            else
+            {
+                lexExpr = new LexSpellingExpr(str);
+            }
+            return lexExpr;
         }
         #endregion
     }
 
-    public class ExprAlterations : IEnumerable<ExprAlteration>
+    public class GroupExpr : Expr, IGroupExpr
     {
-        private List<ExprAlteration> _alterations;
-        private ExprAlteration _alteration;
-
-        public ExprAlterations()
+        public GroupExpr()
         {
-            _alterations = new List<ExprAlteration>();
+            Expressions = new List<Expr>();
         }
 
-        public int Count { get { return _alterations.Count; } }
+        public List<Expr> Expressions { get; private set; }
 
-        public ExprAlteration this[int index]
+        public virtual void AddExpr(Expr expr)
         {
-            get { return _alterations[index]; }
+            Expressions.Add(expr);
         }
 
-        public void BeginNewAlteration()
+        public Expr GetUnwrappedSingleExpr()
         {
-            if (_alteration == null)
+            if (!CanBeSimplified)
+                return this;
+
+            if (Expressions.Count == 0)
+                return null;
+
+            if (Expressions.Count > 1)
+                return null;
+
+            var expr = Expressions[0];
+            var groupExpr = expr as GroupExpr;
+            if (groupExpr != null)
             {
-                _alteration = new ExprAlteration();
-                _alterations.Add(_alteration);
+                return groupExpr.GetUnwrappedSingleExpr();
             }
             else
             {
-                if (_alteration.Count == 0)
-                {
-                    return;
-                }
-                else
-                {
-                    _alteration = new ExprAlteration();
-                    _alterations.Add(_alteration);
-                }
-            }
-        }
-        
-        public void AddExpr(Expr expr)
-        {
-            EnsureAlterationExists();
-            _alteration.AddExpr(expr);
-        }
-
-        public void AddAlteration(ExprAlteration alteration)
-        {
-            if (_alteration == null || _alteration.Count == 0)
-            {
-                _alterations.Remove(_alteration);
-                _alteration = alteration;
-                _alterations.Add(_alteration);
-            }
-            else
-            {
-                _alterations.Add(alteration);
-                _alteration = alteration;
+                return expr;
             }
         }
 
-        private void EnsureAlterationExists()
+        public override string ToStringRef()
         {
-            if (_alteration == null)
-            {
-                _alteration = new ExprAlteration();
-                _alterations.Add(_alteration);
-            }
+            return ToString();
         }
 
-        public IEnumerator<ExprAlteration> GetEnumerator()
+        IExpr[] IGroupExpr.Expressions
         {
-            return _alterations.ToList().GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
+            get { return Expressions.ToArray(); }
         }
     }
 
-    public class ExprAlteration
+    public class AlterationExpr : GroupExpr, IAlterationExpr
     {
-        private List<Expr> _expressions;
-
-        public ExprAlteration()
+        public AlterationExpr()
         {
-            _expressions = new List<Expr>();
         }
 
-        public List<Expr> Expressions { get { return _expressions.ToList(); } }
+        public override void AddExpr(Expr expr)
+        {
+            var otherGroup = expr as GroupExpr;
+            if (otherGroup != null)
+            {
+                //No need to add if there are no expressions in the other group!
+                if (otherGroup.Expressions.Count == 0)
+                    return;
 
-        public int Count { get { return _expressions.Count; } }
+                //Try getting the unwrapped version if possible!
+                var otherGroupUnwrappedExpr = otherGroup.GetUnwrappedSingleExpr();
+                if (otherGroupUnwrappedExpr != null)
+                {
+                    base.AddExpr(otherGroupUnwrappedExpr);
+                    return;
+                }
+                
+                //Check for alt special case - just append those from that one!
+                var otherAltExpr = expr as AlterationExpr;
+                if (otherAltExpr != null && otherAltExpr.CanBeSimplified)
+                {
+                    //Add all of the child production expressions into this one!
+                    foreach (var otherExpr in otherAltExpr.Expressions)
+                    {
+                        base.AddExpr(otherExpr);
+                    }
+
+                    return;
+                }
+            }
+
+            base.AddExpr(expr);
+        }
         
-        public void AddExpr(Expr expr)
+        public override void ToString(StringBuilder sb)
         {
-            _expressions.Add(expr);
-        }
+            var expressions = Expressions.ToList();
+            var requiresParen = expressions.Count > 1;
 
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-            ToString(sb);
-            return sb.ToString();
-        }
+            if (requiresParen)
+                sb.Append("(");
 
-        public virtual void ToString(StringBuilder sb)
-        {
             var isFirst = true;
-            foreach (var expr in _expressions)
+            foreach (var expr in expressions)
+            {
+                if (!isFirst)
+                    sb.Append(" | ");
+
+                isFirst = false;
+
+                sb.Append(expr.ToStringRef());
+            }
+
+            if (requiresParen)
+                sb.Append(")");
+        }
+    }
+
+    public class ProductionExpr : GroupExpr, IProductionExpr
+    {
+        public ProductionExpr()
+        {
+        }
+
+        public override void AddExpr(Expr expr)
+        {
+            var otherGroup = expr as GroupExpr;
+            if (otherGroup != null)
+            {
+                //No need to add if there are no expressions in the other group!
+                if(otherGroup.Expressions.Count == 0)
+                    return;
+
+                //Try getting the unwrapped version if possible!
+                var otherGroupUnwrappedExpr = otherGroup.GetUnwrappedSingleExpr();
+                if (otherGroupUnwrappedExpr != null)
+                {
+                    base.AddExpr(otherGroupUnwrappedExpr);
+                    return;
+                }
+
+                //Check for production special case - just append those from that one!
+                var otherProdExpr = expr as ProductionExpr;
+                if (otherProdExpr != null && otherProdExpr.CanBeSimplified)
+                {
+                    //Add all of the child production expressions into this one!
+                    foreach (var otherExpr in otherProdExpr.Expressions)
+                    {
+                        base.AddExpr(otherExpr);
+                    }
+
+                    return;
+                }
+            }
+
+            base.AddExpr(expr);
+        }
+        
+        public override void ToString(StringBuilder sb)
+        {
+            var expressions = Expressions.ToList();
+
+            var requiresParen = expressions.Count > 1;
+
+            if (requiresParen)
+                sb.Append("(");
+
+            var isFirst = true;
+            foreach (var expr in expressions)
             {
                 if (!isFirst)
                     sb.Append(" ");
 
                 isFirst = false;
 
-                var ruleExpr = expr as RuleExpr;
-                if (ruleExpr != null)
-                {
-                    sb.Append(ruleExpr.Name);
-                    continue;
-                }
-
-                var lexExpr = expr as LexExpr;
-                if (lexExpr != null)
-                {
-                    lexExpr.ToString(sb);
-                    continue;
-                }
-
-                var nullExpr = expr as NullExpr;
-                if (nullExpr != null)
-                {
-                    nullExpr.ToString(sb);
-                    continue;
-                }
-
-                sb.Append("(");
-                expr.ToString(sb);
-                sb.Append(")");
+                sb.Append(expr.ToStringRef());
             }
+
+            if (requiresParen)
+                sb.Append(")");
         }
     }
 }

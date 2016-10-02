@@ -6,38 +6,27 @@ using System.Threading.Tasks;
 
 namespace RapidPliant.Grammar.Expression
 {
-    public class RuleExpr : Expr
+    public partial class RuleExpr : Expr, IRuleExpr
     {
-        public static implicit operator RuleExpr(string ruleName)
+        private Expr _defExpr;
+
+        public RuleExpr()
         {
-            return new RuleExpr(ruleName);
         }
         
-        private Expr _ruleModelExpr;
-
-        public RuleExpr(string ruleName)
-        {
-            Name = ruleName;
-            IsBuilder = false;
-        }
-
-        public string Name { get; private set; }
-
-        public Expr DefinitionExpr { get { return _ruleModelExpr; } }
-
-        public IRuleModel RuleModel { get; set; }
+        public Expr DefinitionExpr { get { return _defExpr; } }
         
         public void As(Expr expr)
         {
-            _ruleModelExpr = expr;
+            _defExpr = expr;
         }
 
         public override string ToString()
         {
             var sb = new StringBuilder();
-            if (_ruleModelExpr != null)
+            if (_defExpr != null)
             {
-                _ruleModelExpr.ToString(sb);
+                _defExpr.ToString(sb);
             }
             else
             {
@@ -59,11 +48,19 @@ namespace RapidPliant.Grammar.Expression
         }
     }
 
-    public interface IRuleModelBuilder
+    public abstract partial class Rule : RuleExpr
     {
+        public static implicit operator Rule(string ruleName)
+        {
+            return new DeclarationRuleExpr(ruleName);
+        }
     }
-
-    public class RuleModelBuilder : IRuleModelBuilder
+    
+    public class DeclarationRuleExpr : Rule, IExprDeclaration
     {
+        public DeclarationRuleExpr(string name)
+        {
+            Name = name;
+        }
     }
 }

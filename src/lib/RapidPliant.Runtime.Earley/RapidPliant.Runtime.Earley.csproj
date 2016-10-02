@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Automata\Earley\EarleyDfa.cs" />
     <Compile Include="Automata\Earley\EarleyNfa.cs" />
+    <Compile Include="Automata\Earley\EarleyNfaFactory.cs" />
     <Compile Include="Automata\Lex\LexDfa.cs" />
     <Compile Include="Automata\Lex\LexNfa.cs" />
     <Compile Include="Automata\Lex\LexNfaFactory.cs" />

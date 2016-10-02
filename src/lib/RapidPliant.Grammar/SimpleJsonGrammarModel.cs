@@ -9,7 +9,7 @@ namespace RapidPliant.Grammar
 {
     public class SimpleJsonGrammarModel : SimpleGrammarModel<SimpleJsonGrammarModel>
     {
-        public RuleExpr
+        public Rule
             Json = "Json",
             Object = "Object",
             Pair = "Pair",
@@ -19,7 +19,7 @@ namespace RapidPliant.Grammar
             ValueRepeat = "ValueRepeat"
             ;
 
-        public LexExpr
+        public Lex
             number = "number",
             strQuote = "quoted_string"
             ;
@@ -27,14 +27,14 @@ namespace RapidPliant.Grammar
         protected override void Define()
         {
             //Configure the lex declarations
-            number = Number("number");
-            strQuote = StringQuoted("quoted_string");
+            number = Number();
+            strQuote = StringQuoted();
 
             //Configure the rule declarations
             Json.As(
                 Object
             );
-
+            
             Object.As(
                 '{' + Value + '}'
             );
@@ -42,9 +42,7 @@ namespace RapidPliant.Grammar
             Value.As(
                 strQuote | number
             );
-
-            var val = Value.ToString();
-
+            
             //Set the start rule!
             Start(Json);
         }

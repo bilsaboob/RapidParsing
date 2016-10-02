@@ -6,33 +6,11 @@ using System.Threading.Tasks;
 
 namespace RapidPliant.Grammar.Expression
 {
-    public class LexExpr : Expr
+    public abstract class LexExpr : Expr, ILexExpr
     {
-        public static implicit operator LexExpr(string name)
-        {
-            return new LexExpr(name);
-        }
-
-        public LexExpr(string name)
-            : this(name, null)
+        public LexExpr()
         {
         }
-
-        public LexExpr(ILexModel lexModel)
-            : this(null, lexModel)
-        {
-        }
-
-        public LexExpr(string name, ILexModel lexModel)
-        {
-            Name = name;
-            LexModel = lexModel;
-            IsBuilder = false;
-        }
-
-        public string Name { get; set; }
-
-        public ILexModel LexModel { get; private set; }
         
         public override string ToString()
         {
@@ -47,10 +25,96 @@ namespace RapidPliant.Grammar.Expression
             {
                 sb.Append(Name);
             }
-            else
-            {
-                sb.Append(LexModel.ToString());
-            }
+        }
+    }
+
+    public class Lex : LexExpr
+    {
+        public static implicit operator Lex(string name)
+        {
+            return new DeclarationLexExpr(name);
+        }
+    }
+
+    public class DeclarationLexExpr : Lex, IExprDeclaration
+    {
+        public DeclarationLexExpr(string name)
+        {
+            Name = name;
+        }
+
+        public override void ToString(StringBuilder sb)
+        {
+            sb.Append(Name);
+        }
+    }
+
+    public class LexTerminalExpr : Lex, ILexTerminalExpr
+    {
+        public LexTerminalExpr(char character)
+        {
+            Char = character;
+        }
+
+        public char Char { get; private set; }
+
+        public override string ToStringRef()
+        {
+            if (string.IsNullOrEmpty(Name))
+                return ToString();
+
+            return base.ToStringRef();
+        }
+
+        public override void ToString(StringBuilder sb)
+        {
+            sb.Append("'" + Char.ToString() + "'");
+        }
+    }
+
+    public class LexSpellingExpr : Lex, ILexSpellingExpr
+    {
+        public LexSpellingExpr(string spelling)
+        {
+            Spelling = spelling;
+        }
+
+        public string Spelling { get; private set; }
+
+        public override string ToStringRef()
+        {
+            if (string.IsNullOrEmpty(Name))
+                return ToString();
+
+            return base.ToStringRef();
+        }
+
+        public override void ToString(StringBuilder sb)
+        {
+            sb.Append("\"" + Spelling + "\"");
+        }
+    }
+
+    public class LexPatternExpr : Lex, ILexPatternExpr
+    {
+        public LexPatternExpr(string pattern)
+        {
+            Pattern = pattern;
+        }
+
+        public string Pattern { get; private set; }
+
+        public override string ToStringRef()
+        {
+            if (string.IsNullOrEmpty(Name))
+                return ToString();
+
+            return base.ToStringRef();
+        }
+
+        public override void ToString(StringBuilder sb)
+        {
+            sb.Append("<" + Pattern + ">");
         }
     }
 }

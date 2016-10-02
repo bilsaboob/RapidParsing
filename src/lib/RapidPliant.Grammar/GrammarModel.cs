@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Grammar.Expression;
@@ -11,97 +14,154 @@ namespace RapidPliant.Grammar
     {
         protected List<RuleExpr> StartRuleExpressions { get; set; }
         protected List<Expr> AllExpressions { get; set; }
-        protected List<RuleExpr> RuleExpressions { get; set; }
-        protected List<LexExpr> LexExpressions { get; set; }
 
-        private ILexModel[] _lexModels;
-        private ILexModel[] LexModels
-        {
-            get
-            {
-                if (_lexModels == null)
-                {
-                    _lexModels = LexExpressions.Select(e => e.LexModel).ToArray();
-                }
-                return _lexModels;
-            }
-        }
+        protected GrammarExprCollection<RuleExpr, IRuleExpr> RuleExpressions { get; set; }
+        protected GrammarExprCollection<LexExpr, ILexExpr> LexExpressions { get; set; }
 
-        private IRuleModel[] _ruleModels;
-        private IRuleModel[] RuleModels
-        {
-            get
-            {
-                if (_ruleModels == null)
-                {
-                    _ruleModels = RuleExpressions.Select(e => e.RuleModel).ToArray();
-                }
-                return _ruleModels;
-            }
-        }
-
-        private GrammarRuleModelBuilder<TGrammarModel> _ruleModelBuilder;
-
+        private Dictionary<string, Expr> _declarationExpressions;
+        
         public GrammarModel()
         {
             AllExpressions = new List<Expr>();
-            RuleExpressions = new List<RuleExpr>();
-            LexExpressions = new List<LexExpr>();
+            RuleExpressions = new GrammarExprCollection<RuleExpr, IRuleExpr>();
+            LexExpressions = new GrammarExprCollection<LexExpr, ILexExpr>();
 
             StartRuleExpressions = new List<RuleExpr>();
 
-            _ruleModelBuilder = new GrammarRuleModelBuilder<TGrammarModel>(this);
+            _declarationExpressions = new Dictionary<string, Expr>();
         }
 
         protected abstract void Define();
 
         public void Build()
         {
+            InitializeExpressions();
+
             //Define the grammar!
             Define();
 
-            BuildModels();
+            CollectExpressions();
+
+            EnsureExpressionNames();
+
+            OnBuilt();
         }
 
-        public IEnumerable<ILexModel> GetLexModels()
+        private void InitializeExpressions()
         {
-            return LexModels;
+            var fields = this.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
+            var exprFields = fields.Where(f => typeof(IExpr).IsAssignableFrom(f.FieldType)).ToList();
+            foreach (var exprField in exprFields)
+            {
+                var expr = EnsureExpr(exprField.GetValue(this), exprField.FieldType);
+                exprField.SetValue(this, expr);
+                EnsureExprName(expr, exprField.Name);
+                _declarationExpressions[exprField.Name] = expr;
+            }
+
+            var props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
+            var exprProps = props.Where(f => typeof(IExpr).IsAssignableFrom(f.PropertyType)).ToList();
+            foreach (var exprProp in exprProps)
+            {
+                try
+                {
+                    var expr = EnsureExpr(exprProp.GetValue(this), exprProp.PropertyType);
+                    exprProp.SetValue(this, expr);
+                    EnsureExprName(expr, exprProp.Name);
+                    _declarationExpressions[exprProp.Name] = expr;
+                }
+                catch (Exception)
+                {
+                    //Doesn't matter
+                }
+            }
         }
 
-        public IEnumerable<IRuleModel> GetRuleModels()
+        private Expr EnsureExpr(object exprObj, Type exprType)
         {
-            return RuleModels;
+            if (exprObj == null)
+            {
+                if (typeof(LexExpr).IsAssignableFrom(exprType))
+                {
+                    return new DeclarationLexExpr(null);
+                }
+
+                if (typeof(RuleExpr).IsAssignableFrom(exprType))
+                {
+                    return new DeclarationRuleExpr(null);
+                }
+            }
+
+            return (Expr) exprObj;
+        }
+
+        private void EnsureExprName(Expr expr, string name)
+        {
+            if (string.IsNullOrEmpty(expr.Name))
+            {
+                if (name.Length > 1 && name[0] == 'm' && char.IsUpper(name[1]))
+                {
+                    name = name.Substring(1);
+                }
+
+                //Set the expression name to the name of the field
+                expr.Name = name.Trim(' ', '_');
+            }
+        }
+
+        private void EnsureExpressionNames()
+        {
+            var fields = this.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
+            var exprFields = fields.Where(f => typeof(IExpr).IsAssignableFrom(f.FieldType)).ToList();
+            foreach (var exprField in exprFields)
+            {
+                var expr = exprField.GetValue(this) as Expr;
+                if(expr == null)
+                    continue;
+
+                var name = GetDeclaredExpressionName(exprField.Name);
+                EnsureExprName(expr, name);
+            }
+
+            var props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
+            var exprProps = props.Where(f => typeof(IExpr).IsAssignableFrom(f.PropertyType)).ToList();
+            foreach (var exprProp in exprProps)
+            {
+                var expr = exprProp.GetValue(this) as Expr;
+                if (expr == null)
+                    continue;
+
+                var name = GetDeclaredExpressionName(exprProp.Name);
+                EnsureExprName(expr, name);
+            }
+        }
+
+        private string GetDeclaredExpressionName(string memberName)
+        {
+            Expr declExpr;
+            if (_declarationExpressions.TryGetValue(memberName, out declExpr))
+            {
+                return declExpr.Name ?? memberName;
+            }
+            return memberName;
+        }
+
+        public IEnumerable<ILexExpr> GetLexExpressions()
+        {
+            return LexExpressions.External;
+        }
+
+        public IEnumerable<IRuleExpr> GetRuleExpressions()
+        {
+            return RuleExpressions.External;
+        }
+
+        protected virtual void OnBuilt()
+        {
         }
 
         #region Build
 
-        private void BuildModels()
-        {
-            CollectExpressions();
-
-            BuildSymbolModels();
-            
-            //By now we have all the rule models
-        }
-
-        private void BuildSymbolModels()
-        {
-            foreach (var lexExpr in LexExpressions)
-            {
-                var lexModel = lexExpr.LexModel;
-            }
-
-            foreach (var ruleExpr in RuleExpressions)
-            {
-                //Set the rule model that was built!
-                ruleExpr.RuleModel = BuildRuleModel(ruleExpr);
-            }
-        }
-        
-        private IRuleModel BuildRuleModel(RuleExpr ruleExpr)
-        {
-            return _ruleModelBuilder.BuildRuleModel(ruleExpr);
-        }
 
         private void CollectExpressions()
         {
@@ -113,35 +173,32 @@ namespace RapidPliant.Grammar
 
         private void CollectExpressions(Expr expr)
         {
-            if (!expr.IsBuilder)
+            var groupExpr = expr as GroupExpr;
+            if (groupExpr != null)
             {
-                if (!AddExpr(expr))
-                    return;
-
-                var lexExpr = expr as LexExpr;
-                if (lexExpr != null)
+                foreach (var childExpr in groupExpr.Expressions)
                 {
-                    AddLexExpression(lexExpr);
-                    return;
-                }
-
-                var ruleExpr = expr as RuleExpr;
-                if (ruleExpr != null)
-                {
-                    AddRuleExpr(ruleExpr);
-                    CollectExpressions(ruleExpr.DefinitionExpr);
-                    return;
+                    CollectExpressions(childExpr);
                 }
 
                 return;
             }
 
-            foreach (var alt in expr.Alterations)
+            if (!AddExpr(expr))
+                return;
+
+            var lexExpr = expr as LexExpr;
+            if (lexExpr != null)
             {
-                foreach (var altExpr in alt.Expressions)
-                {
-                    CollectExpressions(altExpr);
-                }
+                AddLexExpression(lexExpr);
+                return;
+            }
+
+            var ruleExpr = expr as RuleExpr;
+            if (ruleExpr != null)
+            {
+                AddRuleExpr(ruleExpr);
+                CollectExpressions(ruleExpr.DefinitionExpr);
             }
         }
 
@@ -181,14 +238,9 @@ namespace RapidPliant.Grammar
 
         #region Customizable helpers
 
-        internal virtual LexExpr CreateLexPatternExpr(string pattern)
+        internal virtual LexPatternExpr CreateLexPatternExpr(string pattern)
         {
-            return new LexExpr(CreateLexPatternModel(pattern));
-        }
-
-        internal static ILexModel CreateLexPatternModel(string pattern)
-        {
-            return new LexPatternModel(pattern);
+            return new LexPatternExpr(pattern);
         }
 
         #endregion
@@ -208,52 +260,44 @@ namespace RapidPliant.Grammar
         #endregion
     }
 
-    public abstract class SimpleGrammarModel<TGrammarModel> : GrammarModel<TGrammarModel>
-        where TGrammarModel : SimpleGrammarModel<TGrammarModel>
+    public class GrammarExprCollection<TExprInternal, TExprExternal> : IEnumerable<TExprInternal>
+        where TExprInternal : TExprExternal 
     {
-        private NullExpr _nullExpr = new NullExpr();
-        protected virtual NullExpr NullExpr { get { return _nullExpr; } }
+        private List<TExprInternal> _expressionsInternal;
+        private TExprExternal[] _expressionsExternal;
 
-        #region Customizable helpers
-
-        internal virtual LexExpr CreateNumberExpr(string name = null)
+        public GrammarExprCollection()
         {
-            return new LexExpr(name, CreateLexNumberModel());
+            _expressionsInternal = new List<TExprInternal>();
         }
 
-        internal virtual ILexModel CreateLexNumberModel()
+        public TExprExternal[] External
         {
-            return CreateLexPatternModel("[0-9]+");
+            get
+            {
+                if (_expressionsExternal == null)
+                {
+                    _expressionsExternal = _expressionsInternal.Select(e => (TExprExternal)e).ToArray();
+                }
+
+                return _expressionsExternal;
+            }
         }
 
-        internal virtual LexExpr CreateStringQuotedExpr(string name = null)
+        public void Add(TExprInternal expr)
         {
-            return new LexExpr(name, CreateLexStringQuotedModel());
+            _expressionsInternal.Add(expr);
+            _expressionsExternal = null;
         }
 
-        internal virtual ILexModel CreateLexStringQuotedModel()
+        public IEnumerator<TExprInternal> GetEnumerator()
         {
-            return CreateLexPatternModel("[\"][^\"]+[\"]");
-        }
-        #endregion
-
-        #region Helpers
-
-        protected NullExpr Null
-        {
-            get { return NullExpr; }
+            return _expressionsInternal.ToList().GetEnumerator();
         }
 
-        protected LexExpr Number(string name = null)
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            return CreateNumberExpr(name);
+            return GetEnumerator();
         }
-
-        protected LexExpr StringQuoted(string name = null)
-        {
-            return CreateStringQuotedExpr(name);
-        }
-
-        #endregion
     }
 }

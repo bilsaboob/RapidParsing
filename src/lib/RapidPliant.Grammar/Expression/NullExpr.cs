@@ -10,7 +10,6 @@ namespace RapidPliant.Grammar.Expression
     {
         public NullExpr()
         {
-            IsBuilder = false;
         }
 
         public override string ToString()
