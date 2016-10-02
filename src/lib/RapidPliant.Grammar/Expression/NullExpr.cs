@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RapidPliant.Grammar.Expression
 {
-    public class NullExpr : Expr
+    public class NullExpr : GrammarExpr
     {
         public NullExpr()
         {

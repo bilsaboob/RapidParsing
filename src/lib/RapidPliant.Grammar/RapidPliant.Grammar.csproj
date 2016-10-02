@@ -40,13 +40,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Definitions\LexDef.cs" />
+    <Compile Include="Definitions\RuleDef.cs" />
     <Compile Include="Expression\Expr.cs" />
-    <Compile Include="Expression\LexExpr.cs" />
+    <Compile Include="Expression\GrammarExpr.cs" />
     <Compile Include="Expression\NullExpr.cs" />
-    <Compile Include="Expression\RuleExpr.cs" />
     <Compile Include="GrammarModel.cs" />
     <Compile Include="IGrammarModel.cs" />
     <Compile Include="JsonGrammarModel.cs" />
+    <Compile Include="LexModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleGrammarModel.cs" />
     <Compile Include="SimpleJsonGrammarModel.cs" />

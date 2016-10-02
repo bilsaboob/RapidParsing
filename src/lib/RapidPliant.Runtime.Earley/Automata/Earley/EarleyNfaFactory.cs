@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using RapidPliant.Grammar;
+using RapidPliant.Grammar.Expression;
 
 namespace RapidPliant.Runtime.Earley.Automata.Earley
 {
@@ -40,32 +41,32 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
                 return fromState;
             }*/
 
-            var lexExpr = expr as ILexExpr;
-            if (lexExpr != null)
+            var lexRef = expr as ILexRefExpr;
+            if (lexRef != null)
             {
-                return BuildForLex(lexExpr);
+                return BuildForLex(lexRef);
             }
 
-            var ruleExpr = expr as IRuleExpr;
-            if (ruleExpr != null)
+            var ruleRef = expr as IRuleRefExpr;
+            if (ruleRef != null)
             {
-                return BuildForRule(ruleExpr);
+                return BuildForRule(ruleRef);
             }
 
             return null;
         }
 
-        private EarleyNfa BuildForRule(IRuleExpr ruleExpr)
+        private EarleyNfa BuildForRule(IRuleRefExpr ruleRef)
         {
             var nfa = new EarleyNfa();
-            nfa.Start.AddRuleTransitionTo(ruleExpr, nfa.End);
+            nfa.Start.AddRuleTransitionTo(ruleRef.RuleDef, nfa.End);
             return nfa;
         }
 
-        private EarleyNfa BuildForLex(ILexExpr lexExpr)
+        private EarleyNfa BuildForLex(ILexRefExpr lexRef)
         {
             var nfa = new EarleyNfa();
-            nfa.Start.AddLexTransitionTo(lexExpr, nfa.End);
+            nfa.Start.AddLexTransitionTo(lexRef.LexDef, nfa.End);
             return nfa;
         }
 

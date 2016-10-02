@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Grammar.Definitions;
 using RapidPliant.Grammar.Expression;
 
 namespace RapidPliant.Grammar
@@ -12,23 +13,23 @@ namespace RapidPliant.Grammar
     public abstract class GrammarModel<TGrammarModel> : IGrammarModel
         where TGrammarModel : GrammarModel<TGrammarModel>
     {
-        protected List<RuleExpr> StartRuleExpressions { get; set; }
-        protected List<Expr> AllExpressions { get; set; }
+        protected List<RuleDef> StartRuleDefinitions { get; set; }
+        protected List<GrammarDef> AllDefinitions { get; set; }
 
-        protected GrammarExprCollection<RuleExpr, IRuleExpr> RuleExpressions { get; set; }
-        protected GrammarExprCollection<LexExpr, ILexExpr> LexExpressions { get; set; }
+        protected GrammarDefinitionCollecion<RuleDef, IRuleDef> RuleDefinitions { get; set; }
+        protected GrammarDefinitionCollecion<LexDef, ILexDef> LexDefinitions { get; set; }
 
-        private Dictionary<string, Expr> _declarationExpressions;
+        private Dictionary<string, GrammarDef> _preBuildDefinitions;
         
         public GrammarModel()
         {
-            AllExpressions = new List<Expr>();
-            RuleExpressions = new GrammarExprCollection<RuleExpr, IRuleExpr>();
-            LexExpressions = new GrammarExprCollection<LexExpr, ILexExpr>();
+            AllDefinitions = new List<GrammarDef>();
+            RuleDefinitions = new GrammarDefinitionCollecion<RuleDef, IRuleDef>();
+            LexDefinitions = new GrammarDefinitionCollecion<LexDef, ILexDef>();
 
-            StartRuleExpressions = new List<RuleExpr>();
+            StartRuleDefinitions = new List<RuleDef>();
 
-            _declarationExpressions = new Dictionary<string, Expr>();
+            _preBuildDefinitions = new Dictionary<string, GrammarDef>();
         }
 
         protected abstract void Define();
@@ -40,7 +41,7 @@ namespace RapidPliant.Grammar
             //Define the grammar!
             Define();
 
-            CollectExpressions();
+            CollectDefinitions();
 
             EnsureExpressionNames();
 
@@ -53,10 +54,10 @@ namespace RapidPliant.Grammar
             var exprFields = fields.Where(f => typeof(IExpr).IsAssignableFrom(f.FieldType)).ToList();
             foreach (var exprField in exprFields)
             {
-                var expr = EnsureExpr(exprField.GetValue(this), exprField.FieldType);
+                var expr = EnsureDefinition(exprField.GetValue(this), exprField.FieldType);
                 exprField.SetValue(this, expr);
-                EnsureExprName(expr, exprField.Name);
-                _declarationExpressions[exprField.Name] = expr;
+                EnsureDefinitionName(expr, exprField.Name);
+                _preBuildDefinitions[exprField.Name] = expr;
             }
 
             var props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
@@ -65,10 +66,10 @@ namespace RapidPliant.Grammar
             {
                 try
                 {
-                    var expr = EnsureExpr(exprProp.GetValue(this), exprProp.PropertyType);
+                    var expr = EnsureDefinition(exprProp.GetValue(this), exprProp.PropertyType);
                     exprProp.SetValue(this, expr);
-                    EnsureExprName(expr, exprProp.Name);
-                    _declarationExpressions[exprProp.Name] = expr;
+                    EnsureDefinitionName(expr, exprProp.Name);
+                    _preBuildDefinitions[exprProp.Name] = expr;
                 }
                 catch (Exception)
                 {
@@ -77,27 +78,27 @@ namespace RapidPliant.Grammar
             }
         }
 
-        private Expr EnsureExpr(object exprObj, Type exprType)
+        private GrammarDef EnsureDefinition(object exprObj, Type exprType)
         {
             if (exprObj == null)
             {
-                if (typeof(LexExpr).IsAssignableFrom(exprType))
+                if (typeof(LexDef).IsAssignableFrom(exprType))
                 {
-                    return new DeclarationLexExpr(null);
+                    return new Lex();
                 }
 
-                if (typeof(RuleExpr).IsAssignableFrom(exprType))
+                if (typeof(RuleDef).IsAssignableFrom(exprType))
                 {
-                    return new DeclarationRuleExpr(null);
+                    return new Rule();
                 }
             }
 
-            return (Expr) exprObj;
+            return (GrammarDef)exprObj;
         }
 
-        private void EnsureExprName(Expr expr, string name)
+        private void EnsureDefinitionName(GrammarDef grammarDef, string name)
         {
-            if (string.IsNullOrEmpty(expr.Name))
+            if (string.IsNullOrEmpty(grammarDef.Name))
             {
                 if (name.Length > 1 && name[0] == 'm' && char.IsUpper(name[1]))
                 {
@@ -105,55 +106,55 @@ namespace RapidPliant.Grammar
                 }
 
                 //Set the expression name to the name of the field
-                expr.Name = name.Trim(' ', '_');
+                grammarDef.Name = name.Trim(' ', '_');
             }
         }
 
         private void EnsureExpressionNames()
         {
             var fields = this.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
-            var exprFields = fields.Where(f => typeof(IExpr).IsAssignableFrom(f.FieldType)).ToList();
-            foreach (var exprField in exprFields)
+            var defFields = fields.Where(f => typeof(GrammarDef).IsAssignableFrom(f.FieldType)).ToList();
+            foreach (var defField in defFields)
             {
-                var expr = exprField.GetValue(this) as Expr;
-                if(expr == null)
+                var def = defField.GetValue(this) as GrammarDef;
+                if(def == null)
                     continue;
 
-                var name = GetDeclaredExpressionName(exprField.Name);
-                EnsureExprName(expr, name);
+                var name = GetDeclaredDefinitionName(defField.Name);
+                EnsureDefinitionName(def, name);
             }
 
             var props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
-            var exprProps = props.Where(f => typeof(IExpr).IsAssignableFrom(f.PropertyType)).ToList();
-            foreach (var exprProp in exprProps)
+            var defProps = props.Where(f => typeof(GrammarDef).IsAssignableFrom(f.PropertyType)).ToList();
+            foreach (var defProp in defProps)
             {
-                var expr = exprProp.GetValue(this) as Expr;
-                if (expr == null)
+                var def = defProp.GetValue(this) as GrammarDef;
+                if (def == null)
                     continue;
 
-                var name = GetDeclaredExpressionName(exprProp.Name);
-                EnsureExprName(expr, name);
+                var name = GetDeclaredDefinitionName(defProp.Name);
+                EnsureDefinitionName(def, name);
             }
         }
 
-        private string GetDeclaredExpressionName(string memberName)
+        private string GetDeclaredDefinitionName(string memberName)
         {
-            Expr declExpr;
-            if (_declarationExpressions.TryGetValue(memberName, out declExpr))
+            GrammarDef declDef;
+            if (_preBuildDefinitions.TryGetValue(memberName, out declDef))
             {
-                return declExpr.Name ?? memberName;
+                return declDef.Name ?? memberName;
             }
             return memberName;
         }
 
-        public IEnumerable<ILexExpr> GetLexExpressions()
+        public IEnumerable<ILexDef> GetLexDefinitions()
         {
-            return LexExpressions.External;
+            return LexDefinitions.External;
         }
 
-        public IEnumerable<IRuleExpr> GetRuleExpressions()
+        public IEnumerable<IRuleDef> GetRuleDefinitions()
         {
-            return RuleExpressions.External;
+            return RuleDefinitions.External;
         }
 
         protected virtual void OnBuilt()
@@ -163,72 +164,73 @@ namespace RapidPliant.Grammar
         #region Build
 
 
-        private void CollectExpressions()
+        private void CollectDefinitions()
         {
-            foreach (var startRule in StartRuleExpressions)
+            foreach (var startRule in StartRuleDefinitions)
             {
-                CollectExpressions(startRule);
+                if (!AddDefinition(startRule))
+                    return;
+
+                CollectDefinitions(startRule.Expression);
             }
         }
 
-        private void CollectExpressions(Expr expr)
+        private void CollectDefinitions(IExpr expr)
         {
-            var groupExpr = expr as GroupExpr;
+            var groupExpr = expr as IGroupExpr;
             if (groupExpr != null)
             {
                 foreach (var childExpr in groupExpr.Expressions)
                 {
-                    CollectExpressions(childExpr);
+                    CollectDefinitions(childExpr);
                 }
 
                 return;
             }
-
-            if (!AddExpr(expr))
-                return;
-
-            var lexExpr = expr as LexExpr;
-            if (lexExpr != null)
+            
+            var lexRef = expr as LexRefExpr;
+            if (lexRef != null)
             {
-                AddLexExpression(lexExpr);
+                AddLexDefinition(lexRef.LexDef);
                 return;
             }
 
-            var ruleExpr = expr as RuleExpr;
-            if (ruleExpr != null)
+            var ruleRef = expr as RuleRefExpr;
+            if (ruleRef != null)
             {
-                AddRuleExpr(ruleExpr);
-                CollectExpressions(ruleExpr.DefinitionExpr);
+                AddRuleDefinition(ruleRef.RuleDef);
+                CollectDefinitions(((RuleDef)ruleRef.RuleDef).Expression);
+                return;
             }
         }
 
-        private bool AddExpr(Expr expr)
+        private bool AddDefinition(GrammarDef def)
         {
-            if (!AllExpressions.Contains(expr))
+            if (!AllDefinitions.Contains(def))
             {
-                AllExpressions.Add(expr);
+                AllDefinitions.Add(def);
                 return true;
             }
 
             return false;
         }
 
-        private bool AddRuleExpr(RuleExpr ruleExpr)
+        private bool AddRuleDefinition(IRuleDef ruleDef)
         {
-            if (!RuleExpressions.Contains(ruleExpr))
+            if (!RuleDefinitions.Contains(ruleDef))
             {
-                RuleExpressions.Add(ruleExpr);
+                RuleDefinitions.Add(ruleDef);
                 return true;
             }
 
             return false;
         }
 
-        private bool AddLexExpression(LexExpr lexExpr)
+        private bool AddLexDefinition(ILexDef lexDef)
         {
-            if (!LexExpressions.Contains(lexExpr))
+            if (!LexDefinitions.Contains(lexDef))
             {
-                LexExpressions.Add(lexExpr);
+                LexDefinitions.Add(lexDef);
                 return true;
             }
 
@@ -238,21 +240,21 @@ namespace RapidPliant.Grammar
 
         #region Customizable helpers
 
-        internal virtual LexPatternExpr CreateLexPatternExpr(string pattern)
+        internal virtual LexPatternModel CreateLexPatternExpr(string pattern)
         {
-            return new LexPatternExpr(pattern);
+            return new LexPatternModel(pattern);
         }
 
         #endregion
 
         #region Helpers
 
-        protected void Start(RuleExpr startRuleExpr)
+        protected void Start(RuleDef startRuleExpr)
         {
-            StartRuleExpressions.Add(startRuleExpr);
+            StartRuleDefinitions.Add(startRuleExpr);
         }
 
-        protected LexExpr LexPattern(string pattern)
+        protected LexPatternModel LexPattern(string pattern)
         {
             return CreateLexPatternExpr(pattern);
         }
@@ -260,39 +262,54 @@ namespace RapidPliant.Grammar
         #endregion
     }
 
-    public class GrammarExprCollection<TExprInternal, TExprExternal> : IEnumerable<TExprInternal>
-        where TExprInternal : TExprExternal 
+    public class GrammarDefinitionCollecion<TDefInternal, TDefExternal> : IEnumerable<TDefInternal>
+        where TDefInternal : TDefExternal 
     {
-        private List<TExprInternal> _expressionsInternal;
-        private TExprExternal[] _expressionsExternal;
+        private HashSet<TDefInternal> _internal;
+        private TDefExternal[] _external;
 
-        public GrammarExprCollection()
+        public GrammarDefinitionCollecion()
         {
-            _expressionsInternal = new List<TExprInternal>();
+            _internal = new HashSet<TDefInternal>();
         }
 
-        public TExprExternal[] External
+        public TDefExternal[] External
         {
             get
             {
-                if (_expressionsExternal == null)
+                if (_external == null)
                 {
-                    _expressionsExternal = _expressionsInternal.Select(e => (TExprExternal)e).ToArray();
+                    _external = _internal.Select(e => (TDefExternal)e).ToArray();
                 }
 
-                return _expressionsExternal;
+                return _external;
             }
         }
 
-        public void Add(TExprInternal expr)
+        public void Add(TDefInternal def)
         {
-            _expressionsInternal.Add(expr);
-            _expressionsExternal = null;
+            _internal.Add(def);
+            _external = null;
         }
 
-        public IEnumerator<TExprInternal> GetEnumerator()
+        public void Add(TDefExternal def)
         {
-            return _expressionsInternal.ToList().GetEnumerator();
+            Add((TDefInternal) def);
+        }
+
+        public bool Contains(TDefInternal def)
+        {
+            return _internal.Contains(def);
+        }
+
+        public bool Contains(TDefExternal def)
+        {
+            return Contains((TDefInternal) def);
+        }
+
+        public IEnumerator<TDefInternal> GetEnumerator()
+        {
+            return _internal.ToList().GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

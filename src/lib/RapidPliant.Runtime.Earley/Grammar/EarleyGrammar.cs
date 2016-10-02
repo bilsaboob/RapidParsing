@@ -61,11 +61,11 @@ namespace RapidPliant.Runtime.Earley.Grammar
             var ruleNfas = new List<IEarleyNfa>();
 
             //Build the rule nfas for each of the expressions!
-            var ruleExpressions = Grammar.GetRuleExpressions();
+            var ruleDefs = Grammar.GetRuleDefinitions();
 
-            foreach (var ruleExpr in ruleExpressions)
+            foreach (var ruleDef in ruleDefs)
             {
-                var ruleNfa = _earleyNfaFactory.CreateNfaFromExpression(((RuleExpr)ruleExpr).DefinitionExpr);
+                var ruleNfa = _earleyNfaFactory.CreateNfaFromExpression(ruleDef.Expression);
                 ruleNfas.Add(ruleNfa);
             }
 
@@ -83,7 +83,7 @@ namespace RapidPliant.Runtime.Earley.Grammar
         private void PreProcessGrammar()
         {
             //Collect the lex rules!
-            var lexRules = Grammar.GetLexExpressions();
+            var lexRules = Grammar.GetLexDefinitions();
             foreach (var lexRule in lexRules)
             {
                 AddLexRule(lexRule);
@@ -91,7 +91,7 @@ namespace RapidPliant.Runtime.Earley.Grammar
 
             AssignLexRuleIds();
 
-            var parseRules = Grammar.GetRuleExpressions();
+            var parseRules = Grammar.GetRuleDefinitions();
             foreach (var parseRule in parseRules)
             {
                 AddParseRule(parseRule);
@@ -116,38 +116,40 @@ namespace RapidPliant.Runtime.Earley.Grammar
             }
         }
 
-        private void AddLexRule(ILexExpr lexExpr)
+        private void AddLexRule(ILexDef lexDef)
         {
-            var lexPatternExpr = lexExpr as ILexPatternExpr;
+            var lexModel = lexDef.LexModel;
+
+            var lexPatternExpr = lexModel as ILexPatternModel;
             if (lexPatternExpr != null)
             {
                 //Create pattern lex rule!
-                AddOrMapLexRule(lexPatternExpr.Pattern, lexPatternExpr);
+                AddOrMapLexRule(lexPatternExpr.Pattern, lexDef);
                 return;
             }
 
-            var lexSpellingExpr = lexExpr as ILexSpellingExpr;
+            var lexSpellingExpr = lexModel as ILexSpellingModel;
             if (lexSpellingExpr != null)
             {
                 //Create spelling lex rule!
-                AddOrMapLexRule(lexSpellingExpr.Spelling, lexSpellingExpr);
+                AddOrMapLexRule(lexSpellingExpr.Spelling, lexDef);
                 return;
             }
 
-            var lexTerminalExpr = lexExpr as ILexTerminalExpr;
+            var lexTerminalExpr = lexModel as ILexTerminalModel;
             if (lexTerminalExpr != null)
             {
                 //Create terminal lex rule!
-                AddOrMapLexRule(lexTerminalExpr.Char.ToString(), lexTerminalExpr);
+                AddOrMapLexRule(lexTerminalExpr.Char.ToString(), lexDef);
                 return;
             }
 
-            throw new Exception($"Unsupported lex model of type '{lexExpr.GetType().Name}'!");
+            throw new Exception($"Unsupported lex model of type '{lexModel.GetType().Name}'!");
         }
 
-        private void AddOrMapLexRule(string pattern, ILexExpr lexExpr)
+        private void AddOrMapLexRule(string pattern, ILexDef lexDef)
         {
-            var lexRule = new EarleyPatternLexRule(pattern, lexExpr);
+            var lexRule = new EarleyPatternLexRule(pattern, lexDef);
             AllLexRules.Add(lexRule);
 
             EarleyPatternLexRule existingLexRule;
@@ -161,9 +163,9 @@ namespace RapidPliant.Runtime.Earley.Grammar
             }
         }
 
-        private void AddParseRule(IRuleExpr ruleExpr)
+        private void AddParseRule(IRuleDef ruleDef)
         {
-            var parseRule = new EarleyParseRule(ruleExpr);
+            var parseRule = new EarleyParseRule(ruleDef);
             AllParseRules.Add(parseRule);
         }
     }
@@ -176,15 +178,15 @@ namespace RapidPliant.Runtime.Earley.Grammar
     {
         private List<ILexRule> _mappedLexRules;
 
-        public EarleyPatternLexRule(string pattern, ILexExpr lexExpr)
+        public EarleyPatternLexRule(string pattern, ILexDef lexDef)
         {
-            LexExpr = lexExpr;
+            LexDef = lexDef;
             Pattern = pattern;
 
             _mappedLexRules = new List<ILexRule>();
         }
 
-        public ILexExpr LexExpr { get; private set; }
+        public ILexDef LexDef { get; private set; }
         public string Pattern { get; private set; }
 
         public int LocalIndex { get; set; }
@@ -203,12 +205,12 @@ namespace RapidPliant.Runtime.Earley.Grammar
 
     public class EarleyParseRule : IEarleyParseRule
     {
-        public EarleyParseRule(IRuleExpr ruleExpr)
+        public EarleyParseRule(IRuleDef ruleDef)
         {
-            RuleExpr = ruleExpr;
+            RuleDef = ruleDef;
         }
 
-        public IRuleExpr RuleExpr { get; set; }
+        public IRuleDef RuleDef { get; set; }
 
         public int LocalIndex { get; set; }
     }

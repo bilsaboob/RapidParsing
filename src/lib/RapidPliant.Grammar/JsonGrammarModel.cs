@@ -4,6 +4,7 @@ using System.Data.SqlTypes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Grammar.Definitions;
 using RapidPliant.Grammar.Expression;
 
 namespace RapidPliant.Grammar
@@ -28,8 +29,8 @@ namespace RapidPliant.Grammar
         protected override void Define()
         {
             //Configure the lex declarations
-            number = Number();
-            strQuote = StringQuoted();
+            number.As(Number());
+            strQuote.As(StringQuoted());
 
             //Configure the rule declarations
             Json.As(

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RapidPliant.Grammar.Expression;
+using RapidPliant.Grammar.Definitions;
 
 namespace RapidPliant.Grammar
 {
@@ -27,12 +27,12 @@ namespace RapidPliant.Grammar
         protected override void Define()
         {
             //Configure the lex declarations
-            number = Number();
-            strQuote = StringQuoted();
+            number.As(Number());
+            strQuote.As(StringQuoted());
 
             //Configure the rule declarations
             Json.As(
-                Object
+                Object | Value
             );
             
             Object.As(

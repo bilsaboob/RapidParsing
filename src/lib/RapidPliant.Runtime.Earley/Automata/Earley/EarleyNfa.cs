@@ -85,10 +85,10 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
             _transitions = new List<EarleyNfaTransition>();
         }
         
-        public void AddLexTransitionTo(ILexExpr lexExpr, EarleyNfaState toState)
+        public void AddLexTransitionTo(ILexDef lexDef, EarleyNfaState toState)
         {
             //Add transition to the specified state for the given lexExpr
-            _transitions.Add(new EarleyNfaLexTransition(lexExpr, this, toState));
+            _transitions.Add(new EarleyNfaLexTransition(lexDef, this, toState));
         }
 
         public void AddNullTransitionTo(EarleyNfaState toState)
@@ -97,10 +97,10 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
             _transitions.Add(new EarleyNfaNullTransition(this, toState));
         }
 
-        public void AddRuleTransitionTo(IRuleExpr ruleExpr, EarleyNfaState toState)
+        public void AddRuleTransitionTo(IRuleDef ruleDef, EarleyNfaState toState)
         {
             //Add transition by rule
-            _transitions.Add(new EarleyNfaRuleTransition(ruleExpr, this, toState));
+            _transitions.Add(new EarleyNfaRuleTransition(ruleDef, this, toState));
         }
     }
 
@@ -122,13 +122,13 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
 
     public class EarleyNfaLexTransition : EarleyNfaTransition
     {
-        public EarleyNfaLexTransition(ILexExpr lexExpr, EarleyNfaState fromState, EarleyNfaState toState)
+        public EarleyNfaLexTransition(ILexDef lexDef, EarleyNfaState fromState, EarleyNfaState toState)
             : base(fromState, toState)
         {
-            LexExpr = lexExpr;
+            LexDef = lexDef;
         }
 
-        public ILexExpr LexExpr { get; private set; }
+        public ILexDef LexDef { get; private set; }
     }
 
     public class EarleyNfaNullTransition : EarleyNfaTransition
@@ -141,12 +141,12 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
 
     public class EarleyNfaRuleTransition : EarleyNfaTransition
     {
-        public EarleyNfaRuleTransition(IRuleExpr ruleExpr, EarleyNfaState fromState, EarleyNfaState toState)
+        public EarleyNfaRuleTransition(IRuleDef ruleDef, EarleyNfaState fromState, EarleyNfaState toState)
             : base(fromState, toState)
         {
-            RuleExpr = ruleExpr;
+            RuleDef = ruleDef;
         }
 
-        public IRuleExpr RuleExpr { get; private set; }
+        public IRuleDef RuleDef { get; private set; }
     }
 }

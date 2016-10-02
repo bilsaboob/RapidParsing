@@ -5,62 +5,103 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Util;
+using RapidPliant.Grammar.Definitions;
 using RapidPliant.Grammar.Expression;
 
 namespace RapidPliant.Grammar
 {
     public interface IGrammarModel
     {
-        IEnumerable<ILexExpr> GetLexExpressions();
-        IEnumerable<IRuleExpr> GetRuleExpressions();
+        IEnumerable<ILexDef> GetLexDefinitions();
+        IEnumerable<IRuleDef> GetRuleDefinitions();
     }
 
-    public interface IExpr
+    public interface IGrammarDef
     {
         string Name { get; }
     }
 
-    public interface IExprDeclaration
+    public abstract class GrammarDef : IGrammarDef
     {
-        string Name { get; }
+        public string Name { get; set; }
+
+        #region helpers
+        public static RuleRefExpr RuleRef(Rule ruleDef)
+        {
+            return new RuleRefExpr(ruleDef);
+        }
+
+        public static LexRefExpr LexRef(Lex lexDef)
+        {
+            return new LexRefExpr(lexDef);
+        }
+
+        public static ILexModel LexModelForString(string str)
+        {
+            ILexModel lexModel;
+            if (str.Length == 1)
+            {
+                lexModel = new LexTerminalModel(str[0]);
+            }
+            else
+            {
+                lexModel = new LexSpellingModel(str);
+            }
+            return lexModel;
+        }
+
+        public static LexRefExpr InPlaceLexRef(string spelling)
+        {
+            return new LexRefExpr(InPlaceLexDef(spelling));
+        }
+
+        public static LexRefExpr InPlaceLexRef(char character)
+        {
+            return new LexRefExpr(InPlaceLexDef(character));
+        }
+
+        public static InPlaceLexDef InPlaceLexDef(string spelling)
+        {
+            return new InPlaceLexDef(LexModelForString(spelling));
+        }
+
+        public static InPlaceLexDef InPlaceLexDef(char character)
+        {
+            return new InPlaceLexDef(new LexTerminalModel(character));
+        }
+
+        #endregion
     }
 
-    public interface INullExpr : IExpr
+    public interface ILexDef : IGrammarDef
     {
-    }
-
-    public interface IGroupExpr : IExpr
-    {
-        IExpr[] Expressions { get; }
-    }
-
-    public interface IAlterationExpr : IGroupExpr
-    {
-    }
-
-    public interface IProductionExpr : IGroupExpr
-    {
+        ILexModel LexModel { get; }
     }
     
-    public interface ILexExpr : IExpr
+    public interface IRuleDef : IGrammarDef
+    {
+        IExpr Expression { get; }
+    }
+    
+    public interface ILexModel
     {
     }
 
-    public interface IRuleExpr : IExpr
+    public interface IRuleModel
     {
     }
 
-    public interface ILexPatternExpr : ILexExpr
+    public interface ILexPatternModel : ILexModel
     {
         string Pattern { get; }
     }
 
-    public interface ILexTerminalExpr : ILexExpr
+    public interface ILexTerminalModel : ILexModel
     {
         char Char { get; }
     }
     
-    public interface ILexSpellingExpr : ILexExpr
+    public interface ILexSpellingModel : ILexModel
     {
         string Spelling { get; }
     }

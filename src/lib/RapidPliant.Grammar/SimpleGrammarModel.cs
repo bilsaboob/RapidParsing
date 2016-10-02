@@ -14,12 +14,12 @@ namespace RapidPliant.Grammar
             return new NullExpr();
         }
 
-        internal virtual Lex CreateNumberExpr(string name = null)
+        internal virtual ILexModel CreateNumberExpr(string name = null)
         {
             return CreateLexPatternExpr("[0-9]+");
         }
         
-        internal virtual Lex CreateStringQuotedExpr(string name = null)
+        internal virtual ILexModel CreateStringQuotedExpr(string name = null)
         {
             return CreateLexPatternExpr("[\"][^\"]+[\"]");
         }
@@ -40,12 +40,12 @@ namespace RapidPliant.Grammar
             }
         }
 
-        protected Lex Number(string name = null)
+        protected ILexModel Number(string name = null)
         {
             return CreateNumberExpr(name);
         }
 
-        protected Lex StringQuoted(string name = null)
+        protected ILexModel StringQuoted(string name = null)
         {
             return CreateStringQuotedExpr(name);
         }

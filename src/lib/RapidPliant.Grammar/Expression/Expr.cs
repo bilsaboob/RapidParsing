@@ -7,6 +7,30 @@ using System.Threading.Tasks;
 
 namespace RapidPliant.Grammar.Expression
 {
+    public interface IExpr
+    {
+        string Name { get; }
+    }
+
+    public interface INullExpr : IExpr
+    {
+    }
+
+    public interface IGroupExpr : IExpr
+    {
+        IExpr[] Expressions { get; }
+    }
+
+    public interface IAlterationExpr : IGroupExpr
+    {
+        void AddExpr(IExpr expr);
+    }
+
+    public interface IProductionExpr : IGroupExpr
+    {
+        void AddExpr(IExpr expr);
+    }
+
     public partial class Expr : IExpr
     {
         public Expr()
@@ -62,8 +86,10 @@ namespace RapidPliant.Grammar.Expression
 
     public partial class Expr : IExpr
     {
+        private static ExprFactory ExprFactory = new ExprFactory();
+
         #region And
-        public static Expr operator +(Expr lhs, Expr rhs)
+        /*public static Expr operator +(Expr lhs, Expr rhs)
         {
             return AddWithAnd(lhs, rhs);
         }
@@ -82,11 +108,11 @@ namespace RapidPliant.Grammar.Expression
         public static Expr operator +(string lhs, Expr rhs)
         {
             return AddWithAnd(CreateLexExpr(lhs), rhs);
-        }
+        }*/
         #endregion
 
         #region Or
-        public static Expr operator |(Expr lhs, Expr rhs)
+        /*public static Expr operator |(Expr lhs, Expr rhs)
         {
             return AddWithOr(lhs, rhs);
         }
@@ -105,54 +131,54 @@ namespace RapidPliant.Grammar.Expression
         public static Expr operator |(string lhs, Expr rhs)
         {
             return AddWithOr(CreateLexExpr(lhs), rhs);
-        }
-
+        }*/
         #endregion
 
         #region AddWithOr
-        protected static Expr AddWithOr(Expr lhsExpr, Expr rhsExpr)
+        public static Expr AddWithOr(Expr lhsExpr, Expr rhsExpr, ExprFactory exprFactory = null)
         {
-            var altExpr = GetAlteration(lhsExpr);
+            var altExpr = GetAlteration(lhsExpr, exprFactory);
             altExpr.AddExpr(rhsExpr);
-            return altExpr;
+            return (Expr)altExpr;
         }
         
         #endregion
 
         #region AddWithAnd
-        protected static Expr AddWithAnd(Expr lhsExpr, Expr rhsExpr)
+        public static Expr AddWithAnd(Expr lhsExpr, Expr rhsExpr, ExprFactory exprFactory = null)
         {
-            var prodExpr = GetProduction(lhsExpr);
+            var prodExpr = GetProduction(lhsExpr, exprFactory);
             prodExpr.AddExpr(rhsExpr);
-            return prodExpr;
+            return (Expr)prodExpr;
         }
 
         #endregion
 
         #region helpers
 
-        private static ProductionExpr GetProduction(Expr expr)
+        private static IProductionExpr GetProduction(Expr expr, ExprFactory exprFactory)
         {
-            var prodExpr = expr as ProductionExpr;
+            var prodExpr = expr as IProductionExpr;
             if (prodExpr == null)
             {
-                prodExpr = new ProductionExpr();
+                prodExpr = exprFactory.CreateProduction();
                 prodExpr.AddExpr(expr);
             }
             return prodExpr; 
         }
 
-        private static AlterationExpr GetAlteration(Expr expr)
+        private static IAlterationExpr GetAlteration(Expr expr, ExprFactory exprFactory)
         {
-            var altExpr = expr as AlterationExpr;
+            var altExpr = expr as IAlterationExpr;
             if (altExpr == null)
             {
-                altExpr = new AlterationExpr();
+                altExpr = exprFactory.CreateAlteration();
                 altExpr.AddExpr(expr);
             }
             return altExpr;
         }
 
+        /*
         private static Expr CreateLexExpr(string str)
         {
             LexExpr lexExpr;
@@ -166,77 +192,77 @@ namespace RapidPliant.Grammar.Expression
             }
             return lexExpr;
         }
+        */
         #endregion
     }
 
-    public class GroupExpr : Expr, IGroupExpr
+    public class ExprFactory
     {
-        public GroupExpr()
+        public virtual IProductionExpr CreateProduction()
+        {
+            return new ProductionExpr();
+        }
+
+        public virtual IAlterationExpr CreateAlteration()
+        {
+            return new AlterationExpr();
+        }
+    }
+
+    public static class GroupExprExtensions
+    {
+        public static IExpr GetUnwrappedSingleExpr(this IGroupExpr groupExpr)
+        {
+            if (!((Expr)groupExpr).CanBeSimplified)
+                return groupExpr;
+
+            if (groupExpr.Expressions.Length == 0)
+                return null;
+
+            if (groupExpr.Expressions.Length > 1)
+                return null;
+
+            var innerExpr = groupExpr.Expressions[0];
+            var innerGroupExpr = innerExpr as IGroupExpr;
+            if (innerGroupExpr != null)
+            {
+                return innerGroupExpr.GetUnwrappedSingleExpr();
+            }
+            else
+            {
+                return innerExpr;
+            }
+        }
+    }
+
+    public class AlterationExpr : Expr, IAlterationExpr
+    {
+        public AlterationExpr()
         {
             Expressions = new List<Expr>();
         }
 
         public List<Expr> Expressions { get; private set; }
 
-        public virtual void AddExpr(Expr expr)
-        {
-            Expressions.Add(expr);
-        }
-
-        public Expr GetUnwrappedSingleExpr()
-        {
-            if (!CanBeSimplified)
-                return this;
-
-            if (Expressions.Count == 0)
-                return null;
-
-            if (Expressions.Count > 1)
-                return null;
-
-            var expr = Expressions[0];
-            var groupExpr = expr as GroupExpr;
-            if (groupExpr != null)
-            {
-                return groupExpr.GetUnwrappedSingleExpr();
-            }
-            else
-            {
-                return expr;
-            }
-        }
-
-        public override string ToStringRef()
-        {
-            return ToString();
-        }
-
         IExpr[] IGroupExpr.Expressions
         {
             get { return Expressions.ToArray(); }
         }
-    }
 
-    public class AlterationExpr : GroupExpr, IAlterationExpr
-    {
-        public AlterationExpr()
+        public virtual void AddExpr(IExpr expr)
         {
-        }
-
-        public override void AddExpr(Expr expr)
-        {
-            var otherGroup = expr as GroupExpr;
+            var otherGroup = expr as IGroupExpr;
             if (otherGroup != null)
             {
                 //No need to add if there are no expressions in the other group!
-                if (otherGroup.Expressions.Count == 0)
+                if (otherGroup.Expressions.Length == 0)
                     return;
 
                 //Try getting the unwrapped version if possible!
                 var otherGroupUnwrappedExpr = otherGroup.GetUnwrappedSingleExpr();
                 if (otherGroupUnwrappedExpr != null)
                 {
-                    base.AddExpr(otherGroupUnwrappedExpr);
+                    Expressions.Add((Expr)otherGroupUnwrappedExpr);
                     return;
                 }
                 
@@ -247,16 +273,21 @@ namespace RapidPliant.Grammar.Expression
                     //Add all of the child production expressions into this one!
                     foreach (var otherExpr in otherAltExpr.Expressions)
                     {
-                        base.AddExpr(otherExpr);
+                        Expressions.Add(otherExpr);
                     }
 
                     return;
                 }
             }
 
-            base.AddExpr(expr);
+            Expressions.Add((Expr)expr);
         }
-        
+
+        public override string ToStringRef()
+        {
+            return ToString();
+        }
+
         public override void ToString(StringBuilder sb)
         {
             var expressions = Expressions.ToList();
@@ -281,26 +312,34 @@ namespace RapidPliant.Grammar.Expression
         }
     }
 
-    public class ProductionExpr : GroupExpr, IProductionExpr
+    public class ProductionExpr : Expr, IProductionExpr
     {
         public ProductionExpr()
         {
+            Expressions = new List<Expr>();
         }
 
-        public override void AddExpr(Expr expr)
+        public List<Expr> Expressions { get; private set; }
+
+        IExpr[] IGroupExpr.Expressions
         {
-            var otherGroup = expr as GroupExpr;
+            get { return Expressions.ToArray(); }
+        }
+
+        public virtual void AddExpr(IExpr expr)
+        {
+            var otherGroup = expr as IGroupExpr;
             if (otherGroup != null)
             {
                 //No need to add if there are no expressions in the other group!
-                if(otherGroup.Expressions.Count == 0)
+                if(otherGroup.Expressions.Length == 0)
                     return;
 
                 //Try getting the unwrapped version if possible!
                 var otherGroupUnwrappedExpr = otherGroup.GetUnwrappedSingleExpr();
                 if (otherGroupUnwrappedExpr != null)
                 {
-                    base.AddExpr(otherGroupUnwrappedExpr);
+                    Expressions.Add((Expr)otherGroupUnwrappedExpr);
                     return;
                 }
 
@@ -311,16 +350,21 @@ namespace RapidPliant.Grammar.Expression
                     //Add all of the child production expressions into this one!
                     foreach (var otherExpr in otherProdExpr.Expressions)
                     {
-                        base.AddExpr(otherExpr);
+                        Expressions.Add(otherExpr);
                     }
 
                     return;
                 }
             }
 
-            base.AddExpr(expr);
+            Expressions.Add((Expr)expr);
         }
-        
+
+        public override string ToStringRef()
+        {
+            return ToString();
+        }
+
         public override void ToString(StringBuilder sb)
         {
             var expressions = Expressions.ToList();
