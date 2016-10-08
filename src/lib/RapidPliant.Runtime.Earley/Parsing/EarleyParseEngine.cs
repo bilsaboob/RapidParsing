@@ -128,7 +128,7 @@ namespace RapidPliant.Runtime.Earley.Parsing
                     var originEarleyState = originEarleyStates[j];
                     var originDfa = originEarleyState.DfaState;
 
-                    var dfaTransition = originDfa.NonTerminalTransitions.Get(completion.NonTerminal);
+                    var dfaTransition = originDfa.RuleTransitions.Get(completion.RuleDef);
                     if(dfaTransition == null)
                         continue;
 

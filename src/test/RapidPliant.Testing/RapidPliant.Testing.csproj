@@ -4,15 +4,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F71FA673-6338-40B9-B917-D056591E266E}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidPliant.Common</RootNamespace>
-    <AssemblyName>RapidPliant.Common</AssemblyName>
+    <RootNamespace>RapidPliant.Testing</RootNamespace>
+    <AssemblyName>RapidPliant.Testing</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +24,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -40,20 +43,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Expression\Expr.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Rule\ISymbol.cs" />
-    <Compile Include="Rule\Rule.cs" />
-    <Compile Include="Util\HashCode.cs" />
-    <Compile Include="Util\IText.cs" />
-    <Compile Include="Util\RapidList.cs" />
-    <Compile Include="Util\RapidTable.cs" />
-    <Compile Include="Util\UniqueList.cs" />
+    <Compile Include="Tests\RegexPatternTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RapidPliant.Runtime\RapidPliant.Runtime.csproj">
-      <Project>{7E1B0F34-2E20-439D-921D-008D2323FB8C}</Project>
-      <Name>RapidPliant.Runtime</Name>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\RapidPliant.Common\RapidPliant.Common.csproj">
+      <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
+      <Name>RapidPliant.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
+      <Project>{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}</Project>
+      <Name>RapidPliant.Lexing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.Test\RapidPliant.Test.csproj">
+      <Project>{23DB3E8B-4538-4317-AF2E-2FFD57F601C1}</Project>
+      <Name>RapidPliant.Test</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

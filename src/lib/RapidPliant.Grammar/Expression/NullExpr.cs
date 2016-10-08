@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Common.Util;
 
 namespace RapidPliant.Grammar.Expression
 {
@@ -11,17 +12,10 @@ namespace RapidPliant.Grammar.Expression
         public NullExpr()
         {
         }
-
-        public override string ToString()
+        
+        protected override void _ToStringExpr(IText text)
         {
-            var sb = new StringBuilder();
-            ToString(sb);
-            return sb.ToString();
-        }
-
-        public override void ToString(StringBuilder sb)
-        {
-            sb.Append("NULL");
+            text.Append("NULL");
         }
     }
 }

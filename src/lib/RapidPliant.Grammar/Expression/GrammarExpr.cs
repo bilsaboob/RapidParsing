@@ -3,240 +3,119 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Common.Expression;
+using RapidPliant.Grammar.Definitions;
 
 namespace RapidPliant.Grammar.Expression
 {
-    public partial class GrammarExpr : Expr
+    public partial class GrammarExpr : Expr<GrammarExpr>
     {
-        private static GrammarExprFactory ExprFactory = new GrammarExprFactory();
-
-        public static GrammarExpr AddWithOr(Expr lhsExpr, Expr rhsExpr)
+        public GrammarExpr()
+            : this(false, false)
         {
-            return (GrammarExpr)Expr.AddWithOr(lhsExpr, rhsExpr, ExprFactory);
         }
-        
-        public static GrammarExpr AddWithAnd(Expr lhsExpr, Expr rhsExpr)
+
+        protected GrammarExpr(bool isAlteration, bool isProduction) 
+            : base(isAlteration | isProduction, isAlteration, isProduction)
         {
-            return (GrammarExpr)Expr.AddWithAnd(lhsExpr, rhsExpr, ExprFactory);
+        }
+
+        protected override GrammarExpr CreateAlterationExpr()
+        {
+            return new GrammarExpr(true, false);
+        }
+
+        protected override GrammarExpr CreateProductionExpr()
+        {
+            return new GrammarExpr(false, true);
         }
     }
 
-    public partial class GrammarExpr : Expr
+    public partial class GrammarExpr : Expr<GrammarExpr>
     {
         #region And
         public static GrammarExpr operator +(GrammarExpr lhs, GrammarExpr rhs)
         {
-            return GrammarExpr.AddWithAnd(lhs, rhs);
+            return AddWithAnd(lhs, rhs);
         }
         public static GrammarExpr operator +(GrammarExpr lhs, char rhs)
         {
-            return GrammarExpr.AddWithAnd(lhs, GrammarDef.InPlaceLexRef(rhs));
+            return AddWithAnd(lhs, InPlaceLexRef(rhs));
         }
         public static GrammarExpr operator +(char lhs, GrammarExpr rhs)
         {
-            return GrammarExpr.AddWithAnd(GrammarDef.InPlaceLexRef(lhs), rhs);
+            return AddWithAnd(InPlaceLexRef(lhs), rhs);
         }
         public static GrammarExpr operator +(GrammarExpr lhs, string rhs)
         {
-            return GrammarExpr.AddWithAnd(lhs, GrammarDef.InPlaceLexRef(rhs));
+            return AddWithAnd(lhs, InPlaceLexRef(rhs));
         }
 
         public static GrammarExpr operator +(string lhs, GrammarExpr rhs)
         {
-            return GrammarExpr.AddWithAnd(GrammarDef.InPlaceLexRef(lhs), rhs);
+            return AddWithAnd(InPlaceLexRef(lhs), rhs);
         }
         #endregion
 
         #region Or
         public static GrammarExpr operator |(GrammarExpr lhs, GrammarExpr rhs)
         {
-            return GrammarExpr.AddWithOr(lhs, rhs);
+            return AddWithOr(lhs, rhs);
         }
         public static GrammarExpr operator |(GrammarExpr lhs, char rhs)
         {
-            return GrammarExpr.AddWithOr(lhs, GrammarDef.InPlaceLexRef(rhs));
+            return AddWithOr(lhs, InPlaceLexRef(rhs));
         }
         public static GrammarExpr operator |(char lhs, GrammarExpr rhs)
         {
-            return GrammarExpr.AddWithOr(GrammarDef.InPlaceLexRef(lhs), rhs);
+            return AddWithOr(InPlaceLexRef(lhs), rhs);
         }
         public static GrammarExpr operator |(GrammarExpr lhs, string rhs)
         {
-            return GrammarExpr.AddWithOr(lhs, GrammarDef.InPlaceLexRef(rhs));
+            return AddWithOr(lhs, InPlaceLexRef(rhs));
         }
         public static GrammarExpr operator |(string lhs, GrammarExpr rhs)
         {
-            return GrammarExpr.AddWithOr(GrammarDef.InPlaceLexRef(lhs), rhs);
+            return AddWithOr(InPlaceLexRef(lhs), rhs);
         }
         #endregion
-    }
 
-    public class GrammarExprFactory : ExprFactory
-    {
-        public override IAlterationExpr CreateAlteration()
+        #region helpers
+        public static RuleRefExpr RuleRef(RuleDef ruleDef)
         {
-            return new GrammarAlterationExpr();
+            return GrammarDef.RuleRef(ruleDef);
         }
 
-        public override IProductionExpr CreateProduction()
+        public static LexRefExpr LexRef(LexDef lexDef)
         {
-            return new GrammarProductionExpr();
-        }
-    }
-
-    public class GrammarAlterationExpr : GrammarExpr, IAlterationExpr
-    {
-        public GrammarAlterationExpr()
-        {
-            Expressions = new List<Expr>();
+            return GrammarDef.LexRef(lexDef);
         }
 
-        public List<Expr> Expressions { get; private set; }
-
-        IExpr[] IGroupExpr.Expressions
+        public static ILexModel LexModelForString(string str)
         {
-            get { return Expressions.ToArray(); }
+            return GrammarDef.LexModelForString(str);
         }
 
-        public virtual void AddExpr(IExpr expr)
+        public static LexRefExpr InPlaceLexRef(string spelling)
         {
-            var otherGroup = expr as IGroupExpr;
-            if (otherGroup != null)
-            {
-                //No need to add if there are no expressions in the other group!
-                if (otherGroup.Expressions.Length == 0)
-                    return;
-
-                //Try getting the unwrapped version if possible!
-                var otherGroupUnwrappedExpr = otherGroup.GetUnwrappedSingleExpr();
-                if (otherGroupUnwrappedExpr != null)
-                {
-                    Expressions.Add((Expr)otherGroupUnwrappedExpr);
-                    return;
-                }
-
-                //Check for alt special case - just append those from that one!
-                var otherAltExpr = expr as GrammarAlterationExpr;
-                if (otherAltExpr != null && otherAltExpr.CanBeSimplified)
-                {
-                    //Add all of the child production expressions into this one!
-                    foreach (var otherExpr in otherAltExpr.Expressions)
-                    {
-                        Expressions.Add(otherExpr);
-                    }
-
-                    return;
-                }
-            }
-
-            Expressions.Add((Expr)expr);
+            return GrammarDef.InPlaceLexRef(spelling);
         }
 
-        public override string ToStringRef()
+        public static LexRefExpr InPlaceLexRef(char character)
         {
-            return ToString();
+            return GrammarDef.InPlaceLexRef(character);
         }
 
-        public override void ToString(StringBuilder sb)
+        public static InPlaceLexDef InPlaceLexDef(string spelling)
         {
-            var expressions = Expressions.ToList();
-            var requiresParen = expressions.Count > 1;
-
-            if (requiresParen)
-                sb.Append("(");
-
-            var isFirst = true;
-            foreach (var expr in expressions)
-            {
-                if (!isFirst)
-                    sb.Append(" | ");
-
-                isFirst = false;
-
-                sb.Append(expr.ToStringRef());
-            }
-
-            if (requiresParen)
-                sb.Append(")");
-        }
-    }
-
-    public class GrammarProductionExpr : GrammarExpr, IProductionExpr
-    {
-        public GrammarProductionExpr()
-        {
-            Expressions = new List<Expr>();
+            return GrammarDef.InPlaceLexDef(spelling);
         }
 
-        public List<Expr> Expressions { get; private set; }
-
-        IExpr[] IGroupExpr.Expressions
+        public static InPlaceLexDef InPlaceLexDef(char character)
         {
-            get { return Expressions.ToArray(); }
+            return GrammarDef.InPlaceLexDef(character);
         }
-
-        public virtual void AddExpr(IExpr expr)
-        {
-            var otherGroup = expr as IGroupExpr;
-            if (otherGroup != null)
-            {
-                //No need to add if there are no expressions in the other group!
-                if (otherGroup.Expressions.Length == 0)
-                    return;
-
-                //Try getting the unwrapped version if possible!
-                var otherGroupUnwrappedExpr = otherGroup.GetUnwrappedSingleExpr();
-                if (otherGroupUnwrappedExpr != null)
-                {
-                    Expressions.Add((Expr)otherGroupUnwrappedExpr);
-                    return;
-                }
-
-                //Check for production special case - just append those from that one!
-                var otherProdExpr = expr as GrammarProductionExpr;
-                if (otherProdExpr != null && otherProdExpr.CanBeSimplified)
-                {
-                    //Add all of the child production expressions into this one!
-                    foreach (var otherExpr in otherProdExpr.Expressions)
-                    {
-                        Expressions.Add(otherExpr);
-                    }
-
-                    return;
-                }
-            }
-
-            Expressions.Add((Expr)expr);
-        }
-
-        public override string ToStringRef()
-        {
-            return ToString();
-        }
-
-        public override void ToString(StringBuilder sb)
-        {
-            var expressions = Expressions.ToList();
-
-            var requiresParen = expressions.Count > 1;
-
-            if (requiresParen)
-                sb.Append("(");
-
-            var isFirst = true;
-            foreach (var expr in expressions)
-            {
-                if (!isFirst)
-                    sb.Append(" ");
-
-                isFirst = false;
-
-                sb.Append(expr.ToStringRef());
-            }
-
-            if (requiresParen)
-                sb.Append(")");
-        }
+        #endregion
     }
 
     public interface IRuleRefExpr : IExpr

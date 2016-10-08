@@ -41,14 +41,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Automata\Earley\EarleyDfa.cs" />
-    <Compile Include="Automata\Earley\EarleyNfa.cs" />
-    <Compile Include="Automata\Earley\EarleyNfaFactory.cs" />
+    <Compile Include="Automata\Earley\EarleyDfaFactory.cs" />
     <Compile Include="Automata\Lex\LexDfa.cs" />
-    <Compile Include="Automata\Lex\LexNfa.cs" />
-    <Compile Include="Automata\Lex\LexNfaFactory.cs" />
     <Compile Include="Automata\Lex\LexDfaFactory.cs" />
     <Compile Include="Grammar\EarleyGrammar.cs" />
-    <Compile Include="Grammar\ILexRule.cs" />
+    <Compile Include="Grammar\EarleyRuleDef.cs" />
+    <Compile Include="Grammar\IEarleyGrammar.cs" />
     <Compile Include="Grammar\Symbol.cs" />
     <Compile Include="Lexing\Lexeme.cs" />
     <Compile Include="Lexing\ILexExpression.cs" />

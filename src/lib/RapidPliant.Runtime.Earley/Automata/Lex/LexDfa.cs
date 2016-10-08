@@ -33,6 +33,5 @@ namespace RapidPliant.Runtime.Earley.Automata.Lex
 
     public interface ILexCompletion
     {
-        ILexNfa LexNfa { get; set; }
     }
 }

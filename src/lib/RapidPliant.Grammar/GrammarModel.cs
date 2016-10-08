@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Common.Expression;
 using RapidPliant.Grammar.Definitions;
 using RapidPliant.Grammar.Expression;
 
@@ -13,7 +14,7 @@ namespace RapidPliant.Grammar
     public abstract class GrammarModel<TGrammarModel> : IGrammarModel
         where TGrammarModel : GrammarModel<TGrammarModel>
     {
-        protected List<RuleDef> StartRuleDefinitions { get; set; }
+        protected GrammarDefinitionCollecion<RuleDef, IRuleDef> StartRuleDefinitions { get; set; }
         protected List<GrammarDef> AllDefinitions { get; set; }
 
         protected GrammarDefinitionCollecion<RuleDef, IRuleDef> RuleDefinitions { get; set; }
@@ -27,7 +28,7 @@ namespace RapidPliant.Grammar
             RuleDefinitions = new GrammarDefinitionCollecion<RuleDef, IRuleDef>();
             LexDefinitions = new GrammarDefinitionCollecion<LexDef, ILexDef>();
 
-            StartRuleDefinitions = new List<RuleDef>();
+            StartRuleDefinitions = new GrammarDefinitionCollecion<RuleDef, IRuleDef>();
 
             _preBuildDefinitions = new Dictionary<string, GrammarDef>();
         }
@@ -84,12 +85,12 @@ namespace RapidPliant.Grammar
             {
                 if (typeof(LexDef).IsAssignableFrom(exprType))
                 {
-                    return new Lex();
+                    return new LexDef();
                 }
 
                 if (typeof(RuleDef).IsAssignableFrom(exprType))
                 {
-                    return new Rule();
+                    return new RuleDef();
                 }
             }
 
@@ -157,6 +158,11 @@ namespace RapidPliant.Grammar
             return RuleDefinitions.External;
         }
 
+        public IEnumerable<IRuleDef> GetStartRules()
+        {
+            return StartRuleDefinitions.External;
+        }
+
         protected virtual void OnBuilt()
         {
         }
@@ -177,10 +183,9 @@ namespace RapidPliant.Grammar
 
         private void CollectDefinitions(IExpr expr)
         {
-            var groupExpr = expr as IGroupExpr;
-            if (groupExpr != null)
+            if (expr.IsGroup)
             {
-                foreach (var childExpr in groupExpr.Expressions)
+                foreach (var childExpr in expr.Expressions)
                 {
                     CollectDefinitions(childExpr);
                 }
@@ -188,18 +193,18 @@ namespace RapidPliant.Grammar
                 return;
             }
             
-            var lexRef = expr as LexRefExpr;
+            var lexRef = expr as ILexRefExpr;
             if (lexRef != null)
             {
                 AddLexDefinition(lexRef.LexDef);
                 return;
             }
 
-            var ruleRef = expr as RuleRefExpr;
+            var ruleRef = expr as IRuleRefExpr;
             if (ruleRef != null)
             {
                 AddRuleDefinition(ruleRef.RuleDef);
-                CollectDefinitions(((RuleDef)ruleRef.RuleDef).Expression);
+                CollectDefinitions(ruleRef.RuleDef.Expression);
                 return;
             }
         }

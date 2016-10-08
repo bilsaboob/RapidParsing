@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Common.Expression;
 using RapidPliant.Common.Util;
 using RapidPliant.Grammar.Definitions;
 using RapidPliant.Grammar.Expression;
@@ -14,6 +15,7 @@ namespace RapidPliant.Grammar
     {
         IEnumerable<ILexDef> GetLexDefinitions();
         IEnumerable<IRuleDef> GetRuleDefinitions();
+        IEnumerable<IRuleDef> GetStartRules();
     }
 
     public interface IGrammarDef
@@ -26,12 +28,12 @@ namespace RapidPliant.Grammar
         public string Name { get; set; }
 
         #region helpers
-        public static RuleRefExpr RuleRef(Rule ruleDef)
+        public static RuleRefExpr RuleRef(RuleDef ruleDef)
         {
             return new RuleRefExpr(ruleDef);
         }
 
-        public static LexRefExpr LexRef(Lex lexDef)
+        public static LexRefExpr LexRef(LexDef lexDef)
         {
             return new LexRefExpr(lexDef);
         }
@@ -69,7 +71,6 @@ namespace RapidPliant.Grammar
         {
             return new InPlaceLexDef(new LexTerminalModel(character));
         }
-
         #endregion
     }
 

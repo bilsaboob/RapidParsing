@@ -125,7 +125,7 @@ namespace RapidPliant.Runtime.Earley.Parsing
 
         public void CollectFrom(EarleyState earleyState)
         {
-            var lexRules = earleyState.DfaState.ScanTransitions.AllLexRules;
+            var lexRules = earleyState.DfaState.ScanTransitions.AllLexDefs;
             for (var i = 0; i < lexRules.Length; ++i)
             {
                 var lexRule = lexRules[i];
@@ -133,7 +133,7 @@ namespace RapidPliant.Runtime.Earley.Parsing
             }
         }
 
-        private void CreateNewLexemeIfNotExists(ILexRule lexRule)
+        private void CreateNewLexemeIfNotExists(IEarleyLexDef lexRule)
         {
             //Create a new lexeme for the specified lex rule if not already exists!
             var lexeme = lexRule.LexemeFactory.Create();

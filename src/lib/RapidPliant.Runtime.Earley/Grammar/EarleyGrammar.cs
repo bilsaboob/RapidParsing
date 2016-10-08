@@ -10,39 +10,41 @@ using RapidPliant.Runtime.Earley.Lexing;
 
 namespace RapidPliant.Runtime.Earley.Grammar
 {
-    public interface IEarleyGrammar
-    {
-        IEarleyDfa EarleyDfa { get; }
-    }
-
     public class EarleyGrammar : IEarleyGrammar
     {
-        private int LocalLexRuleIndex { get; set; }
-        private int LocalParseRuleIndex { get; set; }
+        private int LocalLexDefIndex { get; set; }
+        private int LocalRuleDefIndex { get; set; }
 
-        private List<EarleyPatternLexRule> AllLexRules { get; set; }
-        private Dictionary<string, EarleyPatternLexRule> LexRulesByPattern { get; set; }
+        private List<EarleyPatternLexDef> AllLexDefs { get; set; }
+        private Dictionary<string, EarleyPatternLexDef> LexDefsByName { get; set; }
+        private Dictionary<string, EarleyPatternLexDef> LexDefsByPattern { get; set; }
 
-        private List<EarleyParseRule> AllParseRules { get; set; }
+        private List<EarleyRuleDef> AllRuleDefs { get; set; }
+        private Dictionary<string, EarleyRuleDef> RuleDefsByName { get; set; }
+        private List<EarleyRuleDef> StartRuleDefs { get; set; }
 
-        private IEarleyNfa EarleyNfa { get; set; }
-        public IEarleyDfa EarleyDfa { get; private set; }
-
-        private EarleyNfaFactory _earleyNfaFactory;
-        
         public EarleyGrammar(IGrammarModel grammar)
         {
             Grammar = grammar;
 
-            AllLexRules = new List<EarleyPatternLexRule>();
-            LexRulesByPattern = new Dictionary<string, EarleyPatternLexRule>();
+            AllLexDefs = new List<EarleyPatternLexDef>();
+            LexDefsByName = new Dictionary<string, EarleyPatternLexDef>();
+            LexDefsByPattern = new Dictionary<string, EarleyPatternLexDef>();
 
-            AllParseRules = new List<EarleyParseRule>();
+            AllRuleDefs = new List<EarleyRuleDef>();
+            RuleDefsByName = new Dictionary<string, EarleyRuleDef>();
 
-            _earleyNfaFactory = new EarleyNfaFactory();
+            StartRuleDefs = new List<EarleyRuleDef>();
         }
 
         public IGrammarModel Grammar { get; private set; }
+
+        public IEarleyDfa EarleyDfa { get; private set; }
+
+        public IEnumerable<IEarleyRuleDef> GetStartRules()
+        {
+            return StartRuleDefs;
+        }
 
         public void Compile()
         {
@@ -53,70 +55,71 @@ namespace RapidPliant.Runtime.Earley.Grammar
 
         private void BuildEarleyAutomata()
         {
-            BuildEarleyNfa();
+            var dfaFactory = new EarleyDfaFactory();
+            dfaFactory.Create(this);
         }
-
-        private void BuildEarleyNfa()
-        {
-            var ruleNfas = new List<IEarleyNfa>();
-
-            //Build the rule nfas for each of the expressions!
-            var ruleDefs = Grammar.GetRuleDefinitions();
-
-            foreach (var ruleDef in ruleDefs)
-            {
-                var ruleNfa = _earleyNfaFactory.CreateNfaFromExpression(ruleDef.Expression);
-                ruleNfas.Add(ruleNfa);
-            }
-
-            var rulesNfa = _earleyNfaFactory.CreateNfaFromMany(ruleNfas.Cast<EarleyNfa>());
-
-            //Set the complete earley nfa!
-            EarleyNfa = rulesNfa;
-        }
-
-        private void BuildEarleyDfa()
-        {
-            EarleyDfa = null;
-        }
-
+        
         private void PreProcessGrammar()
         {
             //Collect the lex rules!
-            var lexRules = Grammar.GetLexDefinitions();
-            foreach (var lexRule in lexRules)
+            //PreProcessLexDefinitions();
+
+            PreProcessRuleDefinitions();
+
+            PreProcessStartRules();
+
+            foreach (var earleyRuleDef in AllRuleDefs)
             {
-                AddLexRule(lexRule);
+                earleyRuleDef.Build();
+            }
+        }
+
+        private void PreProcessStartRules()
+        {
+            var startRuleDefs = Grammar.GetStartRules();
+            foreach (var startRuleDef in startRuleDefs)
+            {
+                var ruleDef = GetRuleDefByName(startRuleDef.Name);
+                if (ruleDef == null)
+                {
+                    throw new Exception($"Could not find start rule def '{startRuleDef.Name}'");
+                }
+
+                if(!StartRuleDefs.Contains(ruleDef))
+                    StartRuleDefs.Add(ruleDef);
+            }
+        }
+
+        private void PreProcessLexDefinitions()
+        {
+            var lexDefs = Grammar.GetLexDefinitions();
+            foreach (var lexDef in lexDefs)
+            {
+                AddLexDef(lexDef);
             }
 
-            AssignLexRuleIds();
-
-            var parseRules = Grammar.GetRuleDefinitions();
-            foreach (var parseRule in parseRules)
+            foreach (var lexRule in AllLexDefs)
             {
-                AddParseRule(parseRule);
+                lexRule.LocalIndex = LocalLexDefIndex++;
             }
-
-            AssignParseRuleIds();
         }
         
-        private void AssignLexRuleIds()
+        private void PreProcessRuleDefinitions()
         {
-            foreach (var lexRule in AllLexRules)
+            var ruleDefs = Grammar.GetRuleDefinitions();
+            foreach (var ruleDef in ruleDefs)
             {
-                lexRule.LocalIndex = LocalLexRuleIndex++;
+                AddRuleDef(ruleDef);
+            }
+
+            foreach (var parseRule in AllRuleDefs)
+            {
+                parseRule.LocalIndex = LocalRuleDefIndex++;
             }
         }
 
-        private void AssignParseRuleIds()
-        {
-            foreach (var parseRule in AllParseRules)
-            {
-                parseRule.LocalIndex = LocalParseRuleIndex++;
-            }
-        }
-
-        private void AddLexRule(ILexDef lexDef)
+        #region helpers
+        private void AddLexDef(ILexDef lexDef)
         {
             var lexModel = lexDef.LexModel;
 
@@ -149,41 +152,49 @@ namespace RapidPliant.Runtime.Earley.Grammar
 
         private void AddOrMapLexRule(string pattern, ILexDef lexDef)
         {
-            var lexRule = new EarleyPatternLexRule(pattern, lexDef);
-            AllLexRules.Add(lexRule);
+            var earleyLexDef = new EarleyPatternLexDef(pattern, lexDef);
 
-            EarleyPatternLexRule existingLexRule;
-            if (!LexRulesByPattern.TryGetValue(pattern, out existingLexRule))
+            LexDefsByName.Add(lexDef.Name, earleyLexDef);
+            AllLexDefs.Add(earleyLexDef);
+
+            EarleyPatternLexDef existingEarleyLexDef;
+            if (!LexDefsByPattern.TryGetValue(pattern, out existingEarleyLexDef))
             {
-                LexRulesByPattern[pattern] = lexRule;
+                LexDefsByPattern[pattern] = earleyLexDef;
             }
             else
             {
-                existingLexRule.AddMappedLexRule(lexRule);
+                existingEarleyLexDef.AddMappedLexRule(earleyLexDef);
             }
         }
 
-        private void AddParseRule(IRuleDef ruleDef)
+        private void AddRuleDef(IRuleDef ruleDef)
         {
-            var parseRule = new EarleyParseRule(ruleDef);
-            AllParseRules.Add(parseRule);
+            var earleyRuleDef = new EarleyRuleDef(ruleDef);
+
+            RuleDefsByName.Add(ruleDef.Name, earleyRuleDef);
+            AllRuleDefs.Add(earleyRuleDef);
         }
+
+        private EarleyRuleDef GetRuleDefByName(string ruleDefName)
+        {
+            EarleyRuleDef earleyRuleDef;
+            RuleDefsByName.TryGetValue(ruleDefName, out earleyRuleDef);
+            return earleyRuleDef;
+        }
+        #endregion
     }
-
-    public interface IEarleyLexRule : ILexRule
+    
+    public class EarleyPatternLexDef : IEarleyLexDef
     {
-    }
+        private List<IEarleyLexDef> _mappedLexDefs;
 
-    public class EarleyPatternLexRule : IEarleyLexRule
-    {
-        private List<ILexRule> _mappedLexRules;
-
-        public EarleyPatternLexRule(string pattern, ILexDef lexDef)
+        public EarleyPatternLexDef(string pattern, ILexDef lexDef)
         {
             LexDef = lexDef;
             Pattern = pattern;
 
-            _mappedLexRules = new List<ILexRule>();
+            _mappedLexDefs = new List<IEarleyLexDef>();
         }
 
         public ILexDef LexDef { get; private set; }
@@ -192,26 +203,10 @@ namespace RapidPliant.Runtime.Earley.Grammar
         public int LocalIndex { get; set; }
         public ILexemeFactory LexemeFactory { get; set; }
 
-        public void AddMappedLexRule(ILexRule otherLexRule)
+        public void AddMappedLexRule(IEarleyLexDef otherEarleyLexDef)
         {
-            if(_mappedLexRules.Contains(otherLexRule))
-                _mappedLexRules.Add(otherLexRule);
+            if(_mappedLexDefs.Contains(otherEarleyLexDef))
+                _mappedLexDefs.Add(otherEarleyLexDef);
         }
-    }
-
-    public interface IEarleyParseRule : IParseRule
-    {
-    }
-
-    public class EarleyParseRule : IEarleyParseRule
-    {
-        public EarleyParseRule(IRuleDef ruleDef)
-        {
-            RuleDef = ruleDef;
-        }
-
-        public IRuleDef RuleDef { get; set; }
-
-        public int LocalIndex { get; set; }
     }
 }

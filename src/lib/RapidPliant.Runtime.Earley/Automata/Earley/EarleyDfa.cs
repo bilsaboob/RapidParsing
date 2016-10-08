@@ -18,7 +18,7 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
     {
         IEarleyDfaTransitionsByToken TokenTransitions { get; }
         IEarleyDfaTransitionsByLexRules ScanTransitions { get; set; }
-        IEarleyDfaTransitionsByNonTerminal NonTerminalTransitions { get; set; }
+        IEarleyDfaTransitionsByRuleDefs RuleTransitions { get; set; }
         IEarleyDfaCompletion[] Completions { get; set; }
     }
     
@@ -34,16 +34,16 @@ namespace RapidPliant.Runtime.Earley.Automata.Earley
 
     public interface IEarleyDfaTransitionsByLexRules
     {
-        ILexRule[] AllLexRules { get; set; }
+        IEarleyLexDef[] AllLexDefs { get; set; }
     }
 
-    public interface IEarleyDfaTransitionsByNonTerminal
+    public interface IEarleyDfaTransitionsByRuleDefs
     {
-        IEarleyDfaTransition Get(object nonTerminal);
+        IEarleyDfaTransition Get(IEarleyRuleDef ruleDef);
     }
 
     public interface IEarleyDfaCompletion
     {
-        object NonTerminal { get; set; }
+        IEarleyRuleDef RuleDef { get; set; }
     }
 }

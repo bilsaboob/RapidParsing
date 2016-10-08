@@ -3,131 +3,98 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Common.Expression;
 using RapidPliant.Grammar.Expression;
 
 namespace RapidPliant.Grammar.Definitions
 {
-    public abstract class RuleDef : GrammarDef, IRuleDef
+    public partial class RuleDef : GrammarDef, IRuleDef
     {
         public RuleDef()
         {
         }
 
-        public IExpr Expression { get; private set; }
+        public GrammarExpr Expression { get; private set; }
+        IExpr IRuleDef.Expression { get { return Expression; } }
 
-        public void As(Expr expr)
+        public void As(GrammarExpr expr)
         {
             Expression = expr;
         }
-
-        /*
-public override string ToString()
-{
-    var sb = new StringBuilder();
-    if (_defExpr != null)
-    {
-        _defExpr.ToString(sb);
-    }
-    else
-    {
-        ToString(sb);
-    }
-    return sb.ToString();
-}
-
-public override void ToString(StringBuilder sb)
-{
-    if (string.IsNullOrEmpty(Name))
-    {
-        sb.Append("?UNKNOWN?");
-    }
-    else
-    {
-        sb.Append(Name);
-    }
-}
-*/
     }
 
-    public partial class Rule : RuleDef
+    public partial class RuleDef
     {
-        public Rule()
+        public static implicit operator RuleDef(string ruleName)
         {
-        }
-    }
-
-    public partial class Rule : RuleDef
-    {
-        public static implicit operator Rule(string ruleName)
-        {
-            return new Rule() {
+            return new RuleDef() {
                 Name = ruleName
             };
         }
 
-        public static implicit operator GrammarExpr(Rule rule)
+        public static implicit operator GrammarExpr(RuleDef RuleDef)
         {
-            return GrammarDef.RuleRef(rule);
+            return GrammarDef.RuleRef(RuleDef);
         }
 
         #region And
-        public static GrammarExpr operator +(GrammarExpr lhs, Rule rhs)
+        public static GrammarExpr operator +(GrammarExpr lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithAnd(lhs, GrammarDef.RuleRef(rhs));
         }
-        public static GrammarExpr operator +(Rule lhs, GrammarExpr rhs)
+        public static GrammarExpr operator +(RuleDef lhs, GrammarExpr rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.RuleRef(lhs), rhs);
         }
-        public static GrammarExpr operator +(Rule lhs, Rule rhs)
+        public static GrammarExpr operator +(RuleDef lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.RuleRef(lhs), GrammarDef.RuleRef(rhs));
         }
-        public static GrammarExpr operator +(Rule lhs, char rhs)
+        public static GrammarExpr operator +(RuleDef lhs, char rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.RuleRef(lhs), GrammarDef.InPlaceLexRef(rhs));
         }
-        public static GrammarExpr operator +(char lhs, Rule rhs)
+        public static GrammarExpr operator +(char lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.InPlaceLexRef(lhs), GrammarDef.RuleRef(rhs));
         }
-        public static GrammarExpr operator +(Rule lhs, string rhs)
+        public static GrammarExpr operator +(RuleDef lhs, string rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.RuleRef(lhs), GrammarDef.InPlaceLexRef(rhs));
         }
 
-        public static GrammarExpr operator +(string lhs, Rule rhs)
+        public static GrammarExpr operator +(string lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.InPlaceLexRef(lhs), GrammarDef.RuleRef(rhs));
         }
         #endregion
 
         #region Or
-        public static GrammarExpr operator |(GrammarExpr lhs, Rule rhs)
+        public static GrammarExpr operator |(GrammarExpr lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithOr(lhs, GrammarDef.RuleRef(rhs));
         }
-        public static GrammarExpr operator |(Rule lhs, GrammarExpr rhs)
+        public static GrammarExpr operator |(RuleDef lhs, GrammarExpr rhs)
         {
             return GrammarExpr.AddWithOr(GrammarDef.RuleRef(lhs), rhs);
         }
-        public static GrammarExpr operator |(Rule lhs, Rule rhs)
+        public static GrammarExpr operator |(RuleDef lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithOr(GrammarDef.RuleRef(lhs), GrammarDef.RuleRef(rhs));
         }
-        public static GrammarExpr operator |(Rule lhs, char rhs)
+        public static GrammarExpr operator |(RuleDef lhs, char rhs)
         {
             return GrammarExpr.AddWithOr(GrammarDef.RuleRef(lhs), GrammarDef.InPlaceLexRef(rhs));
         }
-        public static GrammarExpr operator |(char lhs, Rule rhs)
+        public static GrammarExpr operator |(char lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithOr(GrammarDef.InPlaceLexRef(lhs), GrammarDef.RuleRef(rhs));
         }
-        public static GrammarExpr operator |(Rule lhs, string rhs)
+        public static GrammarExpr operator |(RuleDef lhs, string rhs)
         {
             return GrammarExpr.AddWithOr(GrammarDef.RuleRef(lhs), GrammarDef.InPlaceLexRef(rhs));
         }
-        public static GrammarExpr operator |(string lhs, Rule rhs)
+        public static GrammarExpr operator |(string lhs, RuleDef rhs)
         {
             return GrammarExpr.AddWithOr(GrammarDef.InPlaceLexRef(lhs), GrammarDef.RuleRef(rhs));
         }

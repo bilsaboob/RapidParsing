@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "01 - data", "01 - data", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03 - benchmark", "03 - benchmark", "{D93A61C9-CFBD-4405-97E3-FDC5C10EE05B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "04 - app", "04 - app", "{51E4B360-46EA-4892-A5CE-EABFB6A82F40}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "05 - app", "05 - app", "{51E4B360-46EA-4892-A5CE-EABFB6A82F40}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidPliant.Common", "lib\RapidPliant.Common\RapidPliant.Common.csproj", "{F71FA673-6338-40B9-B917-D056591E266E}"
 EndProject
@@ -22,6 +22,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidPliant.Benchmark", "benchmark\RapidPliant.Benchmark\RapidPliant.Benchmark.csproj", "{E16848D6-673C-44BD-8658-AA354565C664}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidPliant.Benchmark.LargeJsonFile", "benchmark\RapidPliant.Benchmark.LargeJsonFile\RapidPliant.Benchmark.LargeJsonFile.csproj", "{30DB9B4C-EE0E-469B-B122-DE15A98FD351}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidPliant.Lexing", "RapidPliant.Lexing\RapidPliant.Lexing.csproj", "{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "04 - test", "04 - test", "{CCC0A918-1409-4B2D-ACA1-57E45315064F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidPliant.Test", "test\RapidPliant.Test\RapidPliant.Test.csproj", "{23DB3E8B-4538-4317-AF2E-2FFD57F601C1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RapidPliant.Testing", "test\RapidPliant.Testing\RapidPliant.Testing.csproj", "{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +61,18 @@ Global
 		{30DB9B4C-EE0E-469B-B122-DE15A98FD351}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30DB9B4C-EE0E-469B-B122-DE15A98FD351}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30DB9B4C-EE0E-469B-B122-DE15A98FD351}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23DB3E8B-4538-4317-AF2E-2FFD57F601C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23DB3E8B-4538-4317-AF2E-2FFD57F601C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23DB3E8B-4538-4317-AF2E-2FFD57F601C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23DB3E8B-4538-4317-AF2E-2FFD57F601C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,5 +84,8 @@ Global
 		{F80C3D9E-8732-4019-B17B-2AD78F33A261} = {C59C2B14-2FDD-4610-92AF-90D1B8C7CA8A}
 		{E16848D6-673C-44BD-8658-AA354565C664} = {D93A61C9-CFBD-4405-97E3-FDC5C10EE05B}
 		{30DB9B4C-EE0E-469B-B122-DE15A98FD351} = {D93A61C9-CFBD-4405-97E3-FDC5C10EE05B}
+		{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B} = {C59C2B14-2FDD-4610-92AF-90D1B8C7CA8A}
+		{23DB3E8B-4538-4317-AF2E-2FFD57F601C1} = {CCC0A918-1409-4B2D-ACA1-57E45315064F}
+		{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF} = {CCC0A918-1409-4B2D-ACA1-57E45315064F}
 	EndGlobalSection
 EndGlobal

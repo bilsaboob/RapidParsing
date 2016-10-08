@@ -11,7 +11,7 @@ namespace RapidPliant.Grammar
 {
     public class JsonGrammarModel : SimpleGrammarModel<JsonGrammarModel>
     {
-        public Rule
+        public RuleDef
             Json = "Json",
             Object = "Object",
             Pair = "Pair",
@@ -21,7 +21,7 @@ namespace RapidPliant.Grammar
             ValueRepeat = "ValueRepeat"
             ;
 
-        public Lex
+        public LexDef
             number = "number",
             strQuote = "quoted_string"
             ;

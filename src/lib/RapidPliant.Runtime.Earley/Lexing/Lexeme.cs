@@ -88,7 +88,7 @@ namespace RapidPliant.Runtime.Earley.Lexing
 
         public void BeginCaptureIfNotExists(ILexCompletion completion)
         {
-            var lexNfa = completion.LexNfa;
+            /*var lexNfa = completion.LexNfa;
 
             //Use the local index to lookup
             var index = lexNfa.LocalIndex;
@@ -98,7 +98,7 @@ namespace RapidPliant.Runtime.Earley.Lexing
             {
                 capture = new LexCapture(completion);
                 _captures[index] = capture;
-            }
+            }*/
         }
     }
 

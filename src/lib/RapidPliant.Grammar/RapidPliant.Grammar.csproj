@@ -42,7 +42,6 @@
   <ItemGroup>
     <Compile Include="Definitions\LexDef.cs" />
     <Compile Include="Definitions\RuleDef.cs" />
-    <Compile Include="Expression\Expr.cs" />
     <Compile Include="Expression\GrammarExpr.cs" />
     <Compile Include="Expression\NullExpr.cs" />
     <Compile Include="GrammarModel.cs" />

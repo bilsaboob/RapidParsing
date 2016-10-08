@@ -8,7 +8,7 @@ namespace RapidPliant.Runtime.Earley.Automata.Lex
 {
     public class LexDfaFactory
     {
-        public ILexDfa CreateLexDfa(ILexNfa lexNfa)
+        public ILexDfa CreateLexDfa()
         {
             return null;
         }
