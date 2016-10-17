@@ -70,6 +70,11 @@ namespace RapidPliant.Common.Rule
         private RapidList<Production<TRule>> _productions;
 
         public Rule()
+            : this(null)
+        {
+        }
+
+        public Rule(string name)
         {
             _this = (TRule)this;
 
@@ -78,6 +83,7 @@ namespace RapidPliant.Common.Rule
             RootRule = _this;
             HasParentRule = false;
             ParentRule = default(TRule);
+            Name = name;
 
             _subRules = new RapidList<TRule>();
             _productions = new RapidList<Production<TRule>>();
@@ -179,5 +185,29 @@ namespace RapidPliant.Common.Rule
 
         IRule IProduction.LhsRule { get { return LhsRule; } }
         ISymbol[] IProduction.RhsSymbols { get { return _rhsSymbols.AsArray; } }
+        
+        public void AddSymbol(ISymbol symbol)
+        {
+            _rhsSymbols.Add(symbol);
+        }
+
+        public Production<TRule> Clone()
+        {
+            var other = new Production<TRule>(LhsRule);
+            other._rhsSymbols = _rhsSymbols.Clone();
+            return other;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+
+            foreach (var rhsSymbol in RhsSymbols)
+            {
+                sb.Append(rhsSymbol.ToString());
+            }
+
+            return sb.ToString();
+        }
     }
 }

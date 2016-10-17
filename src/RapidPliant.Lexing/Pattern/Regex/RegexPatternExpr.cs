@@ -7,7 +7,7 @@ using RapidPliant.Common.Util;
 
 namespace RapidPliant.Lexing.Pattern.Regex
 {
-    public class RegexPatternExpr : PatternExpr<RegexPatternExpr>
+    public class RegexPatternExpr : PatternExpr<RegexPatternExpr>, IPatternExpr
     {
         public RegexPatternExpr()
             : this(false, false)
@@ -52,8 +52,8 @@ namespace RapidPliant.Lexing.Pattern.Regex
         {
         }
     }
-
-    public class RegexTerminalExpr : RegexPatternExpr
+    
+    public class RegexTerminalExpr : RegexPatternExpr, IPatternTerminalCharExpr
     {
         public RegexTerminalExpr(char character)
         {
@@ -68,7 +68,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
         }
     }
 
-    public class RegexRangeExpr : RegexPatternExpr
+    public class RegexRangeExpr : RegexPatternExpr, IPatternTerminalRangeExpr
     {
         public RegexRangeExpr(char fromChar, char toChar)
         {

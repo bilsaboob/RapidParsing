@@ -24,8 +24,19 @@ namespace RapidPliant.Testing.Tests
             LexDfaTableLexer l;
             LexDfaState d;
             string s;
+            
+            var r6 = CreateLexDfa(
+                CreateLexRule("a|b|c", "A"),
+                CreateLexRule("d|e|f", "B")
+            );
 
-            p = Regex.FromPattern("a|(bc|i|k)");
+            var r = CreateLexDfa("ab|cd|efgh|ijklmn", "A");
+
+            //var r2 = CreateLexRule("(a|b)(c|d)");
+            //var r3 = CreateLexRule("(ab|cd)(ef|gh)");
+            //var r4 = CreateLexRule("(a|c)(e|g)(i|j)");
+
+            /*p = Regex.FromPattern("a|(bc|i|k)");
             s = p.ToString();
             
             //Create the dfa!
@@ -34,7 +45,7 @@ namespace RapidPliant.Testing.Tests
             TestLexing("a|(bc|i|k)", "ai");
 
             TestLexing(l, "ai");
-            TestLexing(l, "a");
+            TestLexing(l, "a");*/
 
             /*p = Regex.FromPattern("a|bc|d|efg");
             s = p.ToString();
@@ -81,28 +92,55 @@ namespace RapidPliant.Testing.Tests
             }
         }
 
-        private LexDfaTableLexer CreateLexer(string regexPattern)
+        protected LexDfaTableLexer CreateLexer(string regexPattern, string name = null)
         {
-            var patternExpr = Regex.FromPattern(regexPattern);
-            var dfa = CreateLexDfa(patternExpr);
+            var patternExpr = CreateLexExpr(regexPattern);
+            var dfa = CreateLexDfa(patternExpr, name);
             return new LexDfaTableLexer(dfa);
         }
 
-        private LexDfaTableLexer CreateLexer(RegexPatternExpr patternExpr)
+        protected LexDfaTableLexer CreateLexer(RegexPatternExpr patternExpr, string name = null)
         {
-            var dfa = CreateLexDfa(patternExpr);
+            var dfa = CreateLexDfa(patternExpr, name);
             return new LexDfaTableLexer(dfa);
         }
 
-        private LexDfaState CreateLexDfa(RegexPatternExpr patternExpr)
+        protected RegexPatternExpr CreateLexExpr(string regexPattern)
+        {
+            return Regex.FromPattern(regexPattern);
+        }
+
+        protected LexDfa CreateLexDfa(string regexPattern, string name = null)
+        {
+            var patternExpr = CreateLexExpr(regexPattern);
+            return CreateLexDfa(patternExpr, name);
+        }
+
+        protected LexPatternRule CreateLexRule(string regexPattern, string name = null)
+        {
+            var patternExpr = CreateLexExpr(regexPattern);
+            //Build a rule from the pattern expression
+            var patternRule = new LexPatternRule(name);
+            patternRule.FromExpression(patternExpr);
+            return patternRule;
+        }
+
+        protected LexDfa CreateLexDfa(params LexPatternRule[] lexRules)
+        {
+            //Build dfa for the rule
+            var dfa = LexDfaFactory.BuildFromLexPatternRules(lexRules);
+            return dfa;
+        }
+
+        protected LexDfa CreateLexDfa(RegexPatternExpr patternExpr, string name = null)
         {
             //Build a rule from the pattern expression
-            var patternRule = new LexPatternRule();
+            var patternRule = new LexPatternRule(name);
             patternRule.FromExpression(patternExpr);
 
             //Build dfa for the rule
-            var dfaState = LexDfaFactory.BuildFromLexPatternRule(patternRule);
-            return dfaState;
+            var dfa = LexDfaFactory.BuildFromLexPatternRule(patternRule);
+            return dfa;
         }
     }
 }

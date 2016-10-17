@@ -46,6 +46,8 @@
     <Compile Include="Rule\Rule.cs" />
     <Compile Include="Util\HashCode.cs" />
     <Compile Include="Util\IText.cs" />
+    <Compile Include="Util\Primes.cs" />
+    <Compile Include="Util\RapidHashSet.cs" />
     <Compile Include="Util\RapidList.cs" />
     <Compile Include="Util\RapidTable.cs" />
     <Compile Include="Util\UniqueList.cs" />

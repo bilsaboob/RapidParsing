@@ -67,6 +67,8 @@ namespace RapidPliant.Lexing.Pattern.Regex
                 {
                     var blockExpr = ParseBlock(c.New());
                     blockExpr.Options = ParseOptions(c);
+                    //Explicit block expressions are not allowed to be simplified!
+                    blockExpr.CanBeSimplified = false;
                     c.AddExpr(blockExpr);
                     continue;
                 }

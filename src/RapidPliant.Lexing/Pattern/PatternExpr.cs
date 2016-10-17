@@ -7,10 +7,7 @@ using RapidPliant.Common.Expression;
 
 namespace RapidPliant.Lexing.Pattern
 {
-    public interface IPatternExpr : IExpr
-    {
-    }
-
+    
     public abstract class PatternExpr<TExpr> : Expr<TExpr>, IPatternExpr
         where TExpr : PatternExpr<TExpr>
     {
@@ -23,5 +20,25 @@ namespace RapidPliant.Lexing.Pattern
             : base(isAlteration | isProduction, isAlteration, isProduction)
         {
         }
+    }
+
+    public interface IPatternExpr
+    {
+    }
+
+    public interface IPatternTerminalExpr
+    {
+    }
+
+    public interface IPatternTerminalCharExpr : IPatternTerminalExpr
+    {
+        char Char { get; }
+    }
+
+    public interface IPatternTerminalRangeExpr : IPatternTerminalExpr
+    {
+        char FromChar { get; }
+
+        char ToChar { get; }
     }
 }

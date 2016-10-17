@@ -15,11 +15,11 @@ namespace RapidPliant.Common.Util
 
     public class RapidList<T> : IRapidList<T>
     {
-        private static readonly T[] _emptyArray = new T[0];
+        protected static readonly T[] _emptyArray = new T[0];
 
-        private T[] _items;
-        private int _count;
-        private int _initialCapacity;
+        protected T[] _items;
+        protected int _count;
+        protected int _initialCapacity;
         protected int _version;
 
         public RapidList()
@@ -27,9 +27,19 @@ namespace RapidPliant.Common.Util
         {
         }
 
+        public RapidList(IEnumerable<T> items)
+            : this(items.Count())
+        {
+            foreach (var item in items)
+            {
+                Add(item);
+            }
+        }
+
         public RapidList(int capacity)
         {
             _initialCapacity = capacity;
+            _items = _emptyArray;
         }
 
         public int Count { get { return _count; } }
@@ -107,12 +117,52 @@ namespace RapidPliant.Common.Util
 
         public IEnumerator<T> GetEnumerator()
         {
-            return new ArrayEnumerator<T>(_items);
+            return new ArrayEnumerator<T>(_items, _count);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public RapidList<T> Clone()
+        {
+            return CloneThis();
+        }
+
+        protected virtual RapidList<T> CloneThis()
+        {
+            var other = new RapidList<T>();
+            other._items = _emptyArray;
+            if (_items.Length > 0)
+            {
+                var otherItems = new T[_items.Length];
+                _items.CopyTo(otherItems, 0);
+                other._items = otherItems;
+            }
+            other._count = _count;
+            other._initialCapacity = _initialCapacity;
+            other._version = _version;
+            return other;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(_count);
+
+            if (_count > 0)
+            {
+                sb.Append(":");
+
+                for (var i = 0; i < _count; ++i)
+                {
+                    sb.AppendLine(string.Format("{0},",_items[i].ToString()));
+                }
+            }
+
+            return sb.ToString();
         }
     }
 
@@ -132,6 +182,29 @@ namespace RapidPliant.Common.Util
                 }
                 return _itemsCached;
             }
+        }
+
+        public new CachingRapidList<T> Clone()
+        {
+            return (CachingRapidList<T>)CloneThis();
+        }
+
+        protected override RapidList<T> CloneThis()
+        {
+            var other = new CachingRapidList<T>();
+            other._items = _emptyArray;
+            if (_items.Length > 0)
+            {
+                var otherItems = new T[_items.Length];
+                _items.CopyTo(otherItems, 0);
+                other._items = otherItems;
+            }
+            other._count = _count;
+            other._initialCapacity = _initialCapacity;
+            other._version = _version;
+            other._itemsCachedVersion = _itemsCachedVersion;
+            other._itemsCached = _itemsCached;
+            return other;
         }
 
         public override T[] ToArray()

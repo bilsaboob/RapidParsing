@@ -12,16 +12,49 @@ namespace RapidPliant.Common.Util
 
     public class RapidTable<TKey, TValue> : IRapidTable<TKey, TValue>
     {
-        public TValue[] Values { get; set; }
+        private Dictionary<TKey, TValue> _items;
+        private TValue[] _valuesCached;
+
+        public RapidTable()
+        {
+            _items = new Dictionary<TKey, TValue>();
+            _valuesCached = null;
+        }
+
+        public TValue[] Values
+        {
+            get
+            {
+                if (_valuesCached == null)
+                {
+                    _valuesCached = _items.Values.ToArray();
+                }
+                return _valuesCached;
+            }
+        }
+
+        public int Count { get { return _items.Count; } }
 
         public bool AddIfNotExists(TKey key, TValue value)
         {
-            return false;
+            if (_items.ContainsKey(key))
+                return false;
+
+            _items[key] = value;
+            return true;
         }
 
         public TValue AddOrGetExisting(TKey key, Func<TValue> valueFn)
         {
-            return valueFn();
+            TValue value;
+
+            if (!_items.TryGetValue(key, out value))
+            {
+                value = valueFn();
+                _items[key] = value;
+            }
+
+            return value;
         }
     }
 }

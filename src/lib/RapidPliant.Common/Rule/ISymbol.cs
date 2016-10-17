@@ -2,11 +2,16 @@
 {
     public interface ISymbol
     {
-        int IndexForOwnerRule { get; }
-        int IndexForOwnerSet { get; }
-        int IndexForGlobal { get; }
+        SymbolType SymbolType { get; }
+    }
 
-        SymbolType SymbolType { get; set; }
+    public abstract class Symbol : ISymbol
+    {
+        public Symbol()
+        {
+        }
+
+        public SymbolType SymbolType { get; protected set; }
     }
 
     public class SymbolType

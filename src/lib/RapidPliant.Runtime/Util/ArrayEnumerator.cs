@@ -13,6 +13,7 @@ namespace RapidPliant.Runtime.Util
         private T[] _items;
         private int _index;
         private T _current;
+        private int _size;
         
         public T Current
         {
@@ -31,15 +32,21 @@ namespace RapidPliant.Runtime.Util
         }
 
         public ArrayEnumerator(T[] itemsArray)
+            : this(itemsArray, itemsArray != null?itemsArray.Length:0)
+        {
+        }
+
+        public ArrayEnumerator(T[] itemsArray, int size)
         {
             _items = itemsArray;
             _index = 0;
             _current = default(T);
+            _size = size;
         }
         
         public bool MoveNext()
         {
-            if (_index >= _items.Length)
+            if (_index >= _size)
             {
                 _index = _items.Length + 1;
                 _current = default(T);

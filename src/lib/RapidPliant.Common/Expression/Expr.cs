@@ -20,6 +20,7 @@ namespace RapidPliant.Common.Expression
         where TExpr : Expr<TExpr>
     {
         protected readonly TExpr _this;
+        private bool? _canBeSimplified;
 
         protected Expr()
             : this(false, false, false)
@@ -50,6 +51,11 @@ namespace RapidPliant.Common.Expression
         {
             get
             {
+                if (_canBeSimplified.HasValue)
+                {
+                    return _canBeSimplified.Value;
+                }
+
                 var opt = Options;
                 if (opt == null)
                     return true;
@@ -62,6 +68,7 @@ namespace RapidPliant.Common.Expression
 
                 return true;
             }
+            set { _canBeSimplified = value; }
         }
 
         public TExpr GetSimplified()

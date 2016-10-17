@@ -11,6 +11,7 @@ namespace RapidPliant.Lexing.Lexer
 {
     public class LexDfaTableLexer
     {
+        private LexDfa _dfa;
         private LexDfaTableState _startState;
         private LexDfaTableState _state;
 
@@ -19,9 +20,10 @@ namespace RapidPliant.Lexing.Lexer
 
         private CharBuffer _spelling;
 
-        public LexDfaTableLexer(LexDfaState startState)
+        public LexDfaTableLexer(LexDfa dfa)
         {
-            _startState = new LexDfaTableState(startState);
+            _dfa = dfa;
+            _startState = new LexDfaTableState(_dfa.StartState);
             _state = _startState;
             _captures = new CachingRapidList<SpellingCapture>();
             _spelling = new CharBuffer(new StringBuilder());
