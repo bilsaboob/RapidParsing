@@ -310,14 +310,14 @@ namespace RapidPliant.App.Controls
             }
 
             var widthProperty = e.Child.GetPropertyValue<GridLength>(set.WidthProperty);
-            if (widthProperty.HasValue && widthProperty.Value != set.unsetValue)
+            if (widthProperty.HasValue && widthProperty.Value != set._unsetValue)
             {
                 e.Width = widthProperty.Value;
                 e.ColumnDefinition.Width = e.Width;
             }
 
             var heightProperty = e.Child.GetPropertyValue<GridLength>(set.HeightProperty);
-            if (heightProperty.HasValue && heightProperty.Value != set.unsetValue)
+            if (heightProperty.HasValue && heightProperty.Value != set._unsetValue)
             {
                 e.Height = heightProperty.Value;
                 e.RowDefinition.Height = e.Height;

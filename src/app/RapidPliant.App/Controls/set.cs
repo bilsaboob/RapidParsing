@@ -9,10 +9,21 @@ namespace RapidPliant.App.Controls
 {
     public class set : DependencyObject
     {
-        public static GridLength unsetValue = new GridLength(0, GridUnitType.Pixel);
+        public static GridLength _unsetValue = new GridLength(0, GridUnitType.Pixel);
 
-        public static readonly DependencyProperty WidthProperty = DependencyProperty.RegisterAttached("Width", typeof(GridLength), typeof(RapidGrid), new FrameworkPropertyMetadata(unsetValue, OnElemWidthPropertyChanged));
-        public static readonly DependencyProperty HeightProperty = DependencyProperty.RegisterAttached("Height", typeof(GridLength), typeof(RapidGrid), new FrameworkPropertyMetadata(unsetValue, OnElemHeighPropertyChanged));
+        public static readonly DependencyProperty WidthProperty = DependencyProperty.RegisterAttached(
+            "Width", 
+            typeof(GridLength), 
+            typeof(set), 
+            new FrameworkPropertyMetadata(_unsetValue, OnElemWidthPropertyChanged)
+        );
+
+        public static readonly DependencyProperty HeightProperty = DependencyProperty.RegisterAttached(
+            "Height", 
+            typeof(GridLength), 
+            typeof(set), 
+            new FrameworkPropertyMetadata(_unsetValue, OnElemHeighPropertyChanged)
+        );
 
         private static void OnElemWidthPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -40,7 +51,7 @@ namespace RapidPliant.App.Controls
             }
         }
         
-        public static void SetWidth(UIElement elem, GridLength value)
+        public static void SetWidth(FrameworkElement elem, GridLength value)
         {
             if (elem == null)
                 return;
@@ -54,7 +65,15 @@ namespace RapidPliant.App.Controls
             }
         }
 
-        public static void SetHeight(UIElement elem, GridLength value)
+        public static GridLength GetWidth(FrameworkElement elem)
+        {
+            if (elem == null)
+                return GridLength.Auto;
+            
+            return (GridLength)elem.GetValue(WidthProperty);
+        }
+
+        public static void SetHeight(FrameworkElement elem, GridLength value)
         {
             if (elem == null)
                 return;
@@ -66,6 +85,14 @@ namespace RapidPliant.App.Controls
             {
                 grid.UpdateLayoutByElement(elem);
             }
+        }
+
+        public static GridLength GetHeight(FrameworkElement elem)
+        {
+            if (elem == null)
+                return GridLength.Auto;
+
+            return (GridLength)elem.GetValue(HeightProperty);
         }
     }
 }

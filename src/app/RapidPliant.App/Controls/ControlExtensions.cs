@@ -63,7 +63,7 @@ namespace RapidPliant.App.Controls
                     children.Add(child);
                 }
             }
-            
+
             return children;
         }
 
@@ -81,7 +81,7 @@ namespace RapidPliant.App.Controls
                 {
                     return null;
                 }
-                return (TValue) val;
+                return (TValue)val;
             }
         }
 
@@ -119,6 +119,32 @@ namespace RapidPliant.App.Controls
             return children;
         }
 
+        public static FrameworkElement FindParentWithDataContext(this DependencyObject child)
+        {
+            if (child == null)
+                return null;
+
+            var parentObject = VisualTreeHelper.GetParent(child);
+            if (parentObject == null)
+            {
+                parentObject = LogicalTreeHelper.GetParent(child);
+            }
+
+            if (parentObject == null)
+                return null;
+
+            var parentFrameworkElem = parentObject as FrameworkElement;
+            if (parentFrameworkElem != null)
+            {
+                if (parentFrameworkElem.DataContext != null)
+                {
+                    return parentFrameworkElem;
+                }
+            }
+
+            return FindParentWithDataContext(parentObject);
+        }
+
         public static T FindParent<T>(this DependencyObject child) where T : DependencyObject
         {
             if (child == null)
@@ -130,7 +156,7 @@ namespace RapidPliant.App.Controls
             {
                 parentObject = LogicalTreeHelper.GetParent(child);
             }
-            
+
             var parent = parentObject as T;
             if (parent != null)
             {
@@ -148,7 +174,7 @@ namespace RapidPliant.App.Controls
             {
                 return null;
             }
-
+            
             var sb = new StringBuilder();
             var writer = XmlWriter.Create(sb, CloneUIElementXmlWriterSettings);
 
@@ -156,12 +182,16 @@ namespace RapidPliant.App.Controls
             mgr.XamlWriterMode = XamlWriterMode.Expression;
             
             XamlWriter.Save(value, mgr);
-            var s = sb.ToString();
-            
-            var stringReader = new StringReader(s);
-            var xmlReader = XmlTextReader.Create(stringReader, new XmlReaderSettings());
-            var elem = (UIElement) XamlReader.Load(xmlReader);
+            var xamlStr = sb.ToString();
 
+            xamlStr = RapidBindingSerializationProperty.UnwrapXaml(xamlStr);
+
+            xamlStr = xamlStr.Replace("&quot;", "\"").Replace("\"\"", "\"");
+
+            var stringReader = new StringReader(xamlStr);
+            var xmlReader = XmlTextReader.Create(stringReader, new XmlReaderSettings());
+            var elem = (UIElement)XamlReader.Load(xmlReader);
+            
             return elem;
         }
 
@@ -170,16 +200,14 @@ namespace RapidPliant.App.Controls
         {
             get
             {
-                
                 if (_cloneUIElementXmlWriterSettings == null)
                 {
                     _cloneUIElementXmlWriterSettings = new XmlWriterSettings {
                         Indent = true,
                         ConformanceLevel = ConformanceLevel.Fragment,
-                        OmitXmlDeclaration = false,
-                        NamespaceHandling = NamespaceHandling.OmitDuplicates,
+                        OmitXmlDeclaration = true,
+                        NamespaceHandling = NamespaceHandling.OmitDuplicates
                     };
-                    TypeDescriptor.AddAttributes(typeof(BindingExpression), new TypeConverterAttribute(typeof(BindingExpressionConverter)));
                 }
 
                 return _cloneUIElementXmlWriterSettings;

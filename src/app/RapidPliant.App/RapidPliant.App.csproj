@@ -49,9 +49,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppBoostrapper.cs" />
-    <Compile Include="Binding\BindingAction.cs" />
+    <Compile Include="Binding\BindingMarkupExtensionBase.cs" />
     <Compile Include="Binding\DependencyPropertyListener.cs" />
-    <Compile Include="Controls\BindingExpressionConverter.cs" />
+    <Compile Include="Binding\RapidBinding.cs" />
+    <Compile Include="Binding\RapidBindingSerializationProperty.cs" />
     <Compile Include="Controls\ControlExtensions.cs" />
     <Compile Include="Controls\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
