@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using RapidPliant.App.Controls;
+using RapidPliant.WPF.Mvx;
+using MainWindow = RapidPliant.WPF.Controls.MainWindow;
 
 namespace RapidPliant.App
 {

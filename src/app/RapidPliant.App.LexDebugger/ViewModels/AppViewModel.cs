@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Msagl.Drawing;
 using RapidPliant.App.ViewModels;
+using RapidPliant.WPF.Mvx;
 
 namespace RapidPliant.App.LexDebugger.ViewModels
 {
@@ -30,11 +31,6 @@ namespace RapidPliant.App.LexDebugger.ViewModels
             set { set(()=>LexPatterns, value); }
         }
 
-        public void AddLexPattern()
-        {
-            LexPatterns.Add(new LexPatternViewModel("test"));
-        }
-
         protected override void LoadData()
         {
             //Link the lex patterns...
@@ -45,6 +41,19 @@ namespace RapidPliant.App.LexDebugger.ViewModels
         {
             var lexPatternVm = new LexPatternViewModel(NewLexPattern);
             LexPatterns.Add(lexPatternVm);
+            LexGraphViewModel.RefreshLexPatterns();
+
+            NewLexPattern = "";
+        }
+
+        public void RemovePattern(LexPatternViewModel lexPattern)
+        {
+            LexPatterns.Remove(lexPattern);
+            LexGraphViewModel.RefreshLexPatterns();
+        }
+
+        public void RefreshPattern(LexPatternViewModel lexPattern)
+        {
             LexGraphViewModel.RefreshLexPatterns();
         }
     }
@@ -66,14 +75,6 @@ namespace RapidPliant.App.LexDebugger.ViewModels
         {
             get { return get(() => Pattern); }
             set { set(()=>Pattern, value); }
-        }
-
-        public void Remove()
-        {
-        }
-
-        public void Refresh()
-        {
         }
     }
 }

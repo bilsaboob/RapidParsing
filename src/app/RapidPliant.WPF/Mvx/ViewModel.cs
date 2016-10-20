@@ -4,10 +4,9 @@ using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using RapidPliant.App.Controls;
-using RapidPliant.App.Utils;
+using RapidPliant.WPF.Utils;
 
-namespace RapidPliant.App.ViewModels
+namespace RapidPliant.WPF.Mvx
 {
     public class ViewModel : INotifyPropertyChanged
     {

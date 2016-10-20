@@ -8,16 +8,16 @@
     <RapidGrid Orientation="Vertical">
 
         <RapidGrid Items="{Binding Path=LexPatterns}" set.Width="*" Orientation="Horizontal">
-            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo Refresh}" Width="80">Rfresh</Button>
+            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo root.RefreshPattern(this)}" Width="80">Rfresh</Button>
             <TextBox set.Width="*" FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Text="{BindTo Pattern}"></TextBox>
-            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo Remove}">Remove</Button>
+            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo root.RemovePattern(this)}">Remove</Button>
         </RapidGrid>
 
         <RapidGrid set.Width="*" Orientation="Horizontal">
             <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo AddPattern}" Width="80">Add</Button>
             <TextBox set.Width="*" FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Text="{BindTo NewLexPattern}"></TextBox>
         </RapidGrid>
-        
+
         <GraphView Graph="{Binding Path=Graph}" set.Height="*"></GraphView>
     </RapidGrid>
 </RapidView>

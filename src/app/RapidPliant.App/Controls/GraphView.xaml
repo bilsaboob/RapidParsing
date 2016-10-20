@@ -1,4 +1,4 @@
-﻿<local:RapidView x:Class="RapidPliant.App.Controls.GraphView"
+﻿<RapidView x:Class="RapidPliant.App.Controls.GraphView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -9,4 +9,4 @@
     <Grid>
         <DockPanel Name="GraphViewerPanel"></DockPanel>
     </Grid>
-</local:RapidView>
+</RapidView>

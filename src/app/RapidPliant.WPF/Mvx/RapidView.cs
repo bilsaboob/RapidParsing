@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using RapidPliant.App.ViewModels;
 
-namespace RapidPliant.App.Controls
+namespace RapidPliant.WPF.Mvx
 {
     public interface IView
     {

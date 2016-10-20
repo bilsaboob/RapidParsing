@@ -2,15 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using RapidPliant.App.Controls;
-using RapidPliant.App.Utils;
-using RapidPliant.App.ViewModels;
+using RapidPliant.WPF.Controls;
+using RapidPliant.WPF.Utils;
 
-namespace RapidPliant.App
+namespace RapidPliant.WPF.Mvx
 {
     public class MvxContext
     {

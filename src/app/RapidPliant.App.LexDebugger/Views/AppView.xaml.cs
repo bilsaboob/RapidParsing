@@ -13,9 +13,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using RapidPliant.App.Binding;
 using RapidPliant.App.Controls;
 using RapidPliant.App.LexDebugger.ViewModels;
+using RapidPliant.WPF.Binding;
+using RapidPliant.WPF.Mvx;
 
 namespace RapidPliant.App.LexDebugger.Views
 {
@@ -24,16 +25,9 @@ namespace RapidPliant.App.LexDebugger.Views
     /// </summary>
     public partial class AppView : IView<AppViewModel>
     {
-        public DependencyPropertyListener _listener;
-
         public AppView()
         {
             InitializeComponent();
-        }
-        
-        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
-        {
-            ((AppViewModel) ViewModel).AddLexPattern();
         }
     }
 

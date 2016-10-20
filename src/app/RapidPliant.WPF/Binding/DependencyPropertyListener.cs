@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
-using RapidPliant.App.Controls;
+using RapidPliant.WPF.Controls;
+using RapidPliant.WPF.Mvx;
 
-namespace RapidPliant.App.Binding
+namespace RapidPliant.WPF.Binding
 {
     public class DependencyPropertyListener : FrameworkElement
     {

@@ -4,19 +4,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7542859F-1BAE-4454-99DA-6BBFABC11758}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <ProjectGuid>{2D34A8A6-FBBB-4A1E-A221-27A85BB073D3}</ProjectGuid>
+    <OutputType>library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidPliant.App.LexDebugger</RootNamespace>
-    <AssemblyName>RapidPliant.App.LexDebugger</AssemblyName>
+    <RootNamespace>RapidPliant.WPF</RootNamespace>
+    <AssemblyName>RapidPliant.WPF</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -26,7 +24,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -51,15 +48,20 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LexDebuggerApplication.cs" />
-    <Compile Include="ViewModels\AppViewModel.cs" />
-    <Compile Include="ViewModels\DebuggerLexDfaGraphViewModel.cs" />
-    <Compile Include="Views\AppView.xaml.cs">
-      <DependentUpon>AppView.xaml</DependentUpon>
+    <Compile Include="Binding\BindingMarkupExtensionBase.cs" />
+    <Compile Include="Binding\DependencyPropertyListener.cs" />
+    <Compile Include="Binding\RapidBinding.cs" />
+    <Compile Include="Binding\RapidBindingSerializationProperty.cs" />
+    <Compile Include="Controls\ControlExtensions.cs" />
+    <Compile Include="Controls\MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="Controls\RapidGrid.cs" />
+    <Compile Include="Mvx\RapidView.cs" />
+    <Compile Include="Controls\set.cs" />
+    <Compile Include="Controls\TemplateGenerator.cs" />
+    <Compile Include="Mvx\ViewModel.cs" />
+    <Compile Include="Mvx\ViewModelResolver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -73,6 +75,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Utils\ReflectionExtensions.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -84,51 +87,13 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\libs\automatic-graph-layout\GraphLayout\Drawing\drawing.csproj">
-      <Project>{b76f8f71-4b00-4242-be36-c9f0732511f7}</Project>
-      <Name>drawing</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\libs\automatic-graph-layout\GraphLayout\MSAGL\Msagl.csproj">
-      <Project>{415d3e3f-7105-46c1-84d2-7ecb34213d92}</Project>
-      <Name>Msagl</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\libs\automatic-graph-layout\GraphLayout\tools\GraphViewerGDI\GraphViewerGDI.csproj">
-      <Project>{725cd2cb-cf37-414e-a5a6-f1d87d4d6ede}</Project>
-      <Name>GraphViewerGDI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\libs\automatic-graph-layout\GraphLayout\tools\WpfGraphControl\WpfGraphControl.csproj">
-      <Project>{fce1d24e-cc6b-47bc-9ce4-427e5d56b71e}</Project>
-      <Name>WpfGraphControl</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\lib\RapidPliant.Common\RapidPliant.Common.csproj">
-      <Project>{f71fa673-6338-40b9-b917-d056591e266e}</Project>
-      <Name>RapidPliant.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\lib\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
-      <Project>{d045878a-7813-4480-9dc5-2a37c60346e2}</Project>
-      <Name>RapidPliant.Grammar</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
-      <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
-      <Name>RapidPliant.Lexing</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RapidPliant.App\RapidPliant.App.csproj">
-      <Project>{407370F0-641D-4649-BFEF-BDF63EF15493}</Project>
-      <Name>RapidPliant.App</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RapidPliant.WPF\RapidPliant.WPF.csproj">
-      <Project>{2d34a8a6-fbbb-4a1e-a221-27a85bb073d3}</Project>
-      <Name>RapidPliant.WPF</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="Views\AppView.xaml">
-      <SubType>Designer</SubType>
+    <Page Include="Controls\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Themes\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

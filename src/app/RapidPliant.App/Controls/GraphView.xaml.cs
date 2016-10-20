@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using Microsoft.Msagl.Drawing;
 using Microsoft.Msagl.WpfGraphControl;
 using RapidPliant.App.ViewModels;
+using RapidPliant.WPF.Mvx;
 using Color = Microsoft.Msagl.Drawing.Color;
 
 namespace RapidPliant.App.Controls

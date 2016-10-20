@@ -49,22 +49,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppBoostrapper.cs" />
-    <Compile Include="Binding\BindingMarkupExtensionBase.cs" />
-    <Compile Include="Binding\DependencyPropertyListener.cs" />
-    <Compile Include="Binding\RapidBinding.cs" />
-    <Compile Include="Binding\RapidBindingSerializationProperty.cs" />
-    <Compile Include="Controls\ControlExtensions.cs" />
-    <Compile Include="Controls\MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Controls\GraphView.xaml.cs">
       <DependentUpon>GraphView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Controls\RapidGrid.cs" />
-    <Compile Include="Controls\RapidView.cs" />
-    <Compile Include="Controls\set.cs" />
-    <Compile Include="Controls\TemplateGenerator.cs" />
-    <Compile Include="Mvx\ViewModelResolver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -79,10 +66,8 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="RapidPliantAppliction.cs" />
-    <Compile Include="Utils\ReflectionExtensions.cs" />
     <Compile Include="ViewModels\LexDfaGraphViewModel.cs" />
     <Compile Include="ViewModels\GraphViewModel.cs" />
-    <Compile Include="ViewModels\ViewModel.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -94,10 +79,6 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Controls\MainWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="Controls\GraphView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -132,9 +113,14 @@
       <Project>{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}</Project>
       <Name>RapidPliant.Lexing</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.WPF\RapidPliant.WPF.csproj">
+      <Project>{2d34a8a6-fbbb-4a1e-a221-27a85bb073d3}</Project>
+      <Name>RapidPliant.WPF</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Themes\" />
+    <Folder Include="Utils\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

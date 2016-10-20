@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Xml;
-using RapidPliant.App.Binding;
+using RapidPliant.WPF.Binding;
 
-namespace RapidPliant.App.Controls
+namespace RapidPliant.WPF.Controls
 {
     public static class ControlExtensions
     {

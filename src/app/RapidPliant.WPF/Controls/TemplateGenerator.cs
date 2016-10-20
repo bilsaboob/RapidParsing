@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace RapidPliant.App.Controls
+namespace RapidPliant.WPF.Controls
 {
     /// <summary>
     /// Class that helps the creation of control and data templates by using delegates.
