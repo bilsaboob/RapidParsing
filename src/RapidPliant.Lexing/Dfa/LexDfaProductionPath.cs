@@ -1,5 +1,8 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using RapidPliant.Common.Rule;
+using RapidPliant.Common.Util;
 
 namespace RapidPliant.Lexing.Dfa
 {
@@ -12,13 +15,12 @@ namespace RapidPliant.Lexing.Dfa
         private bool _isAtEnd;
         private int _rhsEndIndex;
         private ISymbol _symbol;
-        private LexDfaState _state;
         private LexDfaProductionState _productionState;
         private LexDfaProductionPath _parentPath;
 
         public LexDfaProductionPath(IProduction production, LexDfaState state, LexDfaProductionPath parentPath = null)
         {
-            _state = state;
+            State = state;
 
             _production = production;
             _rhsIndex = 0;
@@ -33,7 +35,8 @@ namespace RapidPliant.Lexing.Dfa
             _parentPath = parentPath;
         }
 
-        public LexDfaState State { get { return _state; } set { _state = value; } }
+        public LexDfaState State { get; set; }
+        public LexDfaStateTransition Transition { get; set; }
 
         public int SymbolIndex { get { return _rhsIndex; } }
         public IProduction Production { get { return _production; } }
@@ -42,7 +45,6 @@ namespace RapidPliant.Lexing.Dfa
         public ISymbol Symbol { get { return _symbol; } }
 
         public LexDfaProductionPath ParentPath { get { return _parentPath; } }
-        public LexDfaStateTransition Transition { get; set; }
 
         public LexDfaProductionPath MoveToFirst()
         {
@@ -84,7 +86,7 @@ namespace RapidPliant.Lexing.Dfa
             {
                 parentPath = _parentPath.Clone();
             }
-            var path = new LexDfaProductionPath(_production, _state, parentPath);
+            var path = new LexDfaProductionPath(_production, State, parentPath);
             path._rhsIndex = _rhsIndex;
             path._rhsEndIndex = _rhsEndIndex;
             path._isAtEnd = _isAtEnd;
@@ -123,6 +125,37 @@ namespace RapidPliant.Lexing.Dfa
             }
 
             return sb.ToString();
+        }
+    }
+
+
+    public static class LexDfaProductionPathExtensions
+    {
+        public static RapidList<LexDfaProductionPath> ToProductionPaths(this IRule rule, LexDfaState startState, LexDfaProductionPath parentPath = null)
+        {
+            var productionPaths = new RapidList<LexDfaProductionPath>();
+
+            foreach (var path in rule.Productions.Select(p => new LexDfaProductionPath(p, startState, parentPath)))
+            {
+                productionPaths.Add(path);
+            }
+
+            return productionPaths;
+        }
+
+        public static RapidList<LexDfaProductionPath> ToProductionPaths(this IEnumerable<IRule> rules, LexDfaState startState, LexDfaProductionPath parentPath = null)
+        {
+            var productionPaths = new RapidList<LexDfaProductionPath>();
+
+            foreach (var rule in rules)
+            {
+                foreach (var path in rule.Productions.Select(p => new LexDfaProductionPath(p, startState, parentPath)))
+                {
+                    productionPaths.Add(path);
+                }
+            }
+
+            return productionPaths;
         }
     }
 }

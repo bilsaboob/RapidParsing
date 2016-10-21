@@ -28,6 +28,10 @@ namespace RapidPliant.Lexing.Lexer
             _captures = new CachingRapidList<SpellingCapture>();
             _spelling = new CharBuffer(new StringBuilder());
             _scannedCaptures = new CachingRapidList<SpellingCapture>();
+            
+            Init();
+
+            CanContinue = true;
         }
 
         public int ScannedCapturesCount { get { return _scannedCaptures.Count; } }
@@ -37,6 +41,11 @@ namespace RapidPliant.Lexing.Lexer
         public SpellingCapture[] Captures { get { return _captures.AsArray; } }
 
         public bool CanContinue { get; private set; }
+
+        private void Init()
+        {
+            _startState.Compile();
+        }
 
         public bool Scan(char ch)
         {
@@ -67,7 +76,7 @@ namespace RapidPliant.Lexing.Lexer
                 return;
 
             var dfaTransition = transition.DfaTransition;
-            var completionsCount = dfaTransition.CompletionsCount;
+            var completionsCount = dfaTransition.CompletionsByRuleCount;
             if (completionsCount == 0)
                 return;
 
@@ -147,13 +156,17 @@ namespace RapidPliant.Lexing.Lexer
 
     public class LexDfaTableState
     {
+        private bool _requiresCompile;
+
         private int _minCharValue;
         private int _maxCharValue;
         private LexDfaTableStateTransition[] _transitionsByChar;
-
+        private CachingRapidList<LexDfaTableStateTransition> _transitions;
+        
         public LexDfaTableState(LexDfaState dfaState)
         {
             DfaState = dfaState;
+            _requiresCompile = true;
         }
 
         public LexDfaState DfaState { get; set; }
@@ -171,19 +184,41 @@ namespace RapidPliant.Lexing.Lexer
 
         public void Compile()
         {
+            if(!_requiresCompile)
+                return;
+
             //Currently we only allow UTF8 charset- 128 is the "default"... 256 to support the extended...
             _minCharValue = 0;
             _maxCharValue = 255;
             _transitionsByChar = new LexDfaTableStateTransition[_maxCharValue+1];
+            
+            CompileTransitions();
+
+            _requiresCompile = false;
+
+            var transitions = _transitions.AsArray;
+            for (var i = 0; i < transitions.Length; ++i)
+            {
+                var t = transitions[i];
+                if(t.ToState != null)
+                    t.ToState.Compile();
+            }
+        }
+
+        private void CompileTransitions()
+        {
+            _transitions = new CachingRapidList<LexDfaTableStateTransition>();
 
             var dfaTermTransitions = DfaState.GetTermTransitions();
             foreach (var dfaTermTransition in dfaTermTransitions)
             {
-                AddDfaTermTransition(dfaTermTransition);
+                var toState = new LexDfaTableState(dfaTermTransition.ToState);
+
+                AddDfaTermTransition(dfaTermTransition, toState);
             }
         }
 
-        private void AddDfaTermTransition(LexDfaStateTermTransition dfaTermTransition)
+        private void AddDfaTermTransition(LexDfaStateTermTransition dfaTermTransition, LexDfaTableState toTableState)
         {
             var termSymbol = dfaTermTransition.TransitionTermSymbol;
 
@@ -192,7 +227,9 @@ namespace RapidPliant.Lexing.Lexer
             {
                 //Create the table transition for single character
                 var ch = termSingleCharSymbol.Char;
-                _transitionsByChar[ch] = new LexDfaTableStateTransition(this, ch, dfaTermTransition);
+                var transition = new LexDfaTableStateTransition(this, ch, dfaTermTransition, toTableState);
+                _transitions.Add(transition);
+                _transitionsByChar[ch] = transition;
                 return;
             }
 
@@ -205,8 +242,12 @@ namespace RapidPliant.Lexing.Lexer
                 for (var i = fromChar; i < toChar; ++i)
                 {
                     var ch = (char) i;
-                    _transitionsByChar[ch] = new LexDfaTableStateTransition(this, ch, dfaTermTransition);
+                    var transition = new LexDfaTableStateTransition(this, ch, dfaTermTransition, toTableState);
+                    _transitions.Add(transition);
+                    _transitionsByChar[ch] = transition;
                 }
+
+                return;
             }
         }
     }
@@ -215,12 +256,13 @@ namespace RapidPliant.Lexing.Lexer
     {
         private LexDfaStateTermTransition _dfaTermTransition;
 
-        public LexDfaTableStateTransition(LexDfaTableState fromTableState, char transitionChar, LexDfaStateTermTransition dfaTermTransition)
+        public LexDfaTableStateTransition(LexDfaTableState fromTableState, char transitionChar, LexDfaStateTermTransition dfaTermTransition, LexDfaTableState toTableState)
         {
             FromState = fromTableState;
+            ToState = toTableState;
+            Char = transitionChar;
 
             _dfaTermTransition = dfaTermTransition;
-            Char = transitionChar;
         }
 
         public char Char { get; private set; }

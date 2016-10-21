@@ -11,6 +11,7 @@ namespace RapidPliant.Common.Util
 {
     public interface IRapidList<out T> : IEnumerable<T>
     {
+        int Count { get; }
     }
 
     public class RapidList<T> : IRapidList<T>
@@ -146,6 +147,14 @@ namespace RapidPliant.Common.Util
             return other;
         }
 
+        public virtual void FromArray(T[] values)
+        {
+            _items = values;
+            _count = values.Length;
+            _initialCapacity = _count;
+            _version++;
+        }
+
         public override string ToString()
         {
             var sb = new StringBuilder();
@@ -215,6 +224,15 @@ namespace RapidPliant.Common.Util
             _itemsCached = base.ToArray();
             _itemsCachedVersion = _version;
             return _itemsCached;
+        }
+
+        public override void FromArray(T[] values)
+        {
+            base.FromArray(values);
+
+            //Use the same cached values as the base array
+            _itemsCached = null;
+            _itemsCachedVersion = -1;
         }
     }
 }

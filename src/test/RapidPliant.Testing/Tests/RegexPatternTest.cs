@@ -20,7 +20,18 @@ namespace RapidPliant.Testing.Tests
 
         protected override void Test()
         {
-            RegexPatternExpr p;
+            TestLexing("peterstora",
+                CreateLexRule("pet", "pet1"),
+                CreateLexRule("pet", "pet2"),
+                CreateLexRule("petersto", "petersto2")
+            );
+
+            /*TestLexing(
+                "abefg",
+                "ab|abd|abefg|ijkl"
+            );*/
+
+            /*RegexPatternExpr p;
             LexDfaTableLexer l;
             LexDfaState d;
             string s;
@@ -54,10 +65,17 @@ namespace RapidPliant.Testing.Tests
             s = p.ToString();*/
 
         }
-
-        private void TestLexing(string regexPattern, string input)
+        
+        private void TestLexing(string input, string regexPattern)
         {
             var lexer = CreateLexer(regexPattern);
+            TestLexing(lexer, input);
+        }
+
+        private void TestLexing(string input, params LexPatternRule[] patternRules)
+        {
+            var dfa = CreateLexDfa(patternRules);
+            var lexer = new LexDfaTableLexer(dfa);
             TestLexing(lexer, input);
         }
 
@@ -98,7 +116,7 @@ namespace RapidPliant.Testing.Tests
             var dfa = CreateLexDfa(patternExpr, name);
             return new LexDfaTableLexer(dfa);
         }
-
+        
         protected LexDfaTableLexer CreateLexer(RegexPatternExpr patternExpr, string name = null)
         {
             var dfa = CreateLexDfa(patternExpr, name);

@@ -18,7 +18,6 @@ namespace RapidPliant.Lexing.Pattern
         public LexPatternRule(string name)
             : base(name)
         {
-            Name = name;
         }
 
         public override string ToString()

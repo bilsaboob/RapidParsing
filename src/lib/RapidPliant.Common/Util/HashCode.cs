@@ -111,5 +111,42 @@ namespace RapidPliant.Common.Util
                 return accumulator;
             }
         }
+
+        public static bool EqualsArray<T>(this T[] array, T[] otherArray)
+        {
+            if (array == otherArray)
+                return true;
+
+            if (array == null && otherArray == null)
+                return true;
+
+            if (array != null && otherArray != null)
+            {
+                var len1 = array.Length;
+                var len2 = otherArray.Length;
+
+                if (len1 != len2)
+                    return false;
+
+                for (var i = 0; i < len1; ++i)
+                {
+                    var elem1 = array[i];
+                    var elem2 = otherArray[i];
+
+                    if (elem1 == null && elem2 != null)
+                        return false;
+
+                    if (elem2 == null && elem1 != null)
+                        return false;
+
+                    if (!elem1.Equals(elem2))
+                        return false;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
     }
 }

@@ -69,6 +69,8 @@ namespace RapidPliant.Common.Rule
         private RapidList<TRule> _subRules;
         private RapidList<Production<TRule>> _productions;
 
+        private readonly int _hashCode;
+
         public Rule()
             : this(null)
         {
@@ -87,6 +89,12 @@ namespace RapidPliant.Common.Rule
 
             _subRules = new RapidList<TRule>();
             _productions = new RapidList<Production<TRule>>();
+
+            _hashCode = HashCode.Compute(GetType().GetHashCode());
+            if (!string.IsNullOrEmpty(Name))
+            {
+                _hashCode = HashCode.Compute(_hashCode, Name.GetHashCode());
+            }
         }
 
         private void SetParentRule(TRule parent)
@@ -159,6 +167,52 @@ namespace RapidPliant.Common.Rule
                 return;
             AddProduction(productionInternal);
         }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj == this)
+                return true;
+
+            var other = obj as TRule;
+            if (other == null)
+                return false;
+
+            if (other.Name != Name)
+                return false;
+
+            if (other.IsNullable != IsNullable)
+                return false;
+
+            if (other.IsRootRule != IsRootRule)
+                return false;
+
+            if (other.HasParentRule != HasParentRule)
+                return false;
+
+            if (other.HasSubRules != HasSubRules)
+                return false;
+
+            if (other.SubRules != null && SubRules != null)
+            {
+                if (other.SubRules.Count != SubRules.Count)
+                    return false;
+            }
+            
+            return EqualsT(other);
+        }
+
+        protected virtual bool EqualsT(TRule other)
+        {
+            return true;
+        }
     }
 
     public interface IProduction
@@ -171,12 +225,15 @@ namespace RapidPliant.Common.Rule
     public class Production<TRule> : IProduction
         where TRule : Rule<TRule>, new()
     {
+        private int _hashCode;
         private CachingRapidList<ISymbol> _rhsSymbols;
 
         public Production(TRule lhsRule)
         {
             LhsRule = lhsRule;
             _rhsSymbols = new CachingRapidList<ISymbol>();
+
+            _hashCode = HashCode.Compute(LhsRule.GetHashCode(), HashCode.Compute(_rhsSymbols));
         }
 
         public TRule LhsRule { get; private set; }
@@ -196,6 +253,32 @@ namespace RapidPliant.Common.Rule
             var other = new Production<TRule>(LhsRule);
             other._rhsSymbols = _rhsSymbols.Clone();
             return other;
+        }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj == this)
+                return true;
+
+            var other = obj as Production<TRule>;
+            if (other == null)
+                return false;
+
+            if (other.RhsSymbolsCount != RhsSymbolsCount)
+                return false;
+
+            if (!other.LhsRule.Equals(LhsRule))
+                return false;
+            
+            return true;
         }
 
         public override string ToString()

@@ -52,11 +52,12 @@ namespace RapidPliant.Common.Rule
                 return false;
 
             if (other.OwnerType != OwnerType)
-            {
                 return false;
-            }
 
-            return other.Name == Name;
+            if (other.Name != Name)
+                return false;
+
+            return true;
         }
 
         public override string ToString()

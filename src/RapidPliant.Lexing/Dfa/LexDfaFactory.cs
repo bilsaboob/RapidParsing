@@ -32,20 +32,19 @@ namespace RapidPliant.Lexing.Dfa
 
         public void BuildForRule(IRule rule, LexDfaState startState)
         {
-            var activePaths = new RapidList<LexDfaProductionPath>(rule.Productions.Select(p => new LexDfaProductionPath(p, startState)));
+            var activePaths = rule.ToProductionPaths(startState);
             BuildForPaths(activePaths);
         }
 
         private void BuildForRules(IEnumerable<IRule> rules, LexDfaState startState)
         {
-            var activePaths = new RapidList<LexDfaProductionPath>(rules.SelectMany(rule => rule.Productions.Select(p => new LexDfaProductionPath(p, startState))));
+            var activePaths = rules.ToProductionPaths(startState);
             BuildForPaths(activePaths);
         }
 
         private void BuildForRulePaths(IRule rule, LexDfaState startState, RapidList<LexDfaProductionPath> nextPaths, LexDfaProductionPath parentPath = null)
         {
-            var activePaths = new RapidList<LexDfaProductionPath>(rule.Productions.Select(p => new LexDfaProductionPath(p, startState, parentPath)));
-
+            var activePaths = rule.ToProductionPaths(startState, parentPath);
             BuildForPaths(activePaths, nextPaths);
         }
 
@@ -81,59 +80,47 @@ namespace RapidPliant.Lexing.Dfa
             {
                 var state = activePath.State;
 
-                //Get the symbol for which to make a transition!
+                //Collect the relevant data from the path before we move ahead
                 var symbol = activePath.Symbol;
+                var parentActivePath = activePath.ParentPath;
+                var pathProductionState = activePath.ToProductionState();
 
-                if (activePath.IsAtEnd)
+                //Move one step ahead
+                activePath.MoveNext();
+
+                //The path is at the end - this means we have a completion!
+                state.AddSymbolTransition(symbol, pathProductionState);
+
+                var symbolRuleRef = symbol as ILexPatternRuleRefSymbol;
+                if (symbolRuleRef != null)
                 {
-                    //The path is at the end - this means we have a completion!
-                    var parentActivePath = activePath.ParentPath;
-                    if (parentActivePath != null)
-                    {
-                        //There was a prediction from a parent path
-                        var parentState = parentActivePath.State;
-                        var completedSymbol = parentActivePath.Symbol;
-                        var transition = state.AddSymbolTransition(symbol, activePath.Clone());
-                        activePath.Transition = transition;
-                        state.AddCompletion(completedSymbol);
+                    //This is a reference to another sub lex rule - this means it's a prediction!
+                    var refRule = symbolRuleRef.Rule;
+                    state.AddPrediction(symbol, refRule, pathProductionState);
 
-                        //Move the parent path one step ahead and add to the active paths to be evaluated!
-                        parentActivePath.MoveNext();
-                        nextPaths.Add(parentActivePath);
-                    }
-                    else
-                    {
-                        //There is no parent path - so let's add the symbol as a normal transition!
-                        /*var transition = state.AddSymbolTransition(symbol, activePath.Clone());
-                        activePath.Transition = transition;*/
-                        state.AddCompletion(symbol);
-                    }
+                    //Build for one step ahead for the expanded rules... next iteration they will be part of the "nextPaths"
+                    BuildForRulePaths(refRule, state, nextPaths, activePath);
                 }
                 else
                 {
-                    var symbolRuleRef = symbol as ILexPatternRuleRefSymbol;
-                    if (symbolRuleRef != null)
-                    {
-                        //This is a reference to another sub lex rule - this means it's a prediction!
-                        var refRule = symbolRuleRef.Rule;
-                        //Build for one step ahead for the expanded rules... next iteration they will be part of the "nextPaths"
-                        BuildForRulePaths(refRule, state, nextPaths, activePath);
-                        state.AddPrediction(symbolRuleRef);
-
-                        //Don't add the current path to next iteration list... we must have a completion to continue!
-                    }
-                    else
-                    {
-                        //Add as a normal transition!
-                        var transition = state.AddSymbolTransition(symbol, activePath.Clone());
-                        activePath.Transition = transition;
-                        state.AddScan(symbol);
-
-                        //Move the path one step ahead, and continue the next iteration
-                        activePath.MoveNext();
-                        nextPaths.Add(activePath);
-                    }
+                    //Add as a normal transition!
+                    state.AddScan(symbol, pathProductionState);
                 }
+
+                if (activePath.IsAtEnd)
+                {
+                    state.AddCompletion(symbol, pathProductionState);
+
+                    if (parentActivePath != null)
+                    {
+                        //There was a prediction from a parent path
+                        nextPaths.Add(parentActivePath);
+                    }
+
+                    continue;
+                }
+
+                nextPaths.Add(activePath);
             }
         }
     }
