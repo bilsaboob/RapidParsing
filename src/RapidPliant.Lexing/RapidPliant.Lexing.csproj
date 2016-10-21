@@ -41,6 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Dfa\LexDfa.cs" />
+    <Compile Include="Dfa\LexDfaFactory.cs" />
+    <Compile Include="Dfa\LexDfaProductionPath.cs" />
+    <Compile Include="Dfa\LexDfaProductionState.cs" />
     <Compile Include="Lexer\LexDfaLexer.cs" />
     <Compile Include="Pattern\LexPatternRule.cs" />
     <Compile Include="Pattern\PatternExpr.cs" />

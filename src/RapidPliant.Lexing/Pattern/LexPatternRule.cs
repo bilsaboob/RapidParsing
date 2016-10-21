@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Rule;
+using RapidPliant.Common.Util;
 
 namespace RapidPliant.Lexing.Pattern
 {
@@ -39,6 +40,10 @@ namespace RapidPliant.Lexing.Pattern
 
     public abstract class LexPatternSymbol : Symbol, ILexPatternSymbol
     {
+        public LexPatternSymbol(SymbolType symbolType)
+            : base(symbolType)
+        {
+        }
     }
 
     public interface ILexPatternRuleRefSymbol : ILexPatternSymbol
@@ -48,7 +53,10 @@ namespace RapidPliant.Lexing.Pattern
 
     public class LexPatternRuleRefSymbol : LexPatternSymbol, ILexPatternRuleRefSymbol
     {
+        public static readonly SymbolType _SymbolType = new SymbolType(typeof(LexPatternRuleRefSymbol), "RuleRef");
+
         public LexPatternRuleRefSymbol(IRule rule)
+            : base(_SymbolType)
         {
             Rule = rule;
         }
@@ -60,8 +68,11 @@ namespace RapidPliant.Lexing.Pattern
     {
     }
 
-    public class LexPatternTerminalSymbol : LexPatternSymbol, ILexPatternTerminalSymbol
+    public abstract class LexPatternTerminalSymbol : LexPatternSymbol, ILexPatternTerminalSymbol
     {
+        public LexPatternTerminalSymbol(SymbolType symbolType) : base(symbolType)
+        {
+        }
     }
 
     public interface ILexPatternTerminalCharSymbol : ILexPatternTerminalSymbol
@@ -69,14 +80,47 @@ namespace RapidPliant.Lexing.Pattern
         char Char { get; }
     }
 
-    public class LexPatternTerminalCharSymbol : LexPatternSymbol, ILexPatternTerminalCharSymbol
+    public class LexPatternTerminalCharSymbol : LexPatternTerminalSymbol, ILexPatternTerminalCharSymbol
     {
+        public static readonly SymbolType _SymbolType = new SymbolType(typeof(LexPatternTerminalCharSymbol), "TerminalChar");
+
+        private readonly int _hashCode;
+
         public LexPatternTerminalCharSymbol(char character)
+            : base(_SymbolType)
         {
             Char = character;
+
+            _hashCode = HashCode.Compute(SymbolType.GetHashCode(), Char.GetHashCode());
         }
 
         public char Char { get; private set; }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj == this)
+                return true;
+
+            var other = obj as LexPatternTerminalCharSymbol;
+            if (other == null)
+                return false;
+
+            if (other.SymbolType != SymbolType)
+                return false;
+
+            if (other.Char != Char)
+                return false;
+
+            return true;
+        }
 
         public override string ToString()
         {
@@ -90,16 +134,52 @@ namespace RapidPliant.Lexing.Pattern
         char ToChar { get; }
     }
 
-    public class LexPatternTerminalRangeSymbol : LexPatternSymbol, ILexPatternTerminalRangeSymbol
+    public class LexPatternTerminalRangeSymbol : LexPatternTerminalSymbol, ILexPatternTerminalRangeSymbol
     {
+        public static readonly SymbolType _SymbolType = new SymbolType(typeof(LexPatternTerminalRangeSymbol), "TerminalRange");
+
+        private readonly int _hashCode;
+
         public LexPatternTerminalRangeSymbol(char fromChar, char toChar)
+            : base(_SymbolType)
         {
             FromChar = fromChar;
             ToChar = toChar;
+
+            _hashCode = HashCode.Compute(SymbolType.GetHashCode(), FromChar.GetHashCode(), ToChar.GetHashCode());
         }
 
         public char FromChar { get; private set; }
         public char ToChar { get; private set; }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj == this)
+                return true;
+
+            var other = obj as LexPatternTerminalRangeSymbol;
+            if (other == null)
+                return false;
+
+            if (other.SymbolType != SymbolType)
+                return false;
+
+            if (other.FromChar != FromChar)
+                return false;
+
+            if (other.ToChar != ToChar)
+                return false;
+
+            return true;
+        }
 
         public override string ToString()
         {
