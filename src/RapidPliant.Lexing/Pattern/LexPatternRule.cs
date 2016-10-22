@@ -52,15 +52,63 @@ namespace RapidPliant.Lexing.Pattern
 
     public class LexPatternRuleRefSymbol : LexPatternSymbol, ILexPatternRuleRefSymbol
     {
-        public static readonly SymbolType _SymbolType = new SymbolType(typeof(LexPatternRuleRefSymbol), "RuleRef");
+        public static readonly SymbolType Type = new SymbolType(typeof(LexPatternRuleRefSymbol), "RuleRef");
+
+        private int _hashCode;
 
         public LexPatternRuleRefSymbol(IRule rule)
-            : base(_SymbolType)
+            : base(Type)
         {
             Rule = rule;
+
+            ComputeHashCode();
         }
 
         public IRule Rule { get; private set; }
+
+        private void ComputeHashCode()
+        {
+            _hashCode = HashCode.Compute(SymbolType.GetHashCode(), Rule.GetHashCode());
+        }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj == this)
+                return true;
+
+            var other = obj as LexPatternRuleRefSymbol;
+            if (other == null)
+                return false;
+
+            if (!SymbolType.Equals(other.SymbolType))
+                return false;
+
+            if (Rule != null)
+            {
+                if (!Rule.Equals(other.Rule))
+                    return false;
+            }
+            else
+            {
+                if (other.Rule != null)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("ref:" + Rule.Name);
+        }
     }
 
     public interface ILexPatternTerminalSymbol : ILexPatternSymbol
@@ -81,19 +129,24 @@ namespace RapidPliant.Lexing.Pattern
 
     public class LexPatternTerminalCharSymbol : LexPatternTerminalSymbol, ILexPatternTerminalCharSymbol
     {
-        public static readonly SymbolType _SymbolType = new SymbolType(typeof(LexPatternTerminalCharSymbol), "TerminalChar");
+        public static readonly SymbolType Type = new SymbolType(typeof(LexPatternTerminalCharSymbol), "TerminalChar");
 
-        private readonly int _hashCode;
+        private int _hashCode;
 
         public LexPatternTerminalCharSymbol(char character)
-            : base(_SymbolType)
+            : base(Type)
         {
             Char = character;
 
+            ComputeHashCode();
+        }
+        
+        public char Char { get; private set; }
+
+        private void ComputeHashCode()
+        {
             _hashCode = HashCode.Compute(SymbolType.GetHashCode(), Char.GetHashCode());
         }
-
-        public char Char { get; private set; }
 
         public override int GetHashCode()
         {
@@ -112,7 +165,7 @@ namespace RapidPliant.Lexing.Pattern
             if (other == null)
                 return false;
 
-            if (other.SymbolType != SymbolType)
+            if (!SymbolType.Equals(other.SymbolType))
                 return false;
 
             if (other.Char != Char)
@@ -135,21 +188,26 @@ namespace RapidPliant.Lexing.Pattern
 
     public class LexPatternTerminalRangeSymbol : LexPatternTerminalSymbol, ILexPatternTerminalRangeSymbol
     {
-        public static readonly SymbolType _SymbolType = new SymbolType(typeof(LexPatternTerminalRangeSymbol), "TerminalRange");
+        public static readonly SymbolType Type = new SymbolType(typeof(LexPatternTerminalRangeSymbol), "TerminalRange");
 
-        private readonly int _hashCode;
+        private int _hashCode;
 
         public LexPatternTerminalRangeSymbol(char fromChar, char toChar)
-            : base(_SymbolType)
+            : base(Type)
         {
             FromChar = fromChar;
             ToChar = toChar;
 
-            _hashCode = HashCode.Compute(SymbolType.GetHashCode(), FromChar.GetHashCode(), ToChar.GetHashCode());
+            ComputeHashCode();
         }
-
+        
         public char FromChar { get; private set; }
         public char ToChar { get; private set; }
+
+        private void ComputeHashCode()
+        {
+            _hashCode = HashCode.Compute(SymbolType.GetHashCode(), FromChar.GetHashCode(), ToChar.GetHashCode());
+        }
 
         public override int GetHashCode()
         {
@@ -168,7 +226,7 @@ namespace RapidPliant.Lexing.Pattern
             if (other == null)
                 return false;
 
-            if (other.SymbolType != SymbolType)
+            if (!SymbolType.Equals(other.SymbolType))
                 return false;
 
             if (other.FromChar != FromChar)

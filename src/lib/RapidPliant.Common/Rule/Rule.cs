@@ -215,15 +215,26 @@ namespace RapidPliant.Common.Rule
 
             if (other.Name != Name)
                 return false;
-
+            
             if (SubRules != null)
             {
-                if (!SubRules.SequenceEqual(other.SubRules))
+                if (!SubRules.EqualsSequence(other.SubRules))
                     return false;
             }
             else
             {
                 if (other.SubRules != null)
+                    return false;
+            }
+
+            if (Productions != null)
+            {
+                if (!Productions.EqualsSequence(other.Productions))
+                    return false;
+            }
+            else
+            {
+                if (other.Productions != null)
                     return false;
             }
             
