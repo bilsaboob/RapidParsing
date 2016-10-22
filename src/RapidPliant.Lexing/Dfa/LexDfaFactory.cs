@@ -16,6 +16,9 @@ namespace RapidPliant.Lexing.Dfa
             
             BuildForRule(rule, startState);
 
+            //Make sure to compile the state once it has been built!
+            startState.Compile();
+
             return dfa;
         }
 
@@ -26,6 +29,9 @@ namespace RapidPliant.Lexing.Dfa
             dfa.StartState = startState;
 
             BuildForRules(lexRules, startState);
+
+            //Make sure to compile the state once it has been built!
+            startState.Compile();
 
             return dfa;
         }
@@ -55,13 +61,12 @@ namespace RapidPliant.Lexing.Dfa
             while (activePaths.Count > 0)
             {
                 BuildForPaths(activePaths, nextPaths);
-                
-                //Now make sure to compile the states, building the "next" state!
+
+                //Build for the state of each active path!
                 foreach (var activePath in activePaths)
                 {
-                    //Compile the state - this will build the next state, given the transitions that have been added!
                     var state = activePath.State;
-                    state.Compile();
+                    state.Build();
 
                     //Update the active state of the active path - the new state after the transition!
                     activePath.State = activePath.Transition.ToState;
@@ -82,45 +87,53 @@ namespace RapidPliant.Lexing.Dfa
 
                 //Collect the relevant data from the path before we move ahead
                 var symbol = activePath.Symbol;
-                var parentActivePath = activePath.ParentPath;
                 var pathProductionState = activePath.ToProductionState();
-
-                //Move one step ahead
-                activePath.MoveNext();
-
-                //The path is at the end - this means we have a completion!
-                state.AddSymbolTransition(symbol, pathProductionState);
-
-                var symbolRuleRef = symbol as ILexPatternRuleRefSymbol;
-                if (symbolRuleRef != null)
+                
+                if (!pathProductionState.IsAtEnd)
                 {
-                    //This is a reference to another sub lex rule - this means it's a prediction!
-                    var refRule = symbolRuleRef.Rule;
-                    state.AddPrediction(symbol, refRule, pathProductionState);
+                    //We are not at the end, so we either have a Prediction or a Scan - either way it's a transition!
+                    state.AddSymbolTransition(symbol, pathProductionState);
 
-                    //Build for one step ahead for the expanded rules... next iteration they will be part of the "nextPaths"
-                    BuildForRulePaths(refRule, state, nextPaths, activePath);
+                    //Now also check for prediction or scan
+                    var symbolRuleRef = symbol as ILexPatternRuleRefSymbol;
+                    if (symbolRuleRef != null)
+                    {
+                        //Reference to other rule - so we have a prediction
+                        var refRule = symbolRuleRef.Rule;
+                        state.AddPrediction(symbol, refRule, pathProductionState);
+
+                        //Build for one step ahead for the expanded rules, next iteration they will be part of the "nextPaths"
+                        BuildForRulePaths(refRule, state, nextPaths, activePath);
+                    }
+                    else
+                    {
+                        //We have a scan
+                        state.AddScan(symbol, pathProductionState);
+                    }
+
+                    //Move one step ahead
+                    activePath.MoveNext();
+
+                    //Continue the activePath
+                    nextPaths.Add(activePath);
                 }
                 else
                 {
-                    //Add as a normal transition!
-                    state.AddScan(symbol, pathProductionState);
-                }
-
-                if (activePath.IsAtEnd)
-                {
+                    //We are at the end, so it's a completion
                     state.AddCompletion(symbol, pathProductionState);
 
+                    var parentActivePath = activePath.ParentPath;
+                    //Continue with the parent path if available
                     if (parentActivePath != null)
                     {
+                        //Move One step ahead for the parent path
+                        parentActivePath.MoveNext();
                         //There was a prediction from a parent path
                         nextPaths.Add(parentActivePath);
                     }
 
-                    continue;
+                    //The activePath will not be continued on a completion
                 }
-
-                nextPaths.Add(activePath);
             }
         }
     }

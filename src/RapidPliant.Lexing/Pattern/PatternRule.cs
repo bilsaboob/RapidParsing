@@ -44,6 +44,19 @@ namespace RapidPliant.Lexing.Pattern
                 if (expr.IsAlteration)
                     addAsProduction = false;
 
+                var isOptional = false;
+                if (expr.HasOptions)
+                {
+                    isOptional = expr.Options.IsOptional;
+                }
+
+                RapidList<Production<TRule>> initialActiveProductions = null;
+                if (isOptional)
+                {
+                    //We need to clone the current active productions - since the expression is optional, we need to add everything as usual, but keep the initial productions untuched too!
+                    initialActiveProductions = c.GetActiveProductionsWithOptionalCloned();
+                }
+
                 foreach (var subExpr in expr.Expressions)
                 {
                     var subExprContext = NewProductionsContext();
@@ -58,12 +71,15 @@ namespace RapidPliant.Lexing.Pattern
                         c.AppendAsAlerations(subExprContext);
                     }
                 }
+
+                if(initialActiveProductions != null)
+                    c.AddProductions(initialActiveProductions);
             }
             else
             {
                 //This is a leaf expression - create the symbol for the expression - and add it to the ongoing production
                 var symbol = CreateSymbolForLeafExpr(expr);
-                c.AddSymbol(symbol);
+                c.AddSymbol(symbol, expr);
             }
         }
         
@@ -104,7 +120,7 @@ namespace RapidPliant.Lexing.Pattern
         
         public RapidList<Production<TRule>> ActiveProductions { get; private set; }
         
-        public void AddSymbol(ISymbol symbol)
+        public void AddSymbol(ISymbol symbol, IExpr expr)
         {
             //Make sure there is an active production!
             if (ActiveProductions.Count == 0)
@@ -112,9 +128,27 @@ namespace RapidPliant.Lexing.Pattern
                 ActiveProductions.Add(_rule.CreateProduction());
             }
 
-            foreach (var production in ActiveProductions)
+            //Check for expression options!
+            var isOptional = false;
+            if (expr.HasOptions)
             {
-                production.AddSymbol(symbol);
+                isOptional = expr.Options.IsOptional;
+            }
+
+            var activeProductions = ActiveProductions.GetEnumerator();
+            while (activeProductions.MoveNext())
+            {
+                var activeProduction = activeProductions.Current;
+
+                if (isOptional)
+                {
+                    //Clone without adding for optionals
+                    var clonedActiveProduction = activeProduction.Clone();
+                    ActiveProductions.Add(clonedActiveProduction);
+                }
+
+                //Add symbol to active
+                activeProduction.AddSymbol(symbol);
             }
         }
 
@@ -165,6 +199,34 @@ namespace RapidPliant.Lexing.Pattern
             {
                 ActiveProductions.Add(otherProduction);
             }
+        }
+
+        public void AddProductions(RapidList<Production<TRule>> productions)
+        {
+            if(productions == null)
+                return;
+
+            foreach (var production in productions)
+            {
+                ActiveProductions.Add(production);
+            }
+        }
+
+        public RapidList<Production<TRule>> GetActiveProductionsWithOptionalCloned()
+        {
+            if (ActiveProductions.Count == 0)
+            {
+                ActiveProductions.Add(_rule.CreateProduction());
+            }
+
+            var clonedActiveProductions = new RapidList<Production<TRule>>(ActiveProductions.Count);
+            foreach (var activeProduction in ActiveProductions)
+            {
+                var clonedActiveProduction = activeProduction.Clone();
+                clonedActiveProductions.Add(clonedActiveProduction);
+            }
+
+            return clonedActiveProductions;
         }
     }
 }

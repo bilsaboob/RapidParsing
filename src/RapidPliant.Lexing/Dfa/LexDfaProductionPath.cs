@@ -60,6 +60,7 @@ namespace RapidPliant.Lexing.Dfa
             if (_rhsIndex >= _rhsEndIndex)
             {
                 _isAtEnd = true;
+                _productionState = null;
                 return false;
             }
 

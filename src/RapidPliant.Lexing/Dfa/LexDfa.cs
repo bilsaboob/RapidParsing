@@ -36,8 +36,10 @@ namespace RapidPliant.Lexing.Dfa
     public class LexDfaState
     {
         private LexDfa _dfa;
+
         private bool _requiresCompile;
-        
+        private bool _requiresBuild;
+
         private RapidTable<ISymbol, LexDfaStateTransition> Transitions { get; set; }
         private RapidTable<ILexPatternTerminalSymbol, LexDfaStateTermTransition> TermTransitions { get; set; }
         
@@ -46,9 +48,12 @@ namespace RapidPliant.Lexing.Dfa
         public LexDfaState(LexDfa dfa)
         {
             _dfa = dfa;
-
+            
             Transitions = new RapidTable<ISymbol, LexDfaStateTransition>();
             TermTransitions = new RapidTable<ILexPatternTerminalSymbol, LexDfaStateTermTransition>();
+
+            _requiresBuild = true;
+            _requiresCompile = true;
         }
 
         public LexDfaStateTransition AddSymbolTransition(ISymbol symbol, LexDfaProductionState productionState)
@@ -71,11 +76,17 @@ namespace RapidPliant.Lexing.Dfa
         private LexDfaStateTransition AddTerminalSymbolTransition(ILexPatternTerminalSymbol terminalSymbol, LexDfaProductionState productionState)
         {
             //Either get the existing or add a new one
-            var transition = TermTransitions.AddOrGetExisting(terminalSymbol, () => new LexDfaStateTermTransition(terminalSymbol));
+            var transition = TermTransitions.AddOrGetExisting(terminalSymbol, () => new LexDfaStateTermTransition(_dfa, terminalSymbol) {IsNew = true});
+            transition.AddTransitionProductionState(productionState);
 
-            //Add the production state to the transition
-            transition.AddProductionState(productionState);
+            //If the transition was just created, we will need to rebuild
+            if (transition.IsNew)
+            {
+                _requiresBuild = true;
+                transition.IsNew = false;
+            }
 
+            //Always recompile
             _requiresCompile = true;
 
             return transition;
@@ -84,6 +95,8 @@ namespace RapidPliant.Lexing.Dfa
         private LexDfaStateTransition AddRuleSymbolTransition(ILexPatternRuleRefSymbol ruleSymbol, LexDfaProductionState productionState)
         {
             _requiresCompile = true;
+            _requiresBuild = true;
+
             return null;
         }
 
@@ -92,18 +105,35 @@ namespace RapidPliant.Lexing.Dfa
             return TermTransitions.Values;
         }
 
+        public void Build()
+        {
+            if(!_requiresBuild)
+                return;
+            _requiresBuild = false;
+
+            foreach (var transition in GetTermTransitions())
+            {
+                transition.Build();
+            }
+        }
+
         public void Compile()
         {
             if(!_requiresCompile)
                 return;
+            _requiresCompile = false;
 
-            //Compile each of the transitions, these will prepare a new state automatically
+            //Compile the transitions and then the to states recursively!
             foreach (var transition in GetTermTransitions())
             {
-                transition.Compile(_dfa);
+                transition.Compile();
+                
+                var toState = transition.ToState;
+                if (toState != null)
+                {
+                    toState.Compile();
+                }
             }
-
-            _requiresCompile = false;
         }
 
         public void AddPrediction(ISymbol symbol, IRule rule, LexDfaProductionState productionState)
@@ -113,8 +143,12 @@ namespace RapidPliant.Lexing.Dfa
 
         public void AddCompletion(ISymbol symbol, LexDfaProductionState productionState)
         {
-            //Add a completion info?
-
+            var path = productionState.Path;
+            var lastTransition = path.Transition;
+            if (lastTransition != null)
+            {
+                lastTransition.AddCompletionProductionState(productionState);
+            }
         }
 
         public void AddScan(ISymbol symbol, LexDfaProductionState productionState)
@@ -151,21 +185,29 @@ namespace RapidPliant.Lexing.Dfa
 
     public class LexDfaStateTransition
     {
+        private LexDfa _dfa;
+
         private CachingRapidList<LexDfaProductionPath> _productionPaths;
         private CachingRapidList<LexDfaProductionState> _productionStates;
         private CachingRapidList<LexDfaProductionState> _completionProductionStates;
         private CachingRapidList<LexDfaStateCompletion> _completionsByRule;
 
         private bool _requiresCompile;
+        private bool _requiresBuild;
 
-        public LexDfaStateTransition(ILexPatternSymbol transSymbol)
+        public LexDfaStateTransition(LexDfa dfa, ILexPatternSymbol transSymbol)
         {
             TransitionSymbol = transSymbol;
+
+            _dfa = dfa;
+
             _productionPaths = new CachingRapidList<LexDfaProductionPath>();
             _productionStates = new CachingRapidList<LexDfaProductionState>();
             _completionProductionStates = new CachingRapidList<LexDfaProductionState>();
             _completionsByRule = new CachingRapidList<LexDfaStateCompletion>();
-           _requiresCompile = true;
+
+            _requiresCompile = true;
+            _requiresBuild = true;
         }
 
         public ILexPatternSymbol TransitionSymbol { get; private set; }
@@ -177,7 +219,9 @@ namespace RapidPliant.Lexing.Dfa
         public int CompletionsByRuleCount { get { return _completionsByRule.Count; } }
         public LexDfaStateCompletion[] CompletionsByRule { get { return _completionsByRule.AsArray; } }
 
-        public void AddProductionState(LexDfaProductionState productionState)
+        public bool IsNew { get; set; }
+
+        public void AddTransitionProductionState(LexDfaProductionState productionState)
         {
             //Add the production path... to set the state whenever transition is finished
             var productionPath = productionState.Path;
@@ -188,30 +232,45 @@ namespace RapidPliant.Lexing.Dfa
             _productionStates.Add(productionState);
 
             //If the production is at the end, then we have a completion too!
-            if (productionPath.IsAtEnd)
+            if (productionState.IsAtEnd)
             {
                 _completionProductionStates.Add(productionState);
             }
 
-            //We have new productions... need to recompile later!
+            //We have new productions... need to recompile later...
             _requiresCompile = true;
         }
 
-        public void Compile(LexDfa dfa)
+        public void AddCompletionProductionState(LexDfaProductionState productionState)
+        {
+            _completionProductionStates.Add(productionState);
+            _requiresCompile = true;
+        }
+
+        public void Build()
+        {
+            if(!_requiresBuild)
+                return;
+            _requiresBuild = false;
+
+            //Ensure we have a ToState
+            BuildToState();
+        }
+
+        public void Compile()
         {
             if(!_requiresCompile)
                 return;
+            _requiresCompile = false;
 
             //Ensure we have a ToState
-            EnsureToState(dfa);
+            BuildToState();
 
             //Build the completion by rule
             CompileCompletionsByRule();
 
             //Finally refresh the production paths state
             RefreshProductionPathsState();
-
-            _requiresCompile = false;
         }
 
         private void CompileCompletionsByRule()
@@ -232,12 +291,12 @@ namespace RapidPliant.Lexing.Dfa
             _completionsByRule.FromArray(completionsByRule.Values);
         }
 
-        private void EnsureToState(LexDfa dfa)
+        private void BuildToState()
         {
             //Ensure there is a to state, but reuse it if exists!
             if (ToState == null)
             {
-                ToState = dfa.CreateState();
+                ToState = _dfa.CreateState();
             }
         }
 
@@ -254,8 +313,8 @@ namespace RapidPliant.Lexing.Dfa
 
     public class LexDfaStateTermTransition : LexDfaStateTransition
     {
-        public LexDfaStateTermTransition(ILexPatternTerminalSymbol termSymbol)
-            : base(termSymbol)
+        public LexDfaStateTermTransition(LexDfa dfa, ILexPatternTerminalSymbol termSymbol)
+            : base(dfa, termSymbol)
         {
             TransitionTermSymbol = termSymbol;
         }

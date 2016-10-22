@@ -20,15 +20,23 @@ namespace RapidPliant.Testing.Tests
 
         protected override void Test()
         {
-            TestLexing("peterstora",
+            /*TestLexing("peterstora",
                 CreateLexRule("pet", "pet1"),
                 CreateLexRule("pet", "pet2"),
                 CreateLexRule("petersto", "petersto2")
+            );*/
+
+            TestLexing("peterstora",
+                CreateLexRule("pet(er)?stora", "pet1"),
+                CreateLexRule("pet(er)?st(oracool)?", "pet2")
+            //CreateLexRule("pet", "pet2"),
+            //CreateLexRule("petersto", "petersto2")
             );
 
             /*TestLexing(
                 "abefg",
-                "ab|abd|abefg|ijkl"
+                //"ab|abd|abefg|ijkl"
+                "a(bc)?d"
             );*/
 
             /*RegexPatternExpr p;
@@ -95,7 +103,7 @@ namespace RapidPliant.Testing.Tests
                     //We have new captures
                     foreach (var scannedCapture in lexer.ScannedCaptures)
                     {
-                        var speling = scannedCapture.Spelling;
+                        var spelling = scannedCapture.Spelling;
                     }
                 }
             }

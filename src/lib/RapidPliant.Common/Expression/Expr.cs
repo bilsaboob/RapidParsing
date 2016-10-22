@@ -11,6 +11,9 @@ namespace RapidPliant.Common.Expression
         bool IsProduction { get; }
         bool IsAlteration { get; }
 
+        bool HasOptions { get; }
+        ExprOptions Options { get; }
+        
         IExpr[] Expressions { get; }
 
         void AddExpr(IExpr expr);
@@ -46,6 +49,27 @@ namespace RapidPliant.Common.Expression
 
         protected abstract TExpr CreateAlterationExpr();
         protected abstract TExpr CreateProductionExpr();
+
+        public bool HasOptions
+        {
+            get
+            {
+                var opt = Options;
+                if (opt == null)
+                    return false;
+
+                if (opt.IsOptional)
+                    return true;
+
+                if (opt.IsMany)
+                    return true;
+
+                if (opt.MinCount > 0)
+                    return true;
+
+                return false;
+            }
+        }
 
         public bool CanBeSimplified
         {
