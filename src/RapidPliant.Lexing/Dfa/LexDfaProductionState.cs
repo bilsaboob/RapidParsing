@@ -16,16 +16,22 @@ namespace RapidPliant.Lexing.Dfa
             SymbolIndex = forPath.SymbolIndex;
             Symbol = forPath.Symbol;
             IsAtEnd = forPath.IsAtEnd;
-            
-            _hashCode = HashCode.Compute(Production.LhsRule.GetHashCode(), SymbolIndex.GetHashCode());
-        }
 
+            ComputeHashCode();
+        }
+        
         public IProduction Production { get; private set; }
         public int SymbolIndex { get; private set; }
         public ISymbol Symbol { get; private set; }
         public bool IsAtEnd { get; private set; }
 
         public LexDfaProductionPath Path { get; private set; }
+
+        private void ComputeHashCode()
+        {
+            _hashCode = HashCode.Compute(Production.LhsRule.GetHashCode(), SymbolIndex.GetHashCode());
+            _hashCode = HashCode.Compute(Production.RhsSymbols);
+        }
 
         public override int GetHashCode()
         {
@@ -44,17 +50,19 @@ namespace RapidPliant.Lexing.Dfa
             if (other == null)
                 return false;
 
-            if (other.Production != Production)
+            if (other.SymbolIndex != SymbolIndex)
                 return false;
 
-            if (other.Production == null)
-                return false;
-
-            if (Production == null)
-                return false;
-
-            if (!other.Production.Equals(Production))
-                return false;
+            if (Production != null)
+            {
+                if (!Production.Equals(other.Production))
+                    return false;
+            }
+            else
+            {
+                if (other.Production != null)
+                    return false;
+            }
 
             return true;
         }

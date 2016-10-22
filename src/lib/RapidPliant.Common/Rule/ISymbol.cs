@@ -46,11 +46,11 @@ namespace RapidPliant.Common.Rule
 
             if (obj == this)
                 return true;
-
+            
             var other = obj as SymbolType;
             if (other == null)
                 return false;
-
+            
             if (other.OwnerType != OwnerType)
                 return false;
 

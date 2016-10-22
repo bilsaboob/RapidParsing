@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Util;
@@ -69,7 +70,7 @@ namespace RapidPliant.Common.Rule
         private RapidList<TRule> _subRules;
         private RapidList<Production<TRule>> _productions;
 
-        private readonly int _hashCode;
+        private int _hashCode;
 
         public Rule()
             : this(null)
@@ -89,14 +90,8 @@ namespace RapidPliant.Common.Rule
 
             _subRules = new RapidList<TRule>();
             _productions = new RapidList<Production<TRule>>();
-
-            _hashCode = HashCode.Compute(GetType().GetHashCode());
-            if (!string.IsNullOrEmpty(Name))
-            {
-                _hashCode = HashCode.Compute(_hashCode, Name.GetHashCode());
-            }
         }
-
+        
         private void SetParentRule(TRule parent)
         {
             ParentRule = parent;
@@ -135,6 +130,9 @@ namespace RapidPliant.Common.Rule
         }
         public void AddSubRule(TRule rule)
         {
+            //Hashcode must be updated...
+            _hashCode = 0;
+
             _subRules.Add(rule);
         }
         void IRule.AddSubRule(IRule rule)
@@ -142,6 +140,7 @@ namespace RapidPliant.Common.Rule
             var ruleInternal = rule as TRule;
             if(ruleInternal == null)
                 return;
+
             AddSubRule(ruleInternal);
         }
 
@@ -168,8 +167,25 @@ namespace RapidPliant.Common.Rule
             AddProduction(productionInternal);
         }
 
+        private void ComputeHashCode()
+        {
+            if (_hashCode != 0)
+                return;
+
+            _hashCode = HashCode.Compute(GetType().GetHashCode());
+            if (!string.IsNullOrEmpty(Name))
+            {
+                _hashCode = HashCode.Compute(_hashCode, Name.GetHashCode());
+                if (HasSubRules)
+                {
+                    _hashCode = HashCode.Compute(SubRules);
+                }
+            }
+        }
+
         public override int GetHashCode()
         {
+            ComputeHashCode();
             return _hashCode;
         }
 
@@ -184,10 +200,7 @@ namespace RapidPliant.Common.Rule
             var other = obj as TRule;
             if (other == null)
                 return false;
-
-            if (other.Name != Name)
-                return false;
-
+            
             if (other.IsNullable != IsNullable)
                 return false;
 
@@ -200,9 +213,17 @@ namespace RapidPliant.Common.Rule
             if (other.HasSubRules != HasSubRules)
                 return false;
 
-            if (other.SubRules != null && SubRules != null)
+            if (other.Name != Name)
+                return false;
+
+            if (SubRules != null)
             {
-                if (other.SubRules.Count != SubRules.Count)
+                if (!SubRules.SequenceEqual(other.SubRules))
+                    return false;
+            }
+            else
+            {
+                if (other.SubRules != null)
                     return false;
             }
             
@@ -233,9 +254,9 @@ namespace RapidPliant.Common.Rule
             LhsRule = lhsRule;
             _rhsSymbols = new CachingRapidList<ISymbol>();
 
-            _hashCode = HashCode.Compute(LhsRule.GetHashCode(), HashCode.Compute(_rhsSymbols));
+            ComputeHashCode();
         }
-
+        
         public TRule LhsRule { get; private set; }
         public int RhsSymbolsCount { get { return _rhsSymbols.Count; } }
         public IRapidList<ISymbol> RhsSymbols { get { return _rhsSymbols; } }
@@ -245,6 +266,7 @@ namespace RapidPliant.Common.Rule
         
         public void AddSymbol(ISymbol symbol)
         {
+            _hashCode = 0;
             _rhsSymbols.Add(symbol);
         }
 
@@ -255,8 +277,18 @@ namespace RapidPliant.Common.Rule
             return other;
         }
 
+        private void ComputeHashCode()
+        {
+            if(_hashCode != 0)
+                return;
+
+            _hashCode = HashCode.Compute(LhsRule.GetHashCode(), HashCode.Compute(RhsSymbols));
+        }
+
         public override int GetHashCode()
         {
+            ComputeHashCode();
+
             return _hashCode;
         }
 
@@ -271,12 +303,31 @@ namespace RapidPliant.Common.Rule
             var other = obj as Production<TRule>;
             if (other == null)
                 return false;
-
+            
             if (other.RhsSymbolsCount != RhsSymbolsCount)
                 return false;
+            
+            if (LhsRule != null)
+            {
+                if (!LhsRule.Equals(other.LhsRule))
+                    return false;
+            }
+            else
+            {
+                if (other.LhsRule != null)
+                    return false;
+            }
 
-            if (!other.LhsRule.Equals(LhsRule))
-                return false;
+            if (RhsSymbols != null)
+            {
+                if (!RhsSymbols.EqualsSequence(other.RhsSymbols))
+                    return false;
+            }
+            else
+            {
+                if (other.RhsSymbols != null)
+                    return false;
+            }
             
             return true;
         }

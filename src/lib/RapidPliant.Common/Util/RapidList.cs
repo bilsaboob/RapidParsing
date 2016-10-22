@@ -12,6 +12,8 @@ namespace RapidPliant.Common.Util
     public interface IRapidList<out T> : IEnumerable<T>
     {
         int Count { get; }
+
+        object this[int index] { get; set; }
     }
 
     public class RapidList<T> : IRapidList<T>
@@ -57,6 +59,12 @@ namespace RapidPliant.Common.Util
             {
                 _items[index] = value;
             }
+        }
+
+        object IRapidList<T>.this[int index]
+        {
+            get { return this[index]; }
+            set { this[index] = (T)value; }
         }
 
         public void Add(T item)
