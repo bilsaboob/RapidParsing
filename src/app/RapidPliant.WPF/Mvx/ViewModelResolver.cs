@@ -206,7 +206,10 @@ namespace RapidPliant.WPF.Mvx
                 else
                 {
                     var typeDistance = type.GetTypeDistanceTo(viewModelType);
-                    viewModelsByRelevance.Add(typeDistance, viewModel);
+                    if (!viewModelsByRelevance.ContainsKey(typeDistance))
+                    {
+                        viewModelsByRelevance.Add(typeDistance, viewModel);
+                    }
                 }
             }
             

@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Xml;
@@ -115,6 +119,20 @@ namespace RapidPliant.WPF.Controls
             return children;
         }
 
+        public static FrameworkElement ThisOrFindParentWithDataContext(this DependencyObject child)
+        {
+            var frameworkElem = child as FrameworkElement;
+            if (frameworkElem != null)
+            {
+                if (frameworkElem.DataContext != null)
+                {
+                    return frameworkElem;
+                }
+            }
+
+            return child.FindParentWithDataContext();
+        }
+
         public static FrameworkElement FindParentWithDataContext(this DependencyObject child)
         {
             if (child == null)
@@ -204,10 +222,36 @@ namespace RapidPliant.WPF.Controls
                         OmitXmlDeclaration = true,
                         NamespaceHandling = NamespaceHandling.OmitDuplicates
                     };
+                    TypeDescriptor.AddAttributes(typeof(BindingExpression), new TypeConverterAttribute(typeof(BindingExpressionConverter)));
                 }
 
                 return _cloneUIElementXmlWriterSettings;
             }
+        }
+    }
+
+    public class BindingExpressionConverter : ExpressionConverter
+    {
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+            if (destinationType == typeof(MarkupExtension))
+                return true;
+
+            return false;
+        }
+        public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
+        {
+            if (destinationType == typeof(MarkupExtension))
+            {
+                var bindingExpression = value as BindingExpression;
+                if (bindingExpression == null)
+                    throw new Exception("Invalid binding expression!");
+
+                var converter = (bindingExpression.ParentBinding.Source as RapidBindingPropertyValueProviderConverter);
+                return converter.RapidBinding.CloneForBindingExpressionMarkupSerializationObject();
+            }
+
+            return base.ConvertTo(context, culture, value, destinationType);
         }
     }
 }

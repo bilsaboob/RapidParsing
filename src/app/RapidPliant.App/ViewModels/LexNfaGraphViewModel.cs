@@ -2,37 +2,41 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Msagl.Drawing;
+using RapidPliant.Common.Rule;
 using RapidPliant.Lexing.Graph;
+using RapidPliant.Lexing.Pattern;
 using RapidPliant.Lexing.Pattern.Regex;
 
 namespace RapidPliant.App.ViewModels
 {
-    public class LexDfaGraphViewModel : LexGraphViewModel
+    public class LexNfaGraphViewModel : LexGraphViewModel
     {
-        private LexDfaMsaglGraphModel GraphModel { get; set; }
+        private LexNfaMsaglGraphModel GraphModel { get; set; }
 
-        public LexDfaGraphViewModel()
+        public LexNfaGraphViewModel()
         {
-            GraphModel = new LexDfaMsaglGraphModel();
+            GraphModel = new LexNfaMsaglGraphModel();
         }
 
         protected virtual void LoadDataForLexExpressions(params RegexPatternExpr[] lexExpressions)
         {
-            var dfa = CreateLexDfaGraph(lexExpressions);
-            LoadDataForLexGraph(dfa);
+            var nfa = CreateLexNfaGraph(lexExpressions);
+            LoadDataForLexGraph(nfa);
         }
 
         protected virtual void LoadDataForLexPattern(string lexPattern)
         {
-            var dfa = CreateLexDfaGraph(lexPattern);
-            LoadDataForLexGraph(dfa);
+            var nfa = CreateLexNfaGraph(lexPattern);
+            LoadDataForLexGraph(nfa);
         }
 
-        protected virtual void LoadDataForLexGraph(DfaGraph dfa)
+        protected virtual void LoadDataForLexGraph(NfaGraph nfa)
         {
             //Iterate the lex def and create a graph!
-            var states = dfa.States.OrderBy(s => s.Id).ToList();
+            var states = nfa.States.OrderBy(s => s.Id).ToList();
 
             //Build the graph model for the states
             GraphModel.Build(states);

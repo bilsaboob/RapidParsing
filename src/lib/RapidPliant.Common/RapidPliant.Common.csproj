@@ -44,14 +44,16 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rule\ISymbol.cs" />
     <Compile Include="Rule\Rule.cs" />
+    <Compile Include="Util\Collections\RapidDictionary.cs" />
+    <Compile Include="Util\Collections\RapidProcessOnceQueue.cs" />
+    <Compile Include="Util\Collections\UniqueList.cs" />
     <Compile Include="Util\EqualsExtensions.cs" />
     <Compile Include="Util\HashCode.cs" />
+    <Compile Include="Util\Interval.cs" />
     <Compile Include="Util\IText.cs" />
     <Compile Include="Util\Primes.cs" />
-    <Compile Include="Util\RapidHashSet.cs" />
     <Compile Include="Util\RapidList.cs" />
     <Compile Include="Util\RapidTable.cs" />
-    <Compile Include="Util\UniqueList.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RapidPliant.Runtime\RapidPliant.Runtime.csproj">

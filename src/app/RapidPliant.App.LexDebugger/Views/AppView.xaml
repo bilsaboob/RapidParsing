@@ -8,18 +8,22 @@
     <RapidGrid Orientation="Vertical">
 
         <RapidGrid Items="{Binding Path=LexPatterns}" set.Width="*" Orientation="Horizontal">
-            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo root.RefreshPattern(this)}" Width="80">Rfresh</Button>
             <TextBox set.Width="75" FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Margin="0 0 5 0" Text="{BindTo Name}"></TextBox>
             <TextBox set.Width="*" FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Text="{BindTo Pattern}"></TextBox>
+            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo root.RefreshPattern(this)}" Width="80">Rfresh</Button>
             <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo root.RemovePattern(this)}">Remove</Button>
         </RapidGrid>
 
         <RapidGrid set.Width="*" Orientation="Horizontal">
-            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo AddPattern}" Width="80">Add</Button>
             <TextBox set.Width="75" FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Margin="0 0 5 0" Text="{BindTo NewLexPatternName}"></TextBox>
             <TextBox set.Width="*" FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Text="{BindTo NewLexPattern}"></TextBox>
+            <Button FontSize="20" FontFamily="Consolas" VerticalContentAlignment="Center" Click="{BindTo AddPattern}" Width="150">Add</Button>
         </RapidGrid>
 
-        <GraphView Graph="{Binding Path=Graph}" set.Height="*"></GraphView>
+        <RapidGrid set.Width="*" set.Height="*" Orientation="Horizontal">
+            <GraphView Graph="{BindTo LexNfaGraph.Graph}" set.Height="*" set.Width="*"></GraphView>
+            <GraphView Graph="{BindTo LexDfaGraph.Graph}" set.Height="*" set.Width="*"></GraphView>
+        </RapidGrid>
+        
     </RapidGrid>
 </RapidView>

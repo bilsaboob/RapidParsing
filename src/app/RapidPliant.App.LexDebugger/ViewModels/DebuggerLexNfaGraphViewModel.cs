@@ -1,12 +1,16 @@
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using RapidPliant.App.ViewModels;
 
 namespace RapidPliant.App.LexDebugger.ViewModels
 {
-    public class DebuggerLexDfaGraphViewModel : LexDfaGraphViewModel
-    {
-        public DebuggerLexDfaGraphViewModel()
+    public class DebuggerLexNfaGraphViewModel : LexNfaGraphViewModel
+    {        
+        public DebuggerLexNfaGraphViewModel()
         {
             LexPatterns = new ObservableCollection<LexPatternViewModel>();
         }
@@ -14,7 +18,7 @@ namespace RapidPliant.App.LexDebugger.ViewModels
         public ObservableCollection<LexPatternViewModel> LexPatterns
         {
             get { return get(() => LexPatterns); }
-            set { set(() => LexPatterns, value); }
+            set { set(()=>LexPatterns, value); }
         }
 
         protected override void LoadData()
@@ -22,7 +26,7 @@ namespace RapidPliant.App.LexDebugger.ViewModels
             if (LexPatterns.Any())
             {
                 LoadDataForLexExpressions(
-                    LexPatterns.Select(p => CreateLexExpr(p.Pattern, p.Name)).ToArray()
+                    LexPatterns.Select(p=> CreateLexExpr(p.Pattern, p.Name)).ToArray()
                 );
             }
         }

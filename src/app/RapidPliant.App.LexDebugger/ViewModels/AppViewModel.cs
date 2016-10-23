@@ -13,8 +13,6 @@ namespace RapidPliant.App.LexDebugger.ViewModels
     public class AppViewModel : ViewModel
     {
         private List<string> _nextPatternAutoNames;
-
-        public DebuggerLexDfaGraphViewModel LexGraphViewModel { get; set; }
         
         public AppViewModel()
         {
@@ -22,25 +20,29 @@ namespace RapidPliant.App.LexDebugger.ViewModels
             _nextPatternAutoNames = new List<string>();
 
             CreatePatternNames();
-
             ConsumeNextPatternName();
         }
 
-        private void ConsumeNextPatternName()
+        public DebuggerLexNfaGraphViewModel LexNfaGraph
         {
-            NewLexPatternName = _nextPatternAutoNames.First();
-            _nextPatternAutoNames.RemoveAt(0);
-            NewLexPatternIsAutoName = true;
+            get { return get(() => LexNfaGraph); }
+            set { set(() => LexNfaGraph, value); }
         }
 
-        private void CreatePatternNames()
+        public DebuggerLexDfaGraphViewModel LexDfaGraph
         {
-            for (var i = 'A'; i < 'Z'; ++i)
-            {
-                _nextPatternAutoNames.Add(i.ToString());
-            }
+            get { return get(() => LexDfaGraph); }
+            set { set(() => LexDfaGraph, value); }
         }
 
+        public bool NewLexPatternIsAutoName { get; set; }
+
+        public string NewLexPattern
+        {
+            get { return get(() => NewLexPattern); }
+            set { set(() => NewLexPattern, value); }
+        }
+        
         public string NewLexPatternName
         {
             get { return get(() => NewLexPatternName); }
@@ -63,24 +65,17 @@ namespace RapidPliant.App.LexDebugger.ViewModels
             }
         }
 
-        public bool NewLexPatternIsAutoName { get; set; }
-
-        public string NewLexPattern
-        {
-            get { return get(() => NewLexPattern); }
-            set { set(() => NewLexPattern, value); }
-        }
-
         public ObservableCollection<LexPatternViewModel> LexPatterns
         {
-            get { return get(()=>LexPatterns); }
-            set { set(()=>LexPatterns, value); }
+            get { return get(() => LexPatterns); }
+            set { set(() => LexPatterns, value); }
         }
 
         protected override void LoadData()
         {
-            //Link the lex patterns...
-            LexGraphViewModel.LexPatterns = LexPatterns;
+            //Link the lex patterns, whenever we add to LexPatterns, the Nfa / Dfa graph viewmodels will have them too!
+            LexNfaGraph.LexPatterns = LexPatterns;
+            LexDfaGraph.LexPatterns = LexPatterns;
         }
 
         public void AddPattern()
@@ -92,15 +87,17 @@ namespace RapidPliant.App.LexDebugger.ViewModels
             ConsumeNextPatternName();
 
             LexPatterns.Add(lexPatternVm);
-            LexGraphViewModel.RefreshLexPatterns();
 
             NewLexPattern = "";
+
+            RefreshLexPatternsForGraphs();
         }
 
         public void RemovePattern(LexPatternViewModel lexPattern)
         {
             LexPatterns.Remove(lexPattern);
-            LexGraphViewModel.RefreshLexPatterns();
+            
+            RefreshLexPatternsForGraphs();
 
             if (NewLexPatternIsAutoName && !string.IsNullOrEmpty(NewLexPatternName))
             {
@@ -121,9 +118,31 @@ namespace RapidPliant.App.LexDebugger.ViewModels
             ConsumeNextPatternName();
         }
 
+        private void ConsumeNextPatternName()
+        {
+            NewLexPatternName = _nextPatternAutoNames.First();
+            _nextPatternAutoNames.RemoveAt(0);
+            NewLexPatternIsAutoName = true;
+        }
+
+        private void CreatePatternNames()
+        {
+            for (var i = 'A'; i < 'Z'; ++i)
+            {
+                _nextPatternAutoNames.Add(i.ToString());
+            }
+        }
+
         public void RefreshPattern(LexPatternViewModel lexPattern)
         {
-            LexGraphViewModel.RefreshLexPatterns();
+            RefreshLexPatternsForGraphs();
+        }
+
+        private void RefreshLexPatternsForGraphs()
+        {
+            //Refresh both the nfa/dfa
+            LexNfaGraph.RefreshLexPatterns();
+            LexDfaGraph.RefreshLexPatterns();
         }
     }
 
@@ -135,6 +154,7 @@ namespace RapidPliant.App.LexDebugger.ViewModels
         {
             Pattern = pattern;
             Name = name;
+            _initialName = name;
         }
 
         public bool IsAutoName { get; set; }
@@ -156,7 +176,7 @@ namespace RapidPliant.App.LexDebugger.ViewModels
         public string Pattern
         {
             get { return get(() => Pattern); }
-            set { set(()=>Pattern, value); }
+            set { set(() => Pattern, value); }
         }
     }
 }

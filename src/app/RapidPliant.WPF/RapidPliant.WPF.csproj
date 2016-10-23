@@ -48,9 +48,12 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binding\ActionMethodWithPath.cs" />
     <Compile Include="Binding\BindingMarkupExtensionBase.cs" />
     <Compile Include="Binding\DependencyPropertyListener.cs" />
     <Compile Include="Binding\RapidBinding.cs" />
+    <Compile Include="Binding\RapidBindingHelpers.cs" />
+    <Compile Include="Binding\RapidBindingPropertyValueProviderConverter.cs" />
     <Compile Include="Binding\RapidBindingSerializationProperty.cs" />
     <Compile Include="Controls\ControlExtensions.cs" />
     <Compile Include="Controls\MainWindow.xaml.cs">

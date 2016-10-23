@@ -54,6 +54,7 @@
     <Compile Include="LexDebuggerApplication.cs" />
     <Compile Include="ViewModels\AppViewModel.cs" />
     <Compile Include="ViewModels\DebuggerLexDfaGraphViewModel.cs" />
+    <Compile Include="ViewModels\DebuggerLexNfaGraphViewModel.cs" />
     <Compile Include="Views\AppView.xaml.cs">
       <DependentUpon>AppView.xaml</DependentUpon>
     </Compile>

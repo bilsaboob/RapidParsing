@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Windows;
-using RapidPliant.WPF.Controls;
-using RapidPliant.WPF.Mvx;
+using System.Windows.Data;
+using System.Windows.Markup;
+using System.Xml.Serialization;
 
 namespace RapidPliant.WPF.Binding
 {
@@ -20,7 +22,7 @@ namespace RapidPliant.WPF.Binding
         {
             Path = new PropertyPath(path);
         }
-
+        
         public override object ProvideValue(IServiceProvider provider)
         {
             RapidBindingDelegateBase bindingDelegateBase = null;
@@ -54,7 +56,7 @@ namespace RapidPliant.WPF.Binding
 
             throw new Exception("Not supported property type for RapidBinding!");
         }
-
+        
         public string ToSerializationString(RapidBindingDelegateBase bindingDelegate)
         {
             var sb = new StringBuilder();
@@ -68,6 +70,25 @@ namespace RapidPliant.WPF.Binding
             sb.Append("}");
             return sb.ToString();
         }
+
+        public BindTo CloneForBindingExpressionMarkupSerializationObject()
+        {
+            var b = new BindTo();
+
+            b.Path = ActualPath;
+            b.Converter = ActualConverter;
+            b.ConverterCulture = ConverterCulture;
+            b.ConverterParameter = ConverterParameter;
+            b.Mode = Mode;
+            b.ElementName = ElementName;
+            b.BindsDirectlyToSource = BindsDirectlyToSource;
+            b.NotifyOnSourceUpdated = NotifyOnSourceUpdated;
+            b.NotifyOnTargetUpdated = NotifyOnTargetUpdated;
+            b.NotifyOnValidationError = NotifyOnValidationError;
+            b.IsAsync = IsAsync;
+
+            return b;
+        }
     }
 
     public abstract class RapidBindingDelegateBase
@@ -77,11 +98,11 @@ namespace RapidPliant.WPF.Binding
             FrameworkElement = frameworkElement;
             Binding = binding;
         }
-
+        
         public FrameworkElement FrameworkElement { get; protected set; }
-
+        
         public BindTo Binding { get; protected set; }
-
+        
         public string BoundMemberName { get; protected set; }
 
         public virtual void EnsureSerialization()
@@ -105,7 +126,7 @@ namespace RapidPliant.WPF.Binding
         public Type EventArgsType { get; protected set; }
 
         public Type DelegateType { get; protected set; }
-
+        
         public Delegate Delegate { get; protected set; }
 
         protected virtual void OnEvent(object sender, RoutedEventArgs args)
@@ -151,28 +172,50 @@ namespace RapidPliant.WPF.Binding
 
     public class RapidBindingPropertyDelegate : RapidBindingDelegateBase
     {
+        private RapidBindingPropertyValueProviderConverter _converter;
+
         public RapidBindingPropertyDelegate(BindTo binding, FrameworkElement frameworkElement, DependencyProperty dependencyProperty)
             : base(binding, frameworkElement)
         {
             DependencyProperty = dependencyProperty;
             BoundMemberName = DependencyProperty.Name;
+
+            SetupBinding();
         }
 
         public DependencyProperty DependencyProperty { get; protected set; }
 
+        private void SetupBinding()
+        {
+            _converter = new RapidBindingPropertyValueProviderConverter(this);
+        }
+        
         public override object ProvideValue(IServiceProvider provider)
         {
-            return Binding.Binding.ProvideValue(provider);
+            _converter.SetupBinding();
+            return _converter.ProvideValue(provider);
+        }
+
+        public override void EnsureSerialization()
+        {
+            //Don't serialize... we use the bindingexpression converter!
         }
     }
 
     public class PathIterator
     {
         private int _index;
-
+        private bool _started;
+        
         public PathIterator(string path)
         {
             Parts = ParsePathParts(path);
+            _index = 0;
+        }
+
+        public PathIterator(IEnumerable<PathPart> parts)
+        {
+            Parts = parts.ToArray();
             _index = 0;
         }
 
@@ -222,9 +265,13 @@ namespace RapidPliant.WPF.Binding
         public PathPart[] Parts { get; set; }
 
         public PathPart Current { get; private set; }
+        public bool IsLast { get { return _index >= Parts.Length; } }
+
+        public bool IsStarted { get { return _started; } }
 
         public bool MoveNext()
         {
+            _started = true;
             if (_index < Parts.Length)
             {
                 Current = Parts[_index++];
@@ -249,168 +296,6 @@ namespace RapidPliant.WPF.Binding
         {
             if(pathPart.Name != null)
                 SubParts.Add(pathPart);
-        }
-    }
-
-    public class ActionMethodWithPath
-    {
-        public ActionMethodWithPath(FrameworkElement frameworkElem, string path)
-        {
-            var pathIter = new PathIterator(path);
-
-            object rootDataContext;
-            object thisDataContext;
-            var target = FindDataContexts(frameworkElem, pathIter, out rootDataContext, out thisDataContext);
-
-            EvalActionMethod(rootDataContext, thisDataContext, target, pathIter);
-        }
-        
-        public string Path { get; private set; }
-
-        public object Root { get; private set; }
-
-        public object Target { get; private set; }
-
-        public MethodInfo TargetMethod { get; private set; }
-
-        public object[] TargetMethodArgs { get; private set; }
-
-        private object FindDataContexts(FrameworkElement frameworkElem, PathIterator path, out object rootDataContext, out object thisDataContext)
-        {
-            rootDataContext = null;
-            thisDataContext = null;
-            object target = null;
-
-            var parentWithDataContext = frameworkElem.FindParentWithDataContext();
-            if (parentWithDataContext != null && parentWithDataContext.DataContext != null)
-            {
-                thisDataContext = parentWithDataContext.DataContext;
-                rootDataContext = thisDataContext;
-                target = thisDataContext;
-            }
-
-            if (path.MoveNext())
-            {
-                if (path.Current.Name == "root")
-                {
-                    var view = frameworkElem.FindParent<RapidView>();
-                    rootDataContext = view.ViewModel;
-                    target = rootDataContext;
-                }
-            }
-
-            return target;
-        }
-
-        private void EvalActionMethod(object rootDataContext, object thisDataContext, object target, PathIterator pathIter)
-        {
-            Root = rootDataContext;
-            Target = thisDataContext;
-            
-            PathPart lastPart = pathIter.Current;
-            while(pathIter.MoveNext())
-            {
-                var part = pathIter.Current;
-                lastPart = part;
-
-                var memberName = part.Name;
-                var prop = target.GetType().GetProperty(memberName);
-                if (prop == null)
-                    break;
-
-                target = prop.GetValue(target);
-                if (target == null)
-                    break;
-            }
-
-            Target = target;
-
-            if (lastPart != null)
-            {
-                TargetMethod = target.GetType().GetMethod(lastPart.Name);
-                EvalActionMethodArgs(rootDataContext, thisDataContext, target, lastPart, TargetMethod);
-            }
-        }
-
-        private void EvalActionMethodArgs(object rootDataContext, object thisDataContext, object lastPartDataContext, PathPart lastPart, MethodInfo methodInfo)
-        {
-            var args = new List<object>();
-
-            var methodArgs = methodInfo.GetParameters();
-            var argParts = lastPart.SubParts;
-
-            var len = Math.Min(methodArgs.Length, argParts.Count);
-            var i = 0;
-            for (i = 0; i < len; ++i)
-            {
-                if(i >= methodArgs.Length)
-                    break;
-                
-                if(i >= argParts.Count)
-                    break;
-
-                var methodArg = methodArgs[i];
-                var argPart = argParts[i];
-
-                if (argPart.Name == "this")
-                {
-                    args.Add(thisDataContext);
-                }
-                else if (argPart.Name == "root")
-                {
-                    args.Add(rootDataContext);
-                }
-                else
-                {
-                    args.Add(GetValue(methodArg.ParameterType, argPart.Name));
-                }
-            }
-
-            for (int j = i; j < methodArgs.Length; j++)
-            {
-                var methodArg = methodArgs[i];
-                args.Add(GetDefault(methodArg.ParameterType));
-            }
-
-            TargetMethodArgs = args.ToArray();
-        }
-
-        private object GetValue(Type valueType, string strVal)
-        {
-            if (valueType == typeof(string))
-                return strVal;
-
-            var converter = TypeDescriptor.GetConverter(valueType);
-            if (converter.CanConvertFrom(typeof(string)))
-            {
-                return converter.ConvertFrom(strVal);
-            }
-
-            converter = TypeDescriptor.GetConverter(typeof(string));
-            if (converter.CanConvertTo(valueType))
-            {
-                return converter.ConvertTo(strVal, valueType);
-            }
-
-            return GetDefault(valueType);
-        }
-
-        public object GetDefault(Type t)
-        {
-            return this.GetType().GetMethod("GetDefaultGeneric").MakeGenericMethod(t).Invoke(this, null);
-        }
-
-        public T GetDefaultGeneric<T>()
-        {
-            return default(T);
-        }
-
-        public void Invoke()
-        {
-            if (TargetMethod == null)
-                return;
-
-            TargetMethod.Invoke(Target, TargetMethodArgs);
         }
     }
 }

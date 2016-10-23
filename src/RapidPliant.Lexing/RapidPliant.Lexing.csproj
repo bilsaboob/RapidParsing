@@ -40,14 +40,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Dfa\LexDfa.cs" />
-    <Compile Include="Dfa\LexDfaFactory.cs" />
-    <Compile Include="Dfa\LexDfaProductionPath.cs" />
-    <Compile Include="Dfa\LexDfaProductionState.cs" />
-    <Compile Include="Lexer\LexDfaLexer.cs" />
-    <Compile Include="Pattern\LexPatternRule.cs" />
+    <Compile Include="Graph\Dfa.cs" />
+    <Compile Include="Graph\DfaBuilder.cs" />
+    <Compile Include="Graph\Graph.cs" />
+    <Compile Include="Graph\IGraphState.cs" />
+    <Compile Include="Graph\Nfa.cs" />
+    <Compile Include="Graph\NfaBuilder.cs" />
     <Compile Include="Pattern\PatternExpr.cs" />
-    <Compile Include="Pattern\PatternRule.cs" />
     <Compile Include="Pattern\Regex\RapidRegex.cs" />
     <Compile Include="Pattern\Regex\RegexPatternExpr.cs" />
     <Compile Include="Pattern\Regex\RegexPatternParser.cs" />
@@ -58,6 +57,9 @@
       <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
       <Name>RapidPliant.Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Lexer\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
