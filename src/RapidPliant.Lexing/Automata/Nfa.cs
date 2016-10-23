@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using RapidPliant.Automata;
 using RapidPliant.Collections;
-using RapidPliant.Common.Expression;
-using RapidPliant.Common.Rule;
 using RapidPliant.Common.Symbols;
-using RapidPliant.Lexing.Pattern;
 
-namespace RapidPliant.Lexing.Graph
+namespace RapidPliant.Lexing.Automata
 {
     #region Nfa
     public class NfaGraph : Graph<Nfa, NfaState, NfaTransition>

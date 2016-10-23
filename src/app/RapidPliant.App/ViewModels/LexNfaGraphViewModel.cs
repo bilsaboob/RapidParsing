@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Msagl.Drawing;
 using RapidPliant.Common.Rule;
-using RapidPliant.Lexing.Graph;
+using RapidPliant.Lexing.Automata;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Lexing.Pattern.Regex;
 

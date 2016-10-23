@@ -1,4 +1,4 @@
-﻿using RapidPliant.Lexing.Graph;
+﻿using RapidPliant.Lexing.Automata;
 using RapidPliant.Lexing.Pattern.Regex;
 
 namespace RapidPliant.App.ViewModels

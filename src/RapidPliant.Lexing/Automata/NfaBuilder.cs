@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using RapidPliant.Common.Expression;
-using RapidPliant.Common.Rule;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Lexing.Pattern;
-using RapidPliant.Lexing.Pattern.Regex;
 
-namespace RapidPliant.Lexing.Graph
+namespace RapidPliant.Lexing.Automata
 {
     public class NfaBuildContext
     {

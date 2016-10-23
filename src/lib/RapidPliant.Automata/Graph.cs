@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using RapidPliant.Collections;
 
-namespace RapidPliant.Lexing.Graph
+namespace RapidPliant.Automata
 {
     public abstract class Graph<TRoot, TState, TTransition>
         where TRoot : class

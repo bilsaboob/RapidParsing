@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Rule;
-using RapidPliant.Lexing.Graph;
+using RapidPliant.Lexing.Automata;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Lexing.Pattern.Regex;
 using RapidPliant.Test;

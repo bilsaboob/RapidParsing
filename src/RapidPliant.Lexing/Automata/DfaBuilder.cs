@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
 using RapidPliant.Collections;
-using RapidPliant.Common.Rule;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Util;
 
-namespace RapidPliant.Lexing.Graph
+namespace RapidPliant.Lexing.Automata
 {
     public class DfaBuildContext
     {

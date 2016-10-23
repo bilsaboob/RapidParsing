@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using RapidPliant.Common.Rule;
+﻿using System.Collections.Generic;
+using RapidPliant.Automata;
 using RapidPliant.Common.Symbols;
 
-namespace RapidPliant.Lexing.Graph
+namespace RapidPliant.Lexing.Automata
 {
     public class DfaGraph : Graph<DfaState, DfaState, DfaTransition>
     {

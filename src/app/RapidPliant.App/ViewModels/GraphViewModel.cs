@@ -2,7 +2,6 @@
 using System.Linq;
 using Microsoft.Msagl.Drawing;
 using RapidPliant.Common.Rule;
-using RapidPliant.Lexing.Graph;
 using RapidPliant.WPF.Mvx;
 
 namespace RapidPliant.App.ViewModels
