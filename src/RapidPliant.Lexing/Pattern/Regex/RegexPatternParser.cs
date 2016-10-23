@@ -12,14 +12,14 @@ namespace RapidPliant.Lexing.Pattern.Regex
 {
     public class RegexPatternParser
     {
-        public RegexPatternExpr Parse(TextReader input)
+        public RegexExpr Parse(TextReader input)
         {
             var c = new RegexParseContext(input);
             var expr = Parse(c);
             return expr;
         }
 
-        private RegexPatternExpr Parse(RegexParseContext c, params char[] breakOnChars)
+        private RegexExpr Parse(RegexParseContext c, params char[] breakOnChars)
         {
             Parse(c, new List<char>(breakOnChars));
             return c.ToExpression();
@@ -34,7 +34,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
         {
             while (c.MoveNext())
             {
-                RegexTerminalExpr termExpr;
+                RegexCharExpr termExpr;
                 if (c.IsEscaped)
                 {
                     //Just consume as a normal character!?
@@ -88,18 +88,18 @@ namespace RapidPliant.Lexing.Pattern.Regex
             }
         }
 
-        private RegexPatternExpr ParseBlock(RegexParseContext c)
+        private RegexExpr ParseBlock(RegexParseContext c)
         {
             ParseUntil(c, ')');
             return c.ToExpression();
         }
         
-        private RegexPatternExpr ParseAlias(RegexParseContext c)
+        private RegexExpr ParseAlias(RegexParseContext c)
         {
             return null;
         }
 
-        private RegexPatternExpr ParseGroup(RegexParseContext c)
+        private RegexExpr ParseGroup(RegexParseContext c)
         {
             while (c.MoveNext())
             {
@@ -163,12 +163,12 @@ namespace RapidPliant.Lexing.Pattern.Regex
                 throw new Exception("Invalid pattern range, unexpected end of input, expected a range terminal after '-'!");
             }
 
-            return new RegexRangeExpr(c.PrevAccepted, c.AcceptChar());
+            return new RegexCharRangeExpr(c.PrevAccepted, c.AcceptChar());
         }
 
-        private RegexTerminalExpr CreateTerminalExpr(RegexParseContext c)
+        private RegexCharExpr CreateTerminalExpr(RegexParseContext c)
         {
-            return new RegexTerminalExpr(c.AcceptChar());
+            return new RegexCharExpr(c.AcceptChar());
         }
     }
 
@@ -272,9 +272,9 @@ namespace RapidPliant.Lexing.Pattern.Regex
         private RegexParseContext _activeSubContext;
         private bool _addExprAsAlteration;
         private bool _addExprAsProduction;
-        private RegexPatternExpr _altExpr;
-        private RegexPatternExpr _prodExpr;
-        private List<RegexPatternExpr> _prodExpressions;
+        private RegexExpr _altExpr;
+        private RegexExpr _prodExpr;
+        private List<RegexExpr> _prodExpressions;
 
         private bool _isEscaped { get { return state._isEscaped; } set { state._isEscaped = value; } }
         private bool _isAtEnd { get { return state._isAtEnd; } set { state._isAtEnd = value; } }
@@ -290,7 +290,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
         {
             state = new RegexParseContextState(input);
             _addExprAsProduction = true;
-            _prodExpressions = new List<RegexPatternExpr>();
+            _prodExpressions = new List<RegexExpr>();
         }
 
         public RegexParseContext(RegexParseContextState fromState)
@@ -298,7 +298,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
             state = new RegexParseContextState(fromState);
             state.StartForNewContext();
             _addExprAsProduction = true;
-            _prodExpressions = new List<RegexPatternExpr>();
+            _prodExpressions = new List<RegexExpr>();
         }
 
         public bool IsAtEnd { get { return _isAtEnd; } set { _isAtEnd = value; } }
@@ -399,7 +399,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
             }
         }
 
-        public RegexPatternExpr ToExpression()
+        public RegexExpr ToExpression()
         {
             var rootExpr = _altExpr;
 
@@ -427,14 +427,14 @@ namespace RapidPliant.Lexing.Pattern.Regex
             return rootExpr;
         }
 
-        public void AddExpr(RegexPatternExpr expr)
+        public void AddExpr(RegexExpr expr)
         {
             if (_addExprAsAlteration)
             {
                 if(_altExpr == null)
-                    _altExpr = RegexPatternExpr.Alteration();
+                    _altExpr = RegexExpr.Alteration();
 
-                _prodExpr = RegexPatternExpr.Production();
+                _prodExpr = RegexExpr.Production();
                 _prodExpressions.Add(_prodExpr);
                 _prodExpr.AddExpr(expr);
 
@@ -444,7 +444,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
 
             if (_prodExpr == null)
             {
-                _prodExpr = RegexPatternExpr.Production();
+                _prodExpr = RegexExpr.Production();
                 _prodExpressions.Add(_prodExpr);
             }
             

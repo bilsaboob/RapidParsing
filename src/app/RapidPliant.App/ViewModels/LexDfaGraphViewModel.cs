@@ -17,7 +17,7 @@ namespace RapidPliant.App.ViewModels
             GraphModel = new LexDfaMsaglGraphModel();
         }
 
-        protected virtual void LoadDataForLexExpressions(params RegexPatternExpr[] lexExpressions)
+        protected virtual void LoadDataForLexExpressions(params RegexExpr[] lexExpressions)
         {
             var dfa = CreateLexDfaGraph(lexExpressions);
             LoadDataForLexGraph(dfa);

@@ -25,7 +25,7 @@ namespace RapidPliant.Lexing.Pattern
     {
     }
 
-    public interface IPatternTerminalExpr
+    public interface IPatternTerminalExpr : IPatternExpr
     {
     }
 
@@ -34,10 +34,9 @@ namespace RapidPliant.Lexing.Pattern
         char Char { get; }
     }
 
-    public interface IPatternTerminalRangeExpr : IPatternTerminalExpr
+    public interface IPatternTerminalCharRangeExpr : IPatternTerminalExpr
     {
         char FromChar { get; }
-
         char ToChar { get; }
     }
 }

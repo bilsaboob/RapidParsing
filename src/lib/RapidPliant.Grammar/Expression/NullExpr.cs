@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RapidPliant.Common.Util;
+using RapidPliant.Util;
 
 namespace RapidPliant.Grammar.Expression
 {

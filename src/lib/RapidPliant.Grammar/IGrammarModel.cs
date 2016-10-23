@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Expression;
-using RapidPliant.Common.Util;
 using RapidPliant.Grammar.Definitions;
 using RapidPliant.Grammar.Expression;
 

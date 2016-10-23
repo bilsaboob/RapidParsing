@@ -31,8 +31,6 @@ namespace RapidPliant.Runtime.Earley.Grammar
                 Productions = BuildProductions().ToArray();
             }
         }
-
-        
     }
 
     public partial class EarleyRuleDef : IEarleyRuleDef, IProductionLhs

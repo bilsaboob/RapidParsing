@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7E1B0F34-2E20-439D-921D-008D2323FB8C}</ProjectGuid>
+    <ProjectGuid>{E716BE7E-D064-4991-92D5-A7FE36A6C899}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidPliant.Runtime</RootNamespace>
-    <AssemblyName>RapidPliant.Runtime</AssemblyName>
+    <RootNamespace>RapidPliant</RootNamespace>
+    <AssemblyName>RapidPliant</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -41,12 +41,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\RapidPliant\RapidPliant.csproj">
-      <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
-      <Name>RapidPliant</Name>
-    </ProjectReference>
+    <Compile Include="Collections\ArrayEnumerator.cs" />
+    <Compile Include="Collections\ProcessOnceQueue.cs" />
+    <Compile Include="Collections\UniqueList.cs" />
+    <Compile Include="Util\EqualsExtensions.cs" />
+    <Compile Include="Util\HashCode.cs" />
+    <Compile Include="Util\Interval.cs" />
+    <Compile Include="Util\Text.cs" />
+    <Compile Include="Util\Primes.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

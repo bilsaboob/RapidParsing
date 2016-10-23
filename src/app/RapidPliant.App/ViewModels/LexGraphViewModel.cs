@@ -17,7 +17,7 @@ namespace RapidPliant.App.ViewModels
         protected RapidRegex Regex { get; set; }
 
         #region Helpers
-        protected RegexPatternExpr CreateLexExpr(string regexPattern, string name = null)
+        protected RegexExpr CreateLexExpr(string regexPattern, string name = null)
         {
             var expr = Regex.FromPattern(regexPattern);
 
@@ -39,19 +39,19 @@ namespace RapidPliant.App.ViewModels
             return CreateLexDfaGraph(patternExpr, name);
         }
 
-        protected NfaGraph CreateLexNfaGraph(params RegexPatternExpr[] patternExpressions)
+        protected NfaGraph CreateLexNfaGraph(params RegexExpr[] patternExpressions)
         {
             return LexNfaBuilder.Create(patternExpressions);
         }
 
-        protected DfaGraph CreateLexDfaGraph(params RegexPatternExpr[] patternExpressions)
+        protected DfaGraph CreateLexDfaGraph(params RegexExpr[] patternExpressions)
         {
             var nfa = LexNfaBuilder.Create(patternExpressions);
             var dfa = LexDfaBuilder.Create(nfa.Nfa);
             return dfa;
         }
 
-        protected NfaGraph CreateLexNfaGraph(RegexPatternExpr patternExpr, string name = null)
+        protected NfaGraph CreateLexNfaGraph(RegexExpr patternExpr, string name = null)
         {
             if (!string.IsNullOrEmpty(name))
             {
@@ -61,7 +61,7 @@ namespace RapidPliant.App.ViewModels
             return LexNfaBuilder.Create(patternExpr);
         }
 
-        protected DfaGraph CreateLexDfaGraph(RegexPatternExpr patternExpr, string name = null)
+        protected DfaGraph CreateLexDfaGraph(RegexExpr patternExpr, string name = null)
         {
             if (!string.IsNullOrEmpty(name))
             {

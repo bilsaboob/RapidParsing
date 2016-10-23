@@ -4,18 +4,19 @@ using System.Linq;
 using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
-using RapidPliant.Common.Util;
+using RapidPliant.Common.Symbols;
+using RapidPliant.Util;
 
 namespace RapidPliant.Common.Rule
 {
     public class RuleSet<TRule>
     {
-        public List<ISymbolRef> Symbols { get; set; }
-        public List<ISymbolRef> LexSymbols { get; set; }
-        public List<ISymbolRef> RuleSymbols { get; set; }
+        public IReadOnlyList<ISymbolRef> Symbols { get; set; }
+        public IReadOnlyList<ISymbolRef> LexSymbols { get; set; }
+        public IReadOnlyList<ISymbolRef> RuleSymbols { get; set; }
 
-        public List<TRule> Rules { get; set; }
-        public List<TRule> StartRules { get; set; }
+        public IReadOnlyList<TRule> Rules { get; set; }
+        public IReadOnlyList<TRule> StartRules { get; set; }
     }
 
     public interface ISymbolRef
@@ -53,11 +54,11 @@ namespace RapidPliant.Common.Rule
         IRule ParentRule { get; }
 
         bool HasSubRules { get; }
-        IRapidList<IRule> SubRules { get; }
+        IReadOnlyList<IRule> SubRules { get; }
         IRule CreateSubRule();
         void AddSubRule(IRule rule);
 
-        IRapidList<IProduction> Productions { get; }
+        IReadOnlyList<IProduction> Productions { get; }
         IProduction CreateProduction();
         void AddProduction(IProduction production);
     }
@@ -67,8 +68,8 @@ namespace RapidPliant.Common.Rule
     {
         protected TRule _this;
 
-        private RapidList<TRule> _subRules;
-        private RapidList<Production<TRule>> _productions;
+        private List<TRule> _subRules;
+        private List<Production<TRule>> _productions;
 
         private int _hashCode;
 
@@ -88,8 +89,8 @@ namespace RapidPliant.Common.Rule
             ParentRule = default(TRule);
             Name = name;
 
-            _subRules = new RapidList<TRule>();
-            _productions = new RapidList<Production<TRule>>();
+            _subRules = new List<TRule>();
+            _productions = new List<Production<TRule>>();
         }
         
         private void SetParentRule(TRule parent)
@@ -116,8 +117,8 @@ namespace RapidPliant.Common.Rule
         IRule IRule.ParentRule { get { return ParentRule; } }
 
         public bool HasSubRules { get { return _subRules.Count > 0; } }
-        IRapidList<IRule> IRule.SubRules { get { return _subRules; } }
-        public IRapidList<TRule> SubRules { get { return _subRules; } }
+        IReadOnlyList<IRule> IRule.SubRules { get { return _subRules; } }
+        public IReadOnlyList<TRule> SubRules { get { return _subRules; } }
         public virtual TRule CreateSubRule()
         {
             var subRule = new TRule();
@@ -144,8 +145,8 @@ namespace RapidPliant.Common.Rule
             AddSubRule(ruleInternal);
         }
 
-        public IRapidList<Production<TRule>> Productions { get { return _productions; } }
-        IRapidList<IProduction> IRule.Productions { get { return _productions; } }
+        public IReadOnlyList<Production<TRule>> Productions { get { return _productions; } }
+        IReadOnlyList<IProduction> IRule.Productions { get { return _productions; } }
 
         public virtual Production<TRule> CreateProduction()
         {
@@ -251,29 +252,29 @@ namespace RapidPliant.Common.Rule
     {
         IRule LhsRule { get; }
         int RhsSymbolsCount { get; }
-        ISymbol[] RhsSymbols { get; }
+        IReadOnlyList<ISymbol> RhsSymbols { get; }
     }
 
     public class Production<TRule> : IProduction
         where TRule : Rule<TRule>, new()
     {
         private int _hashCode;
-        private CachingRapidList<ISymbol> _rhsSymbols;
+        private List<ISymbol> _rhsSymbols;
 
         public Production(TRule lhsRule)
         {
             LhsRule = lhsRule;
-            _rhsSymbols = new CachingRapidList<ISymbol>();
+            _rhsSymbols = new List<ISymbol>();
 
             ComputeHashCode();
         }
         
         public TRule LhsRule { get; private set; }
         public int RhsSymbolsCount { get { return _rhsSymbols.Count; } }
-        public IRapidList<ISymbol> RhsSymbols { get { return _rhsSymbols; } }
+        public IReadOnlyList<ISymbol> RhsSymbols { get { return _rhsSymbols; } }
 
         IRule IProduction.LhsRule { get { return LhsRule; } }
-        ISymbol[] IProduction.RhsSymbols { get { return _rhsSymbols.AsArray; } }
+        IReadOnlyList<ISymbol> IProduction.RhsSymbols { get { return _rhsSymbols; } }
         
         public void AddSymbol(ISymbol symbol)
         {
@@ -284,7 +285,7 @@ namespace RapidPliant.Common.Rule
         public Production<TRule> Clone()
         {
             var other = new Production<TRule>(LhsRule);
-            other._rhsSymbols = _rhsSymbols.Clone();
+            other._rhsSymbols = _rhsSymbols.ToList();
             return other;
         }
 

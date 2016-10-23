@@ -18,7 +18,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
         }
 
         [DebuggerStepThrough]
-        public RegexPatternExpr FromPattern(string pattern)
+        public RegexExpr FromPattern(string pattern)
         {
             return _regexPatternParser.Parse(new StringReader(pattern));
         }

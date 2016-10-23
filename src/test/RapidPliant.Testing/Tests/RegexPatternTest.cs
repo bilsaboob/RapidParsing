@@ -6,8 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Rule;
-using RapidPliant.Common.Util;
-using RapidPliant.Common.Util.Collections;
 using RapidPliant.Lexing.Graph;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Lexing.Pattern.Regex;
@@ -28,7 +26,7 @@ namespace RapidPliant.Testing.Tests
             var dfaGraph = nfaGraph.Nfa.ToDfa();
         }
 
-        protected RegexPatternExpr CreateLexExpr(string regexPattern)
+        protected RegexExpr CreateLexExpr(string regexPattern)
         {
             return Regex.FromPattern(regexPattern);
         }

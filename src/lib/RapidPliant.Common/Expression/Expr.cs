@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using RapidPliant.Common.Util;
+using RapidPliant.Util;
 
 namespace RapidPliant.Common.Expression
 {
@@ -14,7 +14,7 @@ namespace RapidPliant.Common.Expression
         bool HasOptions { get; }
         ExprOptions Options { get; }
         
-        IExpr[] Expressions { get; }
+        IReadOnlyList<IExpr> Expressions { get; }
 
         void AddExpr(IExpr expr);
     }
@@ -158,20 +158,7 @@ namespace RapidPliant.Common.Expression
         #region Group expr
         protected List<TExpr> _Expressions { get; private set; }
 
-        private TExpr[] _expressionsCached;
-        protected TExpr[] _ExpressionsCached
-        {
-            get
-            {
-                if (_expressionsCached == null)
-                {
-                    _expressionsCached = _Expressions.ToArray();
-                }
-                return _expressionsCached;
-            }
-        }
-
-        public IExpr[] Expressions { get { return _ExpressionsCached; } }
+        public IReadOnlyList<IExpr> Expressions { get { return _Expressions; } }
 
         public void AddExpr(IExpr expr)
         {
@@ -297,7 +284,6 @@ namespace RapidPliant.Common.Expression
         protected void _AddExprToList(TExpr expr, bool optimize = false)
         {
             _Expressions.Add(expr);
-            _expressionsCached = null;
         }
 
         protected TExpr _GetSingleExprUnwrappedFromGroup()
@@ -353,8 +339,8 @@ namespace RapidPliant.Common.Expression
 
         protected void _ToStringGroupExprAlteration(IText text)
         {
-            var expressions = _ExpressionsCached;
-            var requiresParen = expressions.Length > 1;
+            var expressions = _Expressions;
+            var requiresParen = expressions.Count > 1;
 
             if (requiresParen)
                 text.Append("(");
@@ -383,8 +369,8 @@ namespace RapidPliant.Common.Expression
 
         protected void _ToStringGroupExprProduction(IText text)
         {
-            var expressions = _ExpressionsCached;
-            var requiresParen = expressions.Length > 1;
+            var expressions = _Expressions;
+            var requiresParen = expressions.Count > 1;
 
             if (requiresParen)
                 text.Append("(");

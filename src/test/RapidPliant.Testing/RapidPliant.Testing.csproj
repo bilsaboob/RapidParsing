@@ -51,9 +51,17 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\lib\RapidPliant.Automata\RapidPliant.Automata.csproj">
+      <Project>{7eeca369-1dc9-41d3-955e-a6e03ee87c67}</Project>
+      <Name>RapidPliant.Automata</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\lib\RapidPliant.Common\RapidPliant.Common.csproj">
       <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
       <Name>RapidPliant.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant\RapidPliant.csproj">
+      <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
+      <Name>RapidPliant</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
       <Project>{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}</Project>
