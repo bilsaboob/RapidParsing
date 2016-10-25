@@ -116,13 +116,13 @@
       <Project>{d045878a-7813-4480-9dc5-2a37c60346e2}</Project>
       <Name>RapidPliant.Grammar</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
+      <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
+      <Name>RapidPliant.Lexing</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\lib\RapidPliant\RapidPliant.csproj">
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
       <Name>RapidPliant</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
-      <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
-      <Name>RapidPliant.Lexing</Name>
     </ProjectReference>
     <ProjectReference Include="..\RapidPliant.App\RapidPliant.App.csproj">
       <Project>{407370F0-641D-4649-BFEF-BDF63EF15493}</Project>

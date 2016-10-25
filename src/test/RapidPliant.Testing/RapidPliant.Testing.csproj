@@ -59,13 +59,13 @@
       <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
       <Name>RapidPliant.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
+      <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
+      <Name>RapidPliant.Lexing</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\lib\RapidPliant\RapidPliant.csproj">
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
       <Name>RapidPliant</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
-      <Project>{2EDCD183-D72C-4DE9-A0DA-F5B6A6FB9C0B}</Project>
-      <Name>RapidPliant.Lexing</Name>
     </ProjectReference>
     <ProjectReference Include="..\RapidPliant.Test\RapidPliant.Test.csproj">
       <Project>{23DB3E8B-4538-4317-AF2E-2FFD57F601C1}</Project>
