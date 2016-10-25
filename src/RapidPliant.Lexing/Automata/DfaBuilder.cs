@@ -79,6 +79,9 @@ namespace RapidPliant.Lexing.Automata
 
         public DfaState Create(Nfa nfa)
         {
+            if (!nfa.Start.IsValid)
+                nfa.ToNfaGraph();
+
             using (var buildContext = BeginBuild(nfa))
             {
                 return Build(buildContext);
@@ -141,6 +144,7 @@ namespace RapidPliant.Lexing.Automata
                 if (terminalTransition == null)
                     continue;
 
+                //Here we must take into account the different char intervals a terminal can have!
                 Transitions.AddTerminalTransition(terminalTransition);
             }
         }
@@ -150,10 +154,10 @@ namespace RapidPliant.Lexing.Automata
             var state = Closure.DfaState;
 
             //Process the transitions by unique symbol / terminal
-            foreach (var transitionsByTerminal in Transitions.GetTransitionsByTerminal())
+            var transitions = Transitions.GetTransitionsByTerminalIntervals();
+            foreach (var transitionsByTerminalIntervals in transitions)
             {
-                var terminal = transitionsByTerminal.Terminal;
-                var terminalTransitions = transitionsByTerminal.Transitions;
+                var terminalTransitions = transitionsByTerminalIntervals.Transitions;
                 
                 //Get the closure for the transitions - basically expand the transitions one step ahead, following until a "terminal transition" is reached...
                 //We are basically expanding the "nfa path tree"
@@ -167,106 +171,93 @@ namespace RapidPliant.Lexing.Automata
                     closure.Dispose();
                 }
 
+                var terminals = transitionsByTerminalIntervals.Terminals;
+                var interval = transitionsByTerminalIntervals.Interval;
+
                 //Add transition to the next DFA state
-                state.AddTransition(new DfaTransition(terminal, nextClosure.DfaState));
+                state.AddTransition(new DfaTransition(interval, terminals, nextClosure.DfaState));
             }
         }
     }
 
     public class NfaClosureTransitions
     {
-        private TransitionsCollection<ITerminal, NfaTransition> _terminalTransitions;
+        private Dictionary<Interval, TransitionsEntry> _terminalIntervalTransitions;
 
         public NfaClosureTransitions()
         {
-            _terminalTransitions = new TransitionsCollection<ITerminal, NfaTransition>();
+            _terminalIntervalTransitions = new Dictionary<Interval, TransitionsEntry>();
         }
 
         public void AddTerminalTransition(TerminalNfaTransition terminalTransition)
         {
+            //Instead of storing transitions per terminal - we must store the transitions per character range part of the terminal
             var terminal = terminalTransition.Terminal;
-            _terminalTransitions.AddTransition(terminal, terminalTransition);
+
+            var intervals = terminal.GetIntervals();
+            foreach (var interval in intervals)
+            {
+                TransitionsEntry transitionsForIntervalEntry;
+                if (!_terminalIntervalTransitions.TryGetValue(interval, out transitionsForIntervalEntry))
+                {
+                    transitionsForIntervalEntry = new TransitionsEntry();
+                    transitionsForIntervalEntry.Interval = interval;
+                    _terminalIntervalTransitions[interval] = transitionsForIntervalEntry;
+                }
+
+                //Add the transition and terminal for the interval!
+                transitionsForIntervalEntry.AddTerminal(terminal);
+                transitionsForIntervalEntry.AddTransition(terminalTransition);
+            }
+            
         }
 
-        public IEnumerable<TerminalTransitionsCollection> GetTransitionsByTerminal()
+        public IEnumerable<TerminalTransitionsCollection> GetTransitionsByTerminalIntervals()
         {
-            return _terminalTransitions.GetTransitionsByKey().Select(p => new TerminalTransitionsCollection(p.Key, p.Value));
+            return _terminalIntervalTransitions.Select(p => new TerminalTransitionsCollection(p.Value));
         }
 
-        private class TransitionsCollection<TKey, TTransition>
-            where TTransition : NfaTransition
+        public class TransitionsEntry
         {
-            private Dictionary<TKey, SortedSet<TransitionEntry>> _transitions;
+            private List<ITerminal> _terminals;
+            private List<NfaTransition> _transitions;
 
-            public TransitionsCollection()
+            internal TransitionsEntry()
             {
-                _transitions = new Dictionary<TKey, SortedSet<TransitionEntry>>();
+                _terminals = new List<ITerminal>();
+                _transitions = new List<NfaTransition>();
             }
 
-            public bool AddTransition(TKey key, TTransition transition)
-            {
-                SortedSet<TransitionEntry> transitions;
-                if (!_transitions.TryGetValue(key, out transitions))
-                {
-                    transitions = new SortedSet<TransitionEntry>();
-                    _transitions[key] = transitions;
-                }
+            public Interval Interval { get; set; }
 
-                return transitions.Add(new TransitionEntry(transition));
+            public IReadOnlyList<ITerminal> Terminals { get { return _terminals; } }
+
+            public IReadOnlyList<NfaTransition> Transitions { get { return _transitions; } }
+
+            public void AddTerminal(ITerminal terminal)
+            {
+                _terminals.Add(terminal);
             }
 
-            public class TransitionEntry : IComparable<TransitionEntry>, IComparable
+            public void AddTransition(NfaTransition transition)
             {
-                public TransitionEntry(TTransition transition)
-                {
-                    Transition = transition;
-                    ToState = Transition.ToState;
-                }
-
-                public TTransition Transition { get; set; }
-
-                public NfaState ToState { get; set; }
-
-                public int CompareTo(object obj)
-                {
-                    if (obj == null)
-                        throw new NullReferenceException();
-
-                    var entry = obj as TransitionEntry;
-                    if (entry == null)
-                        throw new ArgumentException("parameter must be a TransitionEntry", nameof(obj));
-
-                    return CompareTo(entry);
-                }
-
-                public int CompareTo(TransitionEntry other)
-                {
-                    return ToState.CompareTo(other.ToState);
-                }
-            }
-
-            public IEnumerable<KeyValuePair<TKey, IEnumerable<TTransition>>> GetTransitionsByKey()
-            {
-                foreach (var p in _transitions)
-                {
-                    var key = p.Key;
-                    var transitions = p.Value.Select(e => e.Transition);
-                    yield return new KeyValuePair<TKey, IEnumerable<TTransition>>(key, transitions);
-                }
+                _transitions.Add(transition);
             }
         }
-    }
 
-    public class TerminalTransitionsCollection
-    {
-        public TerminalTransitionsCollection(ITerminal terminal, IEnumerable<NfaTransition> transitions)
+        public class TerminalTransitionsCollection
         {
-            Terminal = terminal;
-            Transitions = transitions;
-        }
+            private TransitionsEntry _transitionEntry;
 
-        public ITerminal Terminal { get; set; }
-        public IEnumerable<NfaTransition> Transitions { get; set; }
+            public TerminalTransitionsCollection(TransitionsEntry transitionEntry)
+            {
+                _transitionEntry = transitionEntry;
+            }
+
+            public Interval Interval { get { return _transitionEntry.Interval; } }
+            public IEnumerable<ITerminal> Terminals { get { return _transitionEntry.Terminals; } }
+            public IEnumerable<NfaTransition> Transitions { get { return _transitionEntry.Transitions; } }
+        }
     }
 
     public class NfaClosure : IComparable<NfaClosure>, IComparable, IDisposable

@@ -62,7 +62,7 @@ namespace RapidPliant.Common.Symbols
         
         public override string ToString()
         {
-            return $"[{Start}-{End}]";
+            return $"['{Start}'-'{End}']";
         }
     }
 }

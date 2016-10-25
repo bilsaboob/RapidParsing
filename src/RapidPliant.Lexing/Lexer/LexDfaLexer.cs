@@ -78,12 +78,17 @@ namespace RapidPliant.Lexing.Lexer
             {
                 var transition = transitions[i];
 
-                var terminal = transition.Terminal;
-                if (terminal == null)
+                var interval = transition.Interval;
+                if (interval == null)
                     continue;
 
-                if (terminal.IsMatch(ch))
-                    return transition;
+                if(ch < interval.Min)
+                    continue;
+
+                if(ch > interval.Max)
+                    continue;
+
+                return transition;
             }
 
             return null;

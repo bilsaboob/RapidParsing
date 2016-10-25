@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Msagl.Drawing;
 using RapidPliant.Lexing.Automata;
 
@@ -37,13 +38,28 @@ namespace RapidPliant.App.ViewModels
 
         protected override string GetTransitionLabel(DfaTransition transition)
         {
-            var terminal = transition.Terminal;
-            if (terminal != null)
+            var intervalLabel = "";
+            var interval = transition.Interval;
+            if (interval.Min == interval.Max)
             {
-                return terminal.ToString();
+                intervalLabel = $"'{interval.Min}'";
+            }
+            else
+            {
+                intervalLabel = interval.ToString();
             }
 
-            return base.GetTransitionLabel(transition);
+            var terminals = transition.Terminals;
+            var terminalsLabel = "";
+            foreach (var terminal in terminals)
+            {
+                terminalsLabel += terminal.ToString() + ",";
+            }
+            terminalsLabel = terminalsLabel.Trim(',');
+
+            return $"({intervalLabel}) for: {terminalsLabel}";
+
+            //return base.GetTransitionLabel(transition);
         }
 
         protected override bool IsFinalState(DfaState state)

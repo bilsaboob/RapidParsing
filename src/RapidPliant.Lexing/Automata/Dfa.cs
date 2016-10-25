@@ -53,14 +53,18 @@ namespace RapidPliant.Lexing.Automata
 
     public class DfaTransition
     {
-        public DfaTransition(ITerminal terminal, DfaState toState)
+        public DfaTransition(Interval interval, IEnumerable<ITerminal> terminals, DfaState toState)
         {
-            Terminal = terminal;
+            Terminals = terminals;
+            Interval = interval;
             ToState = toState;
         }
 
         public DfaState ToState { get; private set; }
-        public ITerminal Terminal { get; private set; }
+
+        public Interval Interval { get; private set; }
+
+        public IEnumerable<ITerminal> Terminals { get; private set; }
 
         public IReadOnlyList<DfaCompletion> CompletionsByRule { get { return null; } }
     }

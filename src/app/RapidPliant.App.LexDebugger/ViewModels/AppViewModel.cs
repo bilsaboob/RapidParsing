@@ -76,6 +76,9 @@ namespace RapidPliant.App.LexDebugger.ViewModels
             //Link the lex patterns, whenever we add to LexPatterns, the Nfa / Dfa graph viewmodels will have them too!
             LexNfaGraph.LexPatterns = LexPatterns;
             LexDfaGraph.LexPatterns = LexPatterns;
+
+            NewLexPattern = "a([b-e])*bekj";
+            AddPattern();
         }
 
         public void AddPattern()

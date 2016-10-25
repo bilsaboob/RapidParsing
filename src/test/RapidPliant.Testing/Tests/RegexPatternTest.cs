@@ -23,16 +23,16 @@ namespace RapidPliant.Testing.Tests
             var nfaBuilder = new NfaBuilder();
             var dfaBuilder = new DfaBuilder();
 
-            //var expr = CreateLexExpr("a(bc|bd)e");
-            var expr = CreateLexExpr("a(b|c)*de");
+            //var expr = CreateLexExpr("a(bc|bd)*e");
+            var expr = CreateLexExpr("a([b-e])*bekj");
 
             var nfa = nfaBuilder.Create(expr);
             var nfaGraph = nfa.ToNfaGraph();
 
             var dfa = dfaBuilder.Create(nfa);
             var dfaGraph = dfa.ToDfaGraph();
-
-            TestLexing(dfaGraph, "abcbcbcbbbbccccbbbcccbcbcbcde");
+            
+            TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekj");
         }
 
         private void TestLexing(DfaGraph dfaGraph, string input)

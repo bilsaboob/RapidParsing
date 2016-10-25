@@ -7,6 +7,8 @@ namespace RapidPliant.Util
     {
         private static readonly Interval[] _empty = { };
 
+        private int _hashCode;
+
         public Interval(char min, char max)
         {
             if (min.CompareTo(max) > 0)
@@ -14,6 +16,8 @@ namespace RapidPliant.Util
 
             Min = min;
             Max = max;
+
+            ComputeHashCode();
         }
 
         public char Min { get; private set; }
@@ -164,9 +168,37 @@ namespace RapidPliant.Util
             return Max.CompareTo(other.Max);
         }
 
+        private void ComputeHashCode()
+        {
+            _hashCode = HashCode.Compute(Min, Max);
+        }
+
+        public override int GetHashCode()
+        {
+            if(_hashCode == 0)
+                ComputeHashCode();
+
+            return _hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj == this)
+                return true;
+
+            var interval = obj as Interval;
+            if (interval == null)
+                return false;
+            
+            return Min == interval.Min && Max == interval.Max;
+        }
+
         public override string ToString()
         {
-            return $"['{Min}', '{Max}']";
+            return $"['{Min}'-'{Max}']";
         }
     }
 

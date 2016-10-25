@@ -101,18 +101,24 @@ namespace RapidPliant.Lexing.Pattern.Regex
 
         private RegexExpr ParseGroup(RegexParseContext c)
         {
+            RegexExpr rangeExpr = null;
+
             while (c.MoveNext())
             {
                 if (c == ']')
                     break;
-
+                
                 if (c == '-')
                 {
-                    var rangeExpr = CreateRangeExpr(c);
+                    rangeExpr = CreateRangeExpr(c);
+                }
+                else
+                {
+                    c.AcceptChar();
                 }
             }
 
-            return null;
+            return rangeExpr;
         }
 
         private ExprOptions ParseOptions(RegexParseContext c)
@@ -151,7 +157,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
             return options;
         }
 
-        private object CreateRangeExpr(RegexParseContext c)
+        private RegexCharRangeExpr CreateRangeExpr(RegexParseContext c)
         {
             if (!c.HasPrevAccepted)
             {
