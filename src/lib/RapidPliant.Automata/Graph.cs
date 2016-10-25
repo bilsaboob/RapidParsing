@@ -4,9 +4,10 @@ using RapidPliant.Collections;
 
 namespace RapidPliant.Automata
 {
-    public abstract class Graph<TRoot, TState, TTransition>
+    public abstract class Graph<TRoot, TState, TTransition, TBuildContext>
         where TRoot : class
         where TState : class, IGraphState
+        where TBuildContext : GraphBuildContext<TRoot, TState, TTransition>, new()
     {
         private UniqueList<TState> _states;
 
@@ -50,10 +51,19 @@ namespace RapidPliant.Automata
         {
             Root = root;
             StartState = GetStartState(root);
-            BuildForState(StartState);
+
+            using (var buildContext = CreateBuildContext())
+            {
+                BuildForState(buildContext, StartState);
+            }
         }
 
-        protected void BuildForState(TState state)
+        protected virtual TBuildContext CreateBuildContext()
+        {
+            return new TBuildContext();
+        }
+
+        protected void BuildForState(TBuildContext c, TState state)
         {
             if (!state.IsValid)
             {
@@ -62,6 +72,8 @@ namespace RapidPliant.Automata
             
             if(!AddState(state))
                 return;
+            
+            BuildState(c, state);
 
             var transitions = GetStateTransitions(state);
 
@@ -71,11 +83,16 @@ namespace RapidPliant.Automata
                 var toState = GetTransitionToState(transition);
                 if (toState != null)
                 {
-                    BuildForState(toState);
+                    c.EnterTransition(transition);
+                    BuildForState(c, toState);
                 }
             }
         }
-        
+
+        protected virtual void BuildState(TBuildContext c, TState state)
+        {
+        }
+
         protected virtual TState GetStartState(TRoot root)
         {
             if (StartState != null)
@@ -91,5 +108,42 @@ namespace RapidPliant.Automata
 
         protected abstract TState GetTransitionToState(TTransition transition);
         protected abstract IEnumerable<TTransition> GetStateTransitions(TState state);
+    }
+
+    public abstract class Graph<TRoot, TState, TTransition> : Graph<TRoot, TState, TTransition, GraphBuildContext<TRoot, TState, TTransition>>
+        where TRoot : class
+        where TState : class, IGraphState
+    {
+        protected Graph()
+            : base(null, null)
+        {
+        }
+
+        protected Graph(TRoot root)
+            : base(root, null)
+        {
+        }
+
+        protected Graph(TRoot root, TState startState)
+            : base(root, startState)
+        {
+        }
+    }
+
+    public class GraphBuildContext<TRoot, TState, TTransition> : IDisposable
+        where TRoot : class
+        where TState : class, IGraphState
+    {
+        public GraphBuildContext()
+        {
+        }
+
+        public virtual void EnterTransition(TTransition transition)
+        {
+        }
+
+        public virtual void Dispose()
+        {
+        }
     }
 }

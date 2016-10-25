@@ -8,12 +8,12 @@ namespace RapidPliant.App.ViewModels
         public LexGraphViewModel()
         {
             LexNfaBuilder = new NfaBuilder();
-            LexDfaBuilder = new DfaBuilder();
+            LexDfaBuilder = new DfaGraphBuilder();
             Regex = new RapidRegex();
         }
 
         protected NfaBuilder LexNfaBuilder { get; set; }
-        protected DfaBuilder LexDfaBuilder { get; set; }
+        protected DfaGraphBuilder LexDfaBuilder { get; set; }
         protected RapidRegex Regex { get; set; }
 
         #region Helpers

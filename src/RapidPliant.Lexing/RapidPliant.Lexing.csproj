@@ -41,7 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Automata\Dfa.cs" />
-    <Compile Include="Automata\DfaBuilder.cs" />
+    <Compile Include="Automata\DfaGraphBuilder.cs" />
     <Compile Include="Automata\Nfa.cs" />
     <Compile Include="Automata\NfaBuilder.cs" />
     <Compile Include="Pattern\PatternExpr.cs" />

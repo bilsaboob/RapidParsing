@@ -26,13 +26,12 @@ namespace RapidPliant.Lexing.Automata
     {
         private readonly List<DfaTransition> _transitions;
         
-        public DfaState(bool isFinal)
+        public DfaState()
         {
-            IsFinal = isFinal;
             _transitions = new List<DfaTransition>();
         }
         
-        public bool IsFinal { get; private set; }
+        public bool IsFinal { get; set; }
 
         public IReadOnlyList<DfaTransition> Transitions { get { return _transitions; } }
 
