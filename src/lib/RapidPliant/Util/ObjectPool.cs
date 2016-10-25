@@ -144,7 +144,7 @@ namespace RapidPliant.Util
         }
     }
 
-    public static class ReusableStringBuilder<T>
+    public static class ReusableStringBuilder
     {
         public static StringBuilder GetAndClear()
         {
@@ -434,7 +434,7 @@ namespace RapidPliant.Util
             return builder;
         }
 
-        public static void ClearAndFree<T>(this StringBuilder builder)
+        public static void ClearAndFree(this StringBuilder builder)
         {
             if (builder == null)
                 return;

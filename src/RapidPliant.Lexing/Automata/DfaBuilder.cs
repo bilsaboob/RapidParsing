@@ -71,15 +71,17 @@ namespace RapidPliant.Lexing.Automata
         }
     }
 
-    public class DfaGraphBuilder
+    public class DfaBuilder
     {
-        public DfaGraph Create(Nfa nfa)
+        public DfaBuilder()
+        {
+        }
+
+        public DfaState Create(Nfa nfa)
         {
             using (var buildContext = BeginBuild(nfa))
             {
-                var startDfaState = Build(buildContext);
-                var g = new DfaGraph(startDfaState);
-                return g;
+                return Build(buildContext);
             }
         }
 
@@ -267,7 +269,7 @@ namespace RapidPliant.Lexing.Automata
         public IEnumerable<NfaTransition> Transitions { get; set; }
     }
 
-    public class NfaClosure : IDisposable
+    public class NfaClosure : IComparable<NfaClosure>, IComparable, IDisposable
     {
         private int _hashCode;
         
@@ -292,6 +294,7 @@ namespace RapidPliant.Lexing.Automata
                 {
                     FinalStates = ReusableHashSet<NfaState>.GetAndClear();
                     HasFinalStates = true;
+                    DfaState.IsFinal = true;
                 }
                 FinalStates.Add(state);
             }
@@ -312,6 +315,23 @@ namespace RapidPliant.Lexing.Automata
 
             return added;
         }
+        
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                throw new ArgumentNullException();
+
+            var nfaClosure = obj as NfaClosure;
+            if (nfaClosure == null)
+                throw new ArgumentException("instance of NfaClosure expected.", nameof(obj));
+
+            return CompareTo(nfaClosure);
+        }
+
+        public int CompareTo(NfaClosure other)
+        {
+            return GetHashCode().CompareTo(other.GetHashCode());
+        }
 
         private void ComputeHashCode()
         {
@@ -324,6 +344,21 @@ namespace RapidPliant.Lexing.Automata
                 ComputeHashCode();
 
             return _hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (obj == this)
+                return true;
+
+            var nfaClosure = obj as NfaClosure;
+            if (nfaClosure == null)
+                return false;
+
+            return States.EqualsSequence(nfaClosure.States);
         }
 
         public void Dispose()
@@ -344,12 +379,11 @@ namespace RapidPliant.Lexing.Automata
         }
     }
     
-    public static class NfaToDfaExtensions
+    public static class DfaExtensions
     {
-        public static DfaGraph ToDfa(this Nfa nfa)
+        public static DfaGraph ToDfaGraph(this DfaState startState)
         {
-            var dfaBuilder = new DfaGraphBuilder();
-            var g = dfaBuilder.Create(nfa);
+            var g = new DfaGraph(startState);
             return g;
         }
     }

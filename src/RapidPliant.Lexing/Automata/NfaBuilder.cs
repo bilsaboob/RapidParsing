@@ -7,7 +7,7 @@ using RapidPliant.Lexing.Pattern;
 
 namespace RapidPliant.Lexing.Automata
 {
-    public class NfaBuildContext
+    public class NfaBuildContext : IDisposable
     {
         public NfaBuildContext()
         {
@@ -185,6 +185,10 @@ namespace RapidPliant.Lexing.Automata
             return terminal;
         }
         #endregion
+
+        public void Dispose()
+        {
+        }
     }
 
     public class NfaBuilder
@@ -193,24 +197,20 @@ namespace RapidPliant.Lexing.Automata
         {
         }
 
-        public NfaGraph Create(IEnumerable<IExpr> expressions)
+        public Nfa Create(IEnumerable<IExpr> expressions)
         {
-            var c = new NfaBuildContext();
-
-            var nfa = BuildForAlterationExpression(c, expressions);
-            
-            var g = new NfaGraph(nfa);
-            return g;
+            using (var buildContext = new NfaBuildContext())
+            {
+                return BuildForAlterationExpression(buildContext, expressions);
+            }
         }
 
-        public NfaGraph Create(IExpr expr)
+        public Nfa Create(IExpr expr)
         {
-            var c = new NfaBuildContext();
-
-            var nfa = BuildForExpression(c, expr);
-
-            var g = new NfaGraph(nfa);
-            return g;
+            using (var buildContext = new NfaBuildContext())
+            {
+                return BuildForExpression(buildContext, expr);
+            }
         }
 
         private Nfa BuildForExpression(NfaBuildContext c, IExpr expr)

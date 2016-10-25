@@ -61,5 +61,11 @@ namespace RapidPliant.Lexing.Automata
 
         public DfaState ToState { get; private set; }
         public ITerminal Terminal { get; private set; }
+
+        public IReadOnlyList<DfaCompletion> CompletionsByRule { get { return null; } }
+    }
+
+    public class DfaCompletion
+    {
     }
 }

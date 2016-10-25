@@ -50,6 +50,15 @@ namespace RapidPliant.Lexing.Automata
         }
     }
 
+    public static class NfaGrapExtensions
+    {
+        public static NfaGraph ToNfaGraph(this Nfa nfa)
+        {
+            var g = new NfaGraph(nfa);
+            return g;
+        }
+    }
+
     public class Nfa
     {
         public Nfa(NfaState start, NfaState end)
