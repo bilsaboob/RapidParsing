@@ -166,6 +166,11 @@ namespace RapidPliant.Util
         {
             return Reusable.For<List<T>>().GetAndClear();
         }
+
+        public static List<T> GetAndClear(IEnumerable<T> items)
+        {
+            return Reusable.For<List<T>>().GetAndClear(items);
+        }
     }
 
     public static class ObjectPoolExtensions
@@ -382,6 +387,16 @@ namespace RapidPliant.Util
             var list = pool.GetInstance(out isClean);
             if (!isClean)
                 list.Clear();
+            return list;
+        }
+
+        public static List<T> GetAndClear<T>(this ObjectPool<List<T>> pool, IEnumerable<T> items)
+        {
+            bool isClean;
+            var list = pool.GetInstance(out isClean);
+            if (!isClean)
+                list.Clear();
+            list.AddRange(items);
             return list;
         }
 

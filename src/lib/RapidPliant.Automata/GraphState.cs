@@ -2,13 +2,13 @@
 
 namespace RapidPliant.Automata
 {
-    public interface IGraphState
+    public interface IGraphState : IDisposable
     {
         int Id { get; set; }
         bool IsValid { get; }
     }
 
-    public abstract class GraphStateBase : IGraphState, IComparable<GraphStateBase>, IComparable
+    public abstract class GraphStateBase : IGraphState, IComparable<GraphStateBase>, IComparable, IDisposable
     {
         private int _guidHashCode;
         protected int _hashCode;
@@ -53,7 +53,7 @@ namespace RapidPliant.Automata
         {
             return _hashCode;
         }
-
+        
         public override bool Equals(object obj)
         {
             if (obj == null)
@@ -89,6 +89,10 @@ namespace RapidPliant.Automata
         public override string ToString()
         {
             return $"{Id}";
+        }
+
+        public virtual void Dispose()
+        {
         }
     }
 

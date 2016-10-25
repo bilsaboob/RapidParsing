@@ -71,11 +71,11 @@ namespace RapidPliant.Lexing.Automata
 
         public NfaState()
         {
-            _transitions = new List<NfaTransition>();
+            _transitions = ReusableList<NfaTransition>.GetAndClear();
         }
 
         public NfaPath Path { get; set; }
-
+        
         public IReadOnlyList<NfaTransition> Transitions
         {
             get { return _transitions; }
@@ -112,11 +112,33 @@ namespace RapidPliant.Lexing.Automata
                 }
             }
             
-            _expandedTransitionStates = queue.Processed.ToList();
-            
+            _expandedTransitionStates = ReusableList<NfaState>.GetAndClear(queue.Processed);
             queue.ClearAndFree();
 
             return _expandedTransitionStates;
+        }
+
+        public override string ToString()
+        {
+            if (Path == null)
+            {
+                return string.Format("{0}", Id);
+            }
+            else
+            {
+                return string.Format("{0}: {1}", Id, Path.ToString());
+            }
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            if (_expandedTransitionStates != null)
+            {
+                _expandedTransitionStates.ClearAndFree();
+                _expandedTransitionStates = null;
+            }
         }
     }
     #endregion
@@ -138,6 +160,40 @@ namespace RapidPliant.Lexing.Automata
 
         public NfaState ToState { get; private set; }
         public NfaTransitionType TransitionType { get; private set; }
+
+        public string ToTransitionString()
+        {
+            var toStateStr = "";
+            if (ToState == null)
+            {
+                toStateStr = "\u25CF";
+            }
+            else
+            {
+                toStateStr = ToState.Id.ToString();
+            }
+
+            var transitionArrowStr = ToTransitionArrowString();
+            var symbolStr = ToTransitionSymbolString();
+            if (string.IsNullOrEmpty(symbolStr))
+            {
+                return string.Format("{0}{1}", transitionArrowStr, toStateStr);
+            }
+            else
+            {
+                return string.Format("{0}{1}({2})", transitionArrowStr, toStateStr, symbolStr);
+            }
+        }
+
+        protected virtual string ToTransitionArrowString()
+        {
+            return "->";
+        }
+
+        protected virtual string ToTransitionSymbolString()
+        {
+            return null;
+        }
     }
 
     public abstract class SymbolNfaTransition : NfaTransition
@@ -149,6 +205,14 @@ namespace RapidPliant.Lexing.Automata
         }
 
         public ISymbol Symbol { get; protected set; }
+
+        protected override string ToTransitionSymbolString()
+        {
+            if (Symbol == null)
+                return "";
+
+            return Symbol.ToString();
+        }
     }
 
     public class TerminalNfaTransition : SymbolNfaTransition
@@ -168,13 +232,16 @@ namespace RapidPliant.Lexing.Automata
             : base(NfaTransitionType.Null, target)
         {
         }
+
+        protected override string ToTransitionArrowString()
+        {
+            return "=>";
+        }
     }
     #endregion
 
     public class NfaPath
     {
-        private string _pathStr;
-
         public NfaPath(NfaPath prevPath, NfaTransition transition)
         {
             Prev = prevPath;
@@ -186,19 +253,25 @@ namespace RapidPliant.Lexing.Automata
 
         public override string ToString()
         {
-            if (_pathStr != null)
-                return _pathStr;
-
             var prevPath = "";
 
-            if (Prev != null)
+            if (Prev == null)
             {
-                Prev.ToString();
+                prevPath = "\u25CF";
+            }
+            else
+            {
+                prevPath = Prev.ToString();
             }
 
-            _pathStr = string.Format("{0}->{1}", prevPath, Transition.ToState.ToString());
+            var transStr = "";
+            if (Transition != null)
+            {
+                transStr = Transition.ToTransitionString();
+            }
 
-            return _pathStr;
+            var pathStr = string.Format("{0}{1}", prevPath, transStr);
+            return pathStr;
         }
     }
 }

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using RapidPliant.Collections;
+using RapidPliant.Util;
 
 namespace RapidPliant.Automata
 {
-    public abstract class Graph<TRoot, TState, TTransition, TBuildContext>
+    public abstract class Graph<TRoot, TState, TTransition, TBuildContext> : IDisposable
         where TRoot : class
         where TState : class, IGraphState
         where TBuildContext : GraphBuildContext<TRoot, TState, TTransition>, new()
@@ -27,7 +28,8 @@ namespace RapidPliant.Automata
         {
             StartState = startState;
 
-            _states = new UniqueList<TState>();
+            _states = ReusableUniqueList<TState>.GetAndClear();
+
             NextAvailableStateId = 1;
 
             if (root != null)
@@ -108,6 +110,26 @@ namespace RapidPliant.Automata
 
         protected abstract TState GetTransitionToState(TTransition transition);
         protected abstract IEnumerable<TTransition> GetStateTransitions(TState state);
+
+        public virtual void Dispose()
+        {
+            if (_states != null)
+            {
+                foreach (var state in _states)
+                {
+                    try
+                    {
+                        state.Dispose();
+                    }
+                    catch (Exception)
+                    {
+                        //Doesn't matter
+                    }
+                }
+
+                _states.ClearAndFree();
+            }
+        }
     }
 
     public abstract class Graph<TRoot, TState, TTransition> : Graph<TRoot, TState, TTransition, GraphBuildContext<TRoot, TState, TTransition>>

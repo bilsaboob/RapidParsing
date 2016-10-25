@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using RapidPliant.Automata;
 using RapidPliant.Common.Symbols;
+using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Automata
 {
@@ -24,11 +26,11 @@ namespace RapidPliant.Lexing.Automata
 
     public class DfaState : GraphStateBase<DfaState>
     {
-        private readonly List<DfaTransition> _transitions;
+        private List<DfaTransition> _transitions;
         
         public DfaState()
         {
-            _transitions = new List<DfaTransition>();
+            _transitions = ReusableList<DfaTransition>.GetAndClear();
         }
         
         public bool IsFinal { get; set; }
@@ -38,6 +40,14 @@ namespace RapidPliant.Lexing.Automata
         public void AddTransition(DfaTransition transition)
         {
             _transitions.Add(transition);
+        }
+
+        public override void Dispose()
+        {
+            if (_transitions != null)
+            {
+                _transitions.ClearAndFree();
+            }
         }
     }
 
