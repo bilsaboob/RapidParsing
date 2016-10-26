@@ -11,6 +11,7 @@ using RapidPliant.Lexing.Lexer;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Lexing.Pattern.Regex;
 using RapidPliant.Test;
+using RapidPliant.Util;
 
 namespace RapidPliant.Testing.Tests
 {

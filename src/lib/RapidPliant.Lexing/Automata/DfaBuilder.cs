@@ -155,9 +155,22 @@ namespace RapidPliant.Lexing.Automata
 
             //Process the transitions by unique symbol / terminal
             var transitions = Transitions.GetTransitionsByTerminalIntervals();
+
+            //We need to split the terminal transitions into unique non overlapping intervals
+            var nonOverlappingIntervalTransitions = new NonOverlappingIntervalSet<NfaTransition>();
             foreach (var transitionsByTerminalIntervals in transitions)
             {
-                var terminalTransitions = transitionsByTerminalIntervals.Transitions;
+                var interval = transitionsByTerminalIntervals.Interval;
+                var nfaTransitions = transitionsByTerminalIntervals.Transitions;
+
+                //Add the interval, which will split into non overlapping intervals, but keep the association of the nfa transitions for each of the splits
+                nonOverlappingIntervalTransitions.AddInterval(interval, nfaTransitions);
+            }
+
+            //Now lets iterate each of the non overlapping intervall transitions
+            foreach (var transitionsByTerminalIntervals in nonOverlappingIntervalTransitions)
+            {
+                var terminalTransitions = transitionsByTerminalIntervals.AssociatedItems;
                 
                 //Get the closure for the transitions - basically expand the transitions one step ahead, following until a "terminal transition" is reached...
                 //We are basically expanding the "nfa path tree"
@@ -171,7 +184,7 @@ namespace RapidPliant.Lexing.Automata
                     closure.Dispose();
                 }
 
-                var terminals = transitionsByTerminalIntervals.Terminals;
+                var terminals = terminalTransitions.Select(t => (t as TerminalNfaTransition).Terminal);
                 var interval = transitionsByTerminalIntervals.Interval;
 
                 //Add transition to the next DFA state

@@ -13,6 +13,7 @@ namespace RapidPliant.Testing
         static void Main(string[] args)
         {
             TestRunner.Run<RegexPatternTest>();
+            //TestRunner.Run<NonOverlappingSetTest>();
         }
     }
 }
