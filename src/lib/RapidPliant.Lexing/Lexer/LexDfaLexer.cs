@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Common.Expression;
 using RapidPliant.Lexing.Automata;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Util;
@@ -99,15 +100,13 @@ namespace RapidPliant.Lexing.Lexer
             if (transition == null)
                 return;
             
-            var completionsByRule = transition.CompletionsByRule;
-            if(completionsByRule == null)
+            var completionsByExpressions = transition.CompletionsByExpression;
+            if(completionsByExpressions == null)
                 return;
 
-            var completionsByRuleCount = completionsByRule.Count;
-            for (var i = 0; i < completionsByRuleCount; ++i)
+            foreach (var exprCompletion in completionsByExpressions)
             {
-                var ruleCompletion = completionsByRule[i];
-                AddCapture(transition, ruleCompletion);
+                AddCapture(transition, exprCompletion);
             }
         }
 
@@ -205,6 +204,8 @@ namespace RapidPliant.Lexing.Lexer
                 return _spelling;
             }
         }
+
+        public IExpr Expression { get { return _capturedForCompletion.Expression; } }
     }
 }
 

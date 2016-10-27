@@ -17,22 +17,46 @@ namespace RapidPliant.Testing.Tests
 {
     public class RegexPatternTest : TestBase
     {
+        private NfaBuilder NfaBuilder = new NfaBuilder();
+        private DfaBuilder DfaBuilder = new DfaBuilder();
         private RapidRegex Regex = new RapidRegex();
 
         protected override void Test()
         {
-            var nfaBuilder = new NfaBuilder();
-            var dfaBuilder = new DfaBuilder();
+            //TestSingle();
+            TestMerged();
+        }
 
+        private void TestMerged()
+        {
+            var dfaGraph = CreateLexDfa(
+                CreateLexExpr("abc(de)*", "A"),
+                CreateLexExpr("abcd(ef)*", "B")
+            );
+
+            //Expect only A as full capture
+            TestLexing(dfaGraph, "abc");
+
+            //Expect A as a partial capture, "abc"
+            //Expect B as a full capture, "abcd"
+            TestLexing(dfaGraph, "abcd");
+
+            //Expect A as a partial capture, twice, "abc" and "abcde"
+            //Expect B as a partial capture, "abcd"
+            TestLexing(dfaGraph, "abcde");
+        }
+        
+        private void TestSingle()
+        {
             //var expr = CreateLexExpr("a(bc|bd)*e");
             var expr = CreateLexExpr("a([b-e])*bekj");
 
-            var nfa = nfaBuilder.Create(expr);
+            var nfa = NfaBuilder.Create(expr);
             var nfaGraph = nfa.ToNfaGraph();
 
-            var dfa = dfaBuilder.Create(nfa);
+            var dfa = DfaBuilder.Create(nfa);
             var dfaGraph = dfa.ToDfaGraph();
-            
+
             //Should pass:
             var passed = TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekj");
 
@@ -83,16 +107,41 @@ namespace RapidPliant.Testing.Tests
             {
                 foreach (var capture in captures)
                 {
+                    //The "expr" is the "leaf" expression that triggere the capture
+                    var expr = capture.Expression;
+                    var exprName = expr.Name;
+
+                    //The "rootExpr" is the "pattern expression" that we defined above, and has the name that we specified... the "expr" is a subexpression to the root... at some unknown level...
+                    //In general the "rootExpr" is of interest... it may have interesting configuration such as "Trigger Action XYZ" / "Token Factory that creates expecte token" etc...
+                    var rootExpr = expr.Root;
+                    var rootExprName = rootExpr.Name;
+
+                    //The spelling is the captured text
                     var spelling = capture.Spelling;
                 }
             }
 
             return success;
         }
-
-        protected RegexExpr CreateLexExpr(string regexPattern)
+    
+        protected RegexExpr CreateLexExpr(string regexPattern, string name = null)
         {
-            return Regex.FromPattern(regexPattern);
+            var expr = Regex.FromPattern(regexPattern);
+            if (!string.IsNullOrEmpty(name))
+                expr.Name = name;
+            return expr;
+        }
+
+        protected DfaGraph CreateLexDfa(params RegexExpr[] expressions)
+        {
+            return CreateLexDfa(expressions.AsEnumerable());
+        }
+
+        protected DfaGraph CreateLexDfa(IEnumerable<RegexExpr> expressions)
+        {
+            var nfa = NfaBuilder.Create(expressions);
+            var dfa = DfaBuilder.Create(nfa);
+            return dfa.ToDfaGraph();
         }
     }
 }

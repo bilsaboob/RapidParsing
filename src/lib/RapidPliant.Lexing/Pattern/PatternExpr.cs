@@ -21,7 +21,7 @@ namespace RapidPliant.Lexing.Pattern
         }
     }
 
-    public interface IPatternExpr
+    public interface IPatternExpr : IExpr
     {
     }
 

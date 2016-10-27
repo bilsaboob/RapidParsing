@@ -91,7 +91,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
         private RegexExpr ParseBlock(RegexParseContext c)
         {
             ParseUntil(c, ')');
-            return c.ToExpression();
+            return c.ToExpression(false);
         }
         
         private RegexExpr ParseAlias(RegexParseContext c)
@@ -405,7 +405,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
             }
         }
 
-        public RegexExpr ToExpression()
+        public RegexExpr ToExpression(bool ensureRoot = true)
         {
             var rootExpr = _altExpr;
 
@@ -428,6 +428,11 @@ namespace RapidPliant.Lexing.Pattern.Regex
                 {
                     return rootExprSimplified;
                 }
+            }
+            
+            if (rootExpr != null && ensureRoot)
+            {
+                rootExpr.EnsureRoot(rootExpr);
             }
 
             return rootExpr;

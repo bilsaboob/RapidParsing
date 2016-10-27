@@ -2,6 +2,7 @@
 using System.Linq;
 using RapidPliant.Automata;
 using RapidPliant.Collections;
+using RapidPliant.Common.Expression;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Util;
 
@@ -69,6 +70,14 @@ namespace RapidPliant.Lexing.Automata
 
         public NfaState Start { get; private set; }
         public NfaState End { get; private set; }
+
+        public IExpr Expression { get; set; }
+
+        public Nfa WithExpression(IExpr expression)
+        {
+            Expression = expression;
+            return this;
+        }
     }
     #endregion
 
@@ -167,8 +176,16 @@ namespace RapidPliant.Lexing.Automata
             ToState = target;
         }
 
+        public NfaState FromState { get; private set; }
         public NfaState ToState { get; private set; }
         public NfaTransitionType TransitionType { get; private set; }
+        public IExpr Expression { get; private set; }
+
+        public NfaTransition WithExpression(IExpr expression)
+        {
+            Expression = expression;
+            return this;
+        }
 
         public string ToTransitionString()
         {
@@ -203,6 +220,36 @@ namespace RapidPliant.Lexing.Automata
         {
             return null;
         }
+
+        public NfaTransition ThisOrClonedWithFromState(NfaState fromState)
+        {
+            if (FromState != null)
+                return this;
+
+            var clone = Clone();
+            clone.FromState = fromState;
+            return clone;
+        }
+
+        public NfaTransition Clone()
+        {
+            var clone = CreateCloneInstance();
+            CopyTo(clone);
+            return clone;
+        }
+
+        protected virtual void CopyTo(NfaTransition other)
+        {
+            other.FromState = FromState;
+            other.ToState = ToState;
+            other.TransitionType = TransitionType;
+            other.Expression = Expression;
+        }
+
+        protected virtual NfaTransition CreateCloneInstance()
+        {
+            return new NfaTransition(TransitionType, ToState);
+        }
     }
 
     public abstract class SymbolNfaTransition : NfaTransition
@@ -222,6 +269,17 @@ namespace RapidPliant.Lexing.Automata
 
             return Symbol.ToString();
         }
+
+        protected override void CopyTo(NfaTransition other)
+        {
+            base.CopyTo(other);
+
+            var symTransition = other as SymbolNfaTransition;
+            if(symTransition == null)
+                return;
+
+            symTransition.Symbol = Symbol;
+        }
     }
 
     public class TerminalNfaTransition : SymbolNfaTransition
@@ -233,6 +291,22 @@ namespace RapidPliant.Lexing.Automata
         }
 
         public ITerminal Terminal { get; protected set; }
+
+        protected override NfaTransition CreateCloneInstance()
+        {
+            return new TerminalNfaTransition(Terminal, ToState);
+        }
+
+        protected override void CopyTo(NfaTransition other)
+        {
+            base.CopyTo(other);
+
+            var termTransition = other as TerminalNfaTransition;
+            if (termTransition == null)
+                return;
+
+            termTransition.Terminal = Terminal;
+        }
     }
 
     public class NullNfaTransition : NfaTransition
@@ -245,6 +319,16 @@ namespace RapidPliant.Lexing.Automata
         protected override string ToTransitionArrowString()
         {
             return "=>";
+        }
+
+        protected override NfaTransition CreateCloneInstance()
+        {
+            return new NullNfaTransition(ToState);
+        }
+
+        protected override void CopyTo(NfaTransition other)
+        {
+            base.CopyTo(other);
         }
     }
     #endregion

@@ -57,7 +57,13 @@ namespace RapidPliant.Lexing.Automata
                 foreach (var nfaState in expandedStates)
                 {
                     var isFinalState = nfaState.Equals(Nfa.End);
-                    closure.AddState(nfaState, isFinalState);
+                    if (isFinalState)
+                    {
+                        closure.DfaState.IsFinal = true;
+                        closure.AddFinalTransition(nfaTransition);
+                    }
+                    
+                    closure.AddState(nfaState);
                 }
             }
 
@@ -145,7 +151,7 @@ namespace RapidPliant.Lexing.Automata
                     continue;
 
                 //Here we must take into account the different char intervals a terminal can have!
-                Transitions.AddTerminalTransition(terminalTransition);
+                Transitions.AddTerminalTransition((TerminalNfaTransition)terminalTransition.ThisOrClonedWithFromState(nfaState));
             }
         }
 
@@ -175,7 +181,7 @@ namespace RapidPliant.Lexing.Automata
                 //Get the closure for the transitions - basically expand the transitions one step ahead, following until a "terminal transition" is reached...
                 //We are basically expanding the "nfa path tree"
                 var closure = c.Closure(terminalTransitions);
-
+                
                 //Only process each "location" once
                 var nextClosure = c.EnqueueOrGetExisting(closure);
                 if (nextClosure != closure)
@@ -183,12 +189,11 @@ namespace RapidPliant.Lexing.Automata
                     //We have received an existing... dispose the other...
                     closure.Dispose();
                 }
-
-                var terminals = terminalTransitions.Select(t => (t as TerminalNfaTransition).Terminal);
+                
                 var interval = transitionsByTerminalIntervals.Interval;
 
                 //Add transition to the next DFA state
-                state.AddTransition(new DfaTransition(interval, terminals, nextClosure.DfaState));
+                state.AddTransition(new DfaTransition(interval, terminalTransitions, nextClosure.FinalTransitions, nextClosure.DfaState));
             }
         }
     }
@@ -283,26 +288,15 @@ namespace RapidPliant.Lexing.Automata
         }
 
         public DfaState DfaState { get; set; }
-
-        public bool HasFinalStates { get; private set; }
-        public HashSet<NfaState> FinalStates { get; private set; }
         
         public bool HasStates { get; private set; }
         public SortedSet<NfaState> States { get; private set; }
 
-        public bool AddState(NfaState state, bool isFinal)
-        {
-            if (isFinal)
-            {
-                if (FinalStates == null)
-                {
-                    FinalStates = ReusableHashSet<NfaState>.GetAndClear();
-                    HasFinalStates = true;
-                    DfaState.IsFinal = true;
-                }
-                FinalStates.Add(state);
-            }
+        public bool HasFinalTransitions { get; private set; }
+        public HashSet<NfaTransition> FinalTransitions { get; private set; }
 
+        public bool AddState(NfaState state)
+        {
             if (States == null)
             {
                 States = ReusableSortedSet<NfaState>.GetAndClear();
@@ -319,7 +313,18 @@ namespace RapidPliant.Lexing.Automata
 
             return added;
         }
-        
+
+        public void AddFinalTransition(NfaTransition nfaTransition)
+        {
+            if (FinalTransitions == null)
+            {
+                FinalTransitions = ReusableHashSet<NfaTransition>.GetAndClear();
+                HasFinalTransitions = true;
+            }
+
+            FinalTransitions.Add(nfaTransition);
+        }
+
         public int CompareTo(object obj)
         {
             if (obj == null)
@@ -372,13 +377,6 @@ namespace RapidPliant.Lexing.Automata
                 HasStates = false;
                 States.ClearAndFree();
                 States = null;
-            }
-
-            if (FinalStates != null)
-            {
-                HasFinalStates = false;
-                FinalStates.ClearAndFree();
-                FinalStates = null;
             }
         }
     }

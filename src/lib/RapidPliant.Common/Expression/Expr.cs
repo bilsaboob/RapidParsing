@@ -5,6 +5,8 @@ namespace RapidPliant.Common.Expression
 {
     public interface IExpr
     {
+        IExpr Root { get; }
+
         string Name { get; }
 
         bool IsGroup { get; }
@@ -39,6 +41,8 @@ namespace RapidPliant.Common.Expression
             IsAlteration = isAlteration;
             IsProduction = isProduction;
         }
+
+        public IExpr Root { get; set; }
 
         public string Name { get; set; }
         public ExprOptions Options { get; set; }
@@ -101,6 +105,19 @@ namespace RapidPliant.Common.Expression
         }
 
         #region Expr
+
+        public void EnsureRoot(IExpr rootExpr)
+        {
+            if(Root != null)
+                return;
+
+            Root = rootExpr;
+
+            foreach (var childExpr in _Expressions)
+            {
+                childExpr.EnsureRoot(rootExpr);
+            }
+        }
 
         protected virtual string _ToStringRef()
         {
