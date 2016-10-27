@@ -33,20 +33,32 @@ namespace RapidPliant.Testing.Tests
             var dfa = dfaBuilder.Create(nfa);
             var dfaGraph = dfa.ToDfaGraph();
             
-            TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekj");
+            //Should pass:
+            var passed = TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekj");
+
+            //Should fail:
+            //var passed = TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekkj");
+
+            //Should pass:
+            //var passed = TestLexing(dfaGraph, "abecdbekj");
         }
 
-        private void TestLexing(DfaGraph dfaGraph, string input)
+        private bool TestLexing(DfaGraph dfaGraph, string input)
         {
             var lexer = new DfaLexer(dfaGraph);
             var inputReader = new StringReader(input);
+            var success = false;
 
             IReadOnlyList<SpellingCapture> captures = null;
             while (lexer.CanContinue)
             {
                 var i = inputReader.Read();
-                if(i == -1)
+                if (i == -1)
+                {
+                    //TODO: currently no captures... but if we get here... it means we have successfully recognized the input up until this point...
+                    success = true;
                     break;
+                }
 
                 var ch = (char) i;
 
@@ -64,6 +76,7 @@ namespace RapidPliant.Testing.Tests
                 }
             }
 
+            //TODO: currently no captures...
             //Check all the captures
             captures = lexer.Captures;
             if (captures != null && captures.Count > 0)
@@ -73,6 +86,8 @@ namespace RapidPliant.Testing.Tests
                     var spelling = capture.Spelling;
                 }
             }
+
+            return success;
         }
 
         protected RegexExpr CreateLexExpr(string regexPattern)
