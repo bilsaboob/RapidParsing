@@ -70,6 +70,8 @@ namespace RapidPliant.Lexing.Automata
 
             CollectTransitionInfo();
         }
+
+        public DfaState FromState { get; set; }
         
         public DfaState ToState { get; private set; }
 

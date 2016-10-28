@@ -27,6 +27,16 @@ namespace RapidPliant.Testing.Tests
             TestMerged();
         }
 
+        private List<int> GenerateItems(int count)
+        {
+            var items = new List<int>();
+            for (var i = 1; i <= count; ++i)
+            {
+                items.Add(i);
+            }
+            return items;
+        }
+
         private void TestMerged()
         {
             var dfaGraph = CreateLexDfa(
@@ -67,9 +77,17 @@ namespace RapidPliant.Testing.Tests
             //var passed = TestLexing(dfaGraph, "abecdbekj");
         }
 
+
         private bool TestLexing(DfaGraph dfaGraph, string input)
         {
-            var lexer = new DfaLexer(dfaGraph);
+            //Lex using dfault state transition recognizer
+            return TestLexing(dfaGraph, input, new LexDfaTableTransitionRecognizer(dfaGraph));
+            //return TestLexing(dfaGraph, input, new LexDfaStateTransitionRecognizer(dfaGraph));
+        }
+
+        private bool TestLexing(DfaGraph dfaGraph, string input, IDfaRecognizer<char> recognizer)
+        {
+            var lexer = new DfaLexer(recognizer);
             var inputReader = new StringReader(input);
             var success = false;
 
@@ -86,7 +104,7 @@ namespace RapidPliant.Testing.Tests
 
                 var ch = (char) i;
 
-                lexer.Scan(ch);
+                lexer.Lex(ch);
 
                 //Check the captures that were captured for this scan pass
                 captures = lexer.ScannedCaptures;

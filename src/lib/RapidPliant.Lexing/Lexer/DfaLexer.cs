@@ -10,51 +10,103 @@ using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Lexer
 {
+    public interface IDfaRecognizer
+    {
+    }
+
+    public interface IDfaRecognizer<TInput> : IDfaRecognizer
+    {
+        IDfaRecognition Recognize(TInput input);
+
+        void Reset();
+    }
+
+    public interface IDfaRecognition
+    {
+        DfaState FromState { get; }
+        DfaState ToState { get; }
+        IEnumerable<IRecognizerCompletion> Completions { get; }
+    }
+
+    public interface IRecognizerCompletion
+    {
+        object CompletionInfo { get; }
+        object CompletedValue { get; }
+    }
+    
+    public class DfaTableRecognizer<TInput> : IDfaRecognizer<TInput>
+    {
+        public DfaTableRecognizer(DfaGraph dfaGraph)
+        {
+            DfaGraph = dfaGraph;
+
+            Build();
+        }
+        
+        protected DfaGraph DfaGraph { get; set; }
+
+        private void Build()
+        {
+        }
+
+        public IDfaRecognition Recognize(TInput input)
+        {
+            return null;
+        }
+
+        public void Reset()
+        {
+        }
+    }
+
     public class DfaLexer : IDisposable
     {
-        private DfaGraph _dfa;
-        private DfaState _startState;
-        private DfaState _state;
+        private CharBuffer _spelling;
+
+        protected List<SpellingCapture> _captures;
+        protected List<SpellingCapture> _scannedCaptures;
+
         private bool _canContinue;
 
-        private CharBuffer _spelling;
+        protected IDfaRecognizer<char> _recognizer;
         
-        private List<SpellingCapture> _captures;
-        private List<SpellingCapture> _scannedCaptures;
-
-        public DfaLexer(DfaGraph dfa)
+        public DfaLexer(IDfaRecognizer<char> recognizer)
         {
-            _dfa = dfa;
-            _startState = dfa.StartState;
+            _recognizer = recognizer;
             
             Reset();
         }
 
         public bool CanContinue { get { return _canContinue; } }
-
+        
         public IReadOnlyList<SpellingCapture> Captures { get { return _captures; } }
 
         public IReadOnlyList<SpellingCapture> ScannedCaptures { get { return _scannedCaptures; } }
-        
+
+        public void Init()
+        {
+            Reset();
+        }
+
         private void Reset()
         {
-            _state = _startState;
+            _recognizer.Reset();
+
             _spelling = new CharBuffer(ReusableStringBuilder.GetAndClear());
             _captures = ReusableList<SpellingCapture>.GetAndClear();
             _scannedCaptures = ReusableList<SpellingCapture>.GetAndClear();
 
             _canContinue = true;
         }
-        
-        public bool Scan(char ch)
+
+        public bool Lex(char ch)
         {
-            //Clear the scanned captures
             _scannedCaptures.Clear();
 
-            var t = GetTransition(ch);
-            if (t == null)
+            var r = _recognizer.Recognize(ch);
+            if (r == null)
             {
-                //No more valid transitions!
+                //No more valid recognition!
                 _canContinue = false;
                 return false;
             }
@@ -62,57 +114,29 @@ namespace RapidPliant.Lexing.Lexer
             //Append the spelling
             _spelling.Append(ch);
 
-            //Move to the next state
-            _state = t.ToState;
-
-            Capture(t);
+            Capture(r);
 
             return true;
         }
-        
-        private DfaTransition GetTransition(char ch)
+
+        private void Capture(IDfaRecognition recognition)
         {
-            //Find the transition for the specified char
-            var transitions = _state.Transitions;
-            var transitionsCount = transitions.Count;
-            for (var i = 0; i < transitionsCount; ++i)
-            {
-                var transition = transitions[i];
+            if(recognition == null)
+                return;
 
-                var interval = transition.Interval;
-                if (interval == null)
-                    continue;
-
-                if(ch < interval.Min)
-                    continue;
-
-                if(ch > interval.Max)
-                    continue;
-
-                return transition;
-            }
-
-            return null;
-        }
-
-        private void Capture(DfaTransition transition)
-        {
-            if (transition == null)
+            var completions = recognition.Completions;
+            if(completions == null)
                 return;
             
-            var completionsByExpressions = transition.CompletionsByExpression;
-            if(completionsByExpressions == null)
-                return;
-
-            foreach (var exprCompletion in completionsByExpressions)
+            foreach (var completion in completions)
             {
-                AddCapture(transition, exprCompletion);
+                AddCapture(recognition, completion);
             }
         }
 
-        private void AddCapture(DfaTransition transition, DfaCompletion completion)
+        private void AddCapture(IDfaRecognition recognition, IRecognizerCompletion completion)
         {
-            var capture = new SpellingCapture(_spelling, 0, _spelling.Length, transition, completion);
+            var capture = new SpellingCapture(_spelling, 0, _spelling.Length, recognition, completion);
             _captures.Add(capture);
             _scannedCaptures.Add(capture);
         }
@@ -180,16 +204,16 @@ namespace RapidPliant.Lexing.Lexer
         private int _startIndex;
         private int _endIndex;
 
-        private DfaTransition _capturedForTransition;
-        private DfaCompletion _capturedForCompletion;
+        private IDfaRecognition _capturedForRecognition;
+        private IRecognizerCompletion _capturedForCompletion;
 
-        public SpellingCapture(CharBuffer charBuffer, int startIndex, int endIndex, DfaTransition transition, DfaCompletion completion)
+        public SpellingCapture(CharBuffer charBuffer, int startIndex, int endIndex, IDfaRecognition recognition, IRecognizerCompletion completion)
         {
             _charBuffer = charBuffer;
             _startIndex = startIndex;
             _endIndex = endIndex;
 
-            _capturedForTransition = transition;
+            _capturedForRecognition = recognition;
             _capturedForCompletion = completion;
         }
 
@@ -205,7 +229,7 @@ namespace RapidPliant.Lexing.Lexer
             }
         }
 
-        public IExpr Expression { get { return _capturedForCompletion.Expression; } }
+        public IExpr Expression { get { return _capturedForCompletion.CompletedValue as IExpr; } }
     }
 }
 

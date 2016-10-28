@@ -44,7 +44,9 @@
     <Compile Include="Automata\DfaBuilder.cs" />
     <Compile Include="Automata\Nfa.cs" />
     <Compile Include="Automata\NfaBuilder.cs" />
-    <Compile Include="Lexer\LexDfaLexer.cs" />
+    <Compile Include="Lexer\LexDfaTableTransitionRecognizer.cs" />
+    <Compile Include="Lexer\LexDfaStateTransitionRecognizer.cs" />
+    <Compile Include="Lexer\DfaLexer.cs" />
     <Compile Include="Pattern\PatternExpr.cs" />
     <Compile Include="Pattern\Regex\RapidRegex.cs" />
     <Compile Include="Pattern\Regex\RegexExpr.cs" />
