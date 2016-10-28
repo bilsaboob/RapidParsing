@@ -77,7 +77,7 @@ namespace RapidPliant.Lexing.Automata
 
         public Interval Interval { get; private set; }
 
-        public IEnumerable<ITerminal> Terminals { get; private set; }
+        public IEnumerable<ITerminal> Terminals { get { return _terminals; } }
 
         public IEnumerable<NfaTransition> NfaTransitions { get; private set; }
         public IEnumerable<NfaTransition> NfaFinalTransitions { get; private set; }
