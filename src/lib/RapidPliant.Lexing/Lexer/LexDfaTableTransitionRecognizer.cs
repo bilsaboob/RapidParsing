@@ -213,6 +213,6 @@ namespace RapidPliant.Lexing.Lexer
 
         DfaState IDfaRecognition.FromState { get { return FromState.DfaState; } }
 
-        public IEnumerable<IRecognizerCompletion> Completions { get { return _completions; } }
+        public IReadOnlyList<IRecognizerCompletion> Completions { get { return _completions; } }
     }
 }

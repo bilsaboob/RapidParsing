@@ -44,6 +44,8 @@
     <Compile Include="Automata\DfaBuilder.cs" />
     <Compile Include="Automata\Nfa.cs" />
     <Compile Include="Automata\NfaBuilder.cs" />
+    <Compile Include="Lexer\Recognizer.cs" />
+    <Compile Include="Lexer\Lexer.cs" />
     <Compile Include="Lexer\LexDfaTableTransitionRecognizer.cs" />
     <Compile Include="Lexer\LexDfaStateTransitionRecognizer.cs" />
     <Compile Include="Lexer\DfaLexer.cs" />

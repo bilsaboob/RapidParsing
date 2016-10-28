@@ -91,7 +91,9 @@ namespace RapidPliant.Testing.Tests
             var inputReader = new StringReader(input);
             var success = false;
 
-            IReadOnlyList<SpellingCapture> captures = null;
+            var allCaptures = new List<ISpellingCapture>();
+
+            var lexContext = new LexContext();
             while (lexer.CanContinue)
             {
                 var i = inputReader.Read();
@@ -101,42 +103,39 @@ namespace RapidPliant.Testing.Tests
                     success = true;
                     break;
                 }
-
+                
+                //Prepare the lex context for the next lex
                 var ch = (char) i;
+                lexContext.CharToLex = ch;
+                lexContext.ClearCaptures();
 
-                lexer.Lex(ch);
+                //Lex!
+                lexer.Lex(lexContext);
 
-                //Check the captures that were captured for this scan pass
-                captures = lexer.ScannedCaptures;
-                if (captures != null && captures.Count > 0)
+                //Check the captures that were captured for this lex pass
+                //There can be multiple captures with same spelling, in case of multiple rules that match the same input
+                foreach (var capture in lexContext.Captures)
                 {
-                    //There can be multiple captures with same spelling, in case of multiple rules that match the same input
-                    foreach (var capture in captures)
-                    {
-                        var spelling = capture.Spelling;
-                    }
+                    var spelling = capture.Spelling;
+                    allCaptures.Add(capture);
                 }
             }
 
             //TODO: currently no captures...
             //Check all the captures
-            captures = lexer.Captures;
-            if (captures != null && captures.Count > 0)
+            foreach (var capture in allCaptures)
             {
-                foreach (var capture in captures)
-                {
-                    //The "expr" is the "leaf" expression that triggere the capture
-                    var expr = capture.Expression;
-                    var exprName = expr.Name;
+                //The "expr" is the "leaf" expression that triggere the capture
+                var expr = capture.Expression;
+                var exprName = expr.Name;
 
-                    //The "rootExpr" is the "pattern expression" that we defined above, and has the name that we specified... the "expr" is a subexpression to the root... at some unknown level...
-                    //In general the "rootExpr" is of interest... it may have interesting configuration such as "Trigger Action XYZ" / "Token Factory that creates expecte token" etc...
-                    var rootExpr = expr.Root;
-                    var rootExprName = rootExpr.Name;
+                //The "rootExpr" is the "pattern expression" that we defined above, and has the name that we specified... the "expr" is a subexpression to the root... at some unknown level...
+                //In general the "rootExpr" is of interest... it may have interesting configuration such as "Trigger Action XYZ" / "Token Factory that creates expecte token" etc...
+                var rootExpr = expr.Root;
+                var rootExprName = rootExpr.Name;
 
-                    //The spelling is the captured text
-                    var spelling = capture.Spelling;
-                }
+                //The spelling is the captured text
+                var spelling = capture.Spelling;
             }
 
             return success;

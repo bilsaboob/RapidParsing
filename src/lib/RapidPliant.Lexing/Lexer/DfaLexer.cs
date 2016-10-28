@@ -10,62 +10,10 @@ using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Lexer
 {
-    public interface IDfaRecognizer
-    {
-    }
-
-    public interface IDfaRecognizer<TInput> : IDfaRecognizer
-    {
-        IDfaRecognition Recognize(TInput input);
-
-        void Reset();
-    }
-
-    public interface IDfaRecognition
-    {
-        DfaState FromState { get; }
-        DfaState ToState { get; }
-        IEnumerable<IRecognizerCompletion> Completions { get; }
-    }
-
-    public interface IRecognizerCompletion
-    {
-        object CompletionInfo { get; }
-        object CompletedValue { get; }
-    }
-    
-    public class DfaTableRecognizer<TInput> : IDfaRecognizer<TInput>
-    {
-        public DfaTableRecognizer(DfaGraph dfaGraph)
-        {
-            DfaGraph = dfaGraph;
-
-            Build();
-        }
-        
-        protected DfaGraph DfaGraph { get; set; }
-
-        private void Build()
-        {
-        }
-
-        public IDfaRecognition Recognize(TInput input)
-        {
-            return null;
-        }
-
-        public void Reset()
-        {
-        }
-    }
-
-    public class DfaLexer : IDisposable
+    public class DfaLexer : ILexer, IDisposable
     {
         private CharBuffer _spelling;
-
-        protected List<SpellingCapture> _captures;
-        protected List<SpellingCapture> _scannedCaptures;
-
+        
         private bool _canContinue;
 
         protected IDfaRecognizer<char> _recognizer;
@@ -79,10 +27,6 @@ namespace RapidPliant.Lexing.Lexer
 
         public bool CanContinue { get { return _canContinue; } }
         
-        public IReadOnlyList<SpellingCapture> Captures { get { return _captures; } }
-
-        public IReadOnlyList<SpellingCapture> ScannedCaptures { get { return _scannedCaptures; } }
-
         public void Init()
         {
             Reset();
@@ -93,16 +37,15 @@ namespace RapidPliant.Lexing.Lexer
             _recognizer.Reset();
 
             _spelling = new CharBuffer(ReusableStringBuilder.GetAndClear());
-            _captures = ReusableList<SpellingCapture>.GetAndClear();
-            _scannedCaptures = ReusableList<SpellingCapture>.GetAndClear();
-
+            
             _canContinue = true;
         }
 
-        public bool Lex(char ch)
+        public bool Lex(ILexContext context)
         {
-            _scannedCaptures.Clear();
+            var ch = context.CharToLex;
 
+            //Let the recognizer check if we can move forward for the specified char
             var r = _recognizer.Recognize(ch);
             if (r == null)
             {
@@ -114,31 +57,18 @@ namespace RapidPliant.Lexing.Lexer
             //Append the spelling
             _spelling.Append(ch);
 
-            Capture(r);
+            //Check for any completions and add them to the lex context if any!
+            var completions = r.Completions;
+            if (completions != null)
+            {
+                foreach (var completion in completions)
+                {
+                    var capture = new SpellingCapture(_spelling, 0, _spelling.Length, r, completion);
+                    context.AddCapture(capture);
+                }
+            }
 
             return true;
-        }
-
-        private void Capture(IDfaRecognition recognition)
-        {
-            if(recognition == null)
-                return;
-
-            var completions = recognition.Completions;
-            if(completions == null)
-                return;
-            
-            foreach (var completion in completions)
-            {
-                AddCapture(recognition, completion);
-            }
-        }
-
-        private void AddCapture(IDfaRecognition recognition, IRecognizerCompletion completion)
-        {
-            var capture = new SpellingCapture(_spelling, 0, _spelling.Length, recognition, completion);
-            _captures.Add(capture);
-            _scannedCaptures.Add(capture);
         }
 
         public void Dispose()
@@ -146,16 +76,6 @@ namespace RapidPliant.Lexing.Lexer
             if (_spelling != null)
             {
                 _spelling.Dispose();
-            }
-
-            if (_captures != null)
-            {
-                _captures.ClearAndFree();
-            }
-
-            if (_scannedCaptures != null)
-            {
-                _scannedCaptures.ClearAndFree();
             }
         }
     }
@@ -196,8 +116,8 @@ namespace RapidPliant.Lexing.Lexer
             }
         }
     }
-
-    public class SpellingCapture
+    
+    public class SpellingCapture : ISpellingCapture
     {
         private string _spelling;
         private CharBuffer _charBuffer;
