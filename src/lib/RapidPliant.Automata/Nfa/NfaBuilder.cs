@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using RapidPliant.Common.Expression;
-using RapidPliant.Common.Symbols;
-using RapidPliant.Lexing.Pattern;
-using RapidPliant.Util;
 
-namespace RapidPliant.Lexing.Automata
+namespace RapidPliant.Automata.Nfa
 {
     public interface INfaBuilder
     {

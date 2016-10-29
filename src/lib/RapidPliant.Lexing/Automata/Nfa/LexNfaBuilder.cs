@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using RapidPliant.Automata.Nfa;
 using RapidPliant.Common.Expression;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Lexing.Pattern;
 
-namespace RapidPliant.Lexing.Automata
+namespace RapidPliant.Lexing.Automata.Nfa
 {
     public class LexNfaBuilder : NfaBuilder
     {
@@ -46,7 +43,7 @@ namespace RapidPliant.Lexing.Automata
         #region Nfa factories
         protected virtual INfa CreateTerminalNfa(INfaState start, INfaState end, ITerminal terminal, IExpr expr)
         {
-            return new Nfa(start, end);
+            return new RapidPliant.Automata.Nfa.Nfa(start, end);
         }
 
         protected virtual LexNfaTransition CreateTerminalTransition(INfaState fromState, INfaState toState, ITerminal terminal, IExpr expr)

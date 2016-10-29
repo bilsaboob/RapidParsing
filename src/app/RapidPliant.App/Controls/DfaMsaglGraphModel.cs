@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Msagl.Drawing;
+using RapidPliant.Automata.Dfa;
 using RapidPliant.Lexing.Automata;
 
 namespace RapidPliant.App.ViewModels

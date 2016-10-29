@@ -1,4 +1,6 @@
-﻿using RapidPliant.Lexing.Automata;
+﻿using RapidPliant.Automata.Nfa;
+using RapidPliant.Lexing.Automata;
+using RapidPliant.Lexing.Automata.Nfa;
 
 namespace RapidPliant.App.ViewModels
 {

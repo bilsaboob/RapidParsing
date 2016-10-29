@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Msagl.Drawing;
+using RapidPliant.Automata.Nfa;
 using RapidPliant.Common.Rule;
 using RapidPliant.Lexing.Automata;
 using RapidPliant.Lexing.Pattern;

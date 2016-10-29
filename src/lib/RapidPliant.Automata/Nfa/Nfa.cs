@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using RapidPliant.Automata;
 using RapidPliant.Collections;
 using RapidPliant.Common.Expression;
-using RapidPliant.Common.Symbols;
 using RapidPliant.Util;
 
-namespace RapidPliant.Lexing.Automata
+namespace RapidPliant.Automata.Nfa
 {
     #region Nfa
     public interface INfaGraph : IStateGraph

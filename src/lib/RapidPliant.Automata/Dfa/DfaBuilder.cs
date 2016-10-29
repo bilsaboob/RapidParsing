@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using RapidPliant.Automata.Nfa;
 using RapidPliant.Collections;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Util;
 
-namespace RapidPliant.Lexing.Automata
+namespace RapidPliant.Automata.Dfa
 {
     public interface IDfaBuilder
     {

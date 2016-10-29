@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using RapidPliant.Common.Expression;
+﻿using RapidPliant.Automata.Nfa;
 
-namespace RapidPliant.Lexing.Automata
+namespace RapidPliant.Lexing.Automata.Nfa
 {
     public class LexNfaAutomata : NfaAutomata<LexNfaAutomata>
     {

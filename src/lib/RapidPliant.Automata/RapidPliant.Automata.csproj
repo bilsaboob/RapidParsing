@@ -40,8 +40,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Dfa\Dfa.cs" />
+    <Compile Include="Dfa\DfaAutomata.cs" />
+    <Compile Include="Dfa\DfaBuilder.cs" />
     <Compile Include="Graph.cs" />
     <Compile Include="GraphState.cs" />
+    <Compile Include="Nfa\Nfa.cs" />
+    <Compile Include="Nfa\NfaAutomata.cs" />
+    <Compile Include="Nfa\NfaBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

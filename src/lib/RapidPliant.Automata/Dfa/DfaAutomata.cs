@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RapidPliant.Automata.Nfa;
 
-namespace RapidPliant.Lexing.Automata.Dfa
+namespace RapidPliant.Automata.Dfa
 {
     public abstract class DfaAutomata<TAutomata>
         where TAutomata : DfaAutomata<TAutomata>, new()

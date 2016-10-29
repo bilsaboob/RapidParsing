@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RapidPliant.Automata.Nfa;
 using RapidPliant.Common.Symbols;
 
-namespace RapidPliant.Lexing.Automata
+namespace RapidPliant.Lexing.Automata.Nfa
 {
     public interface ILexNfaTransition : INfaTransition
     {
