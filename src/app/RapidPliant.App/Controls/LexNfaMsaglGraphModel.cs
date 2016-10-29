@@ -5,7 +5,7 @@ using RapidPliant.Lexing.Automata;
 
 namespace RapidPliant.App.ViewModels
 {
-    public class LexNfaMsaglGraphModel : MsaglGraphModel<NfaState, NfaTransition>
+    public class LexNfaMsaglGraphModel : MsaglGraphModel<LexNfaAutomata.LexNfaState, LexNfaAutomata.LexNfaTransition>
     {
         public LexNfaMsaglGraphModel()
         {
@@ -16,35 +16,35 @@ namespace RapidPliant.App.ViewModels
             return new LexNfaMsaglGraph();
         }
 
-        protected override int GetStateId(NfaState state)
+        protected override int GetStateId(LexNfaAutomata.LexNfaState state)
         {
             return state.Id;
         }
 
-        protected override IEnumerable<NfaTransition> GetStateTransitions(NfaState state)
+        protected override IEnumerable<LexNfaAutomata.LexNfaTransition> GetStateTransitions(LexNfaAutomata.LexNfaState state)
         {
             return state.Transitions;
         }
         
-        protected override NfaState GetTransitionToState(NfaTransition transition)
+        protected override LexNfaAutomata.LexNfaState GetTransitionToState(LexNfaAutomata.LexNfaTransition transition)
         {
             return transition.ToState;
         }
 
-        protected override string GetStateLabel(NfaState state)
+        protected override string GetStateLabel(LexNfaAutomata.LexNfaState state)
         {
             return state.Id.ToString();
         }
 
-        protected override string GetTransitionLabel(NfaTransition transition)
+        protected override string GetTransitionLabel(LexNfaAutomata.LexNfaTransition transition)
         {
-            var terminalTransition = transition as TerminalNfaTransition;
+            var terminalTransition = transition as ILexNfaTerminalTransition;
             if (terminalTransition != null)
             {
                 return terminalTransition.Terminal.ToString();
             }
 
-            var nullTransition = transition as NullNfaTransition;
+            var nullTransition = transition as ILexNfaNullTransition;
             if (nullTransition != null)
             {
                 //Null transitions have no label yet... until Prediction and such...

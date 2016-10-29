@@ -33,7 +33,7 @@ namespace RapidPliant.App.ViewModels
             LoadDataForLexGraph(nfa);
         }
 
-        protected virtual void LoadDataForLexGraph(NfaGraph nfa)
+        protected virtual void LoadDataForLexGraph(LexNfaAutomata.LexNfaGraph nfa)
         {
             //Iterate the lex def and create a graph!
             var states = nfa.States.OrderBy(s => s.Id).ToList();

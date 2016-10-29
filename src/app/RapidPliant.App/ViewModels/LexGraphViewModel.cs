@@ -7,13 +7,9 @@ namespace RapidPliant.App.ViewModels
     {
         public LexGraphViewModel()
         {
-            LexNfaBuilder = new NfaBuilder();
-            LexDfaBuilder = new DfaBuilder();
             Regex = new RapidRegex();
         }
 
-        protected NfaBuilder LexNfaBuilder { get; set; }
-        protected DfaBuilder LexDfaBuilder { get; set; }
         protected RapidRegex Regex { get; set; }
 
         #region Helpers
@@ -27,7 +23,7 @@ namespace RapidPliant.App.ViewModels
             return expr;
         }
 
-        protected NfaGraph CreateLexNfaGraph(string regexPattern, string name = null)
+        protected LexNfaAutomata.LexNfaGraph CreateLexNfaGraph(string regexPattern, string name = null)
         {
             var patternExpr = CreateLexExpr(regexPattern, name);
             return CreateLexNfaGraph(patternExpr, name);
@@ -39,28 +35,29 @@ namespace RapidPliant.App.ViewModels
             return CreateLexDfaGraph(patternExpr, name);
         }
 
-        protected NfaGraph CreateLexNfaGraph(params RegexExpr[] patternExpressions)
+        protected LexNfaAutomata.LexNfaGraph CreateLexNfaGraph(params RegexExpr[] patternExpressions)
         {
-            var nfa = LexNfaBuilder.Create(patternExpressions);
-            return nfa.ToNfaGraph();
+            var nfa = LexNfaAutomata.BuildNfa(patternExpressions);
+            return (LexNfaAutomata.LexNfaGraph)nfa.ToNfaGraph();
         }
 
         protected DfaGraph CreateLexDfaGraph(params RegexExpr[] patternExpressions)
         {
-            var nfa = LexNfaBuilder.Create(patternExpressions);
-            var dfa = LexDfaBuilder.Create(nfa);
+            var nfa = LexNfaAutomata.BuildNfa(patternExpressions);
+            var nfaGraph = nfa.ToNfaGraph();
+            var dfa = LexDfaAutomata.BuildDfa(nfaGraph);
             return dfa.ToDfaGraph();
         }
 
-        protected NfaGraph CreateLexNfaGraph(RegexExpr patternExpr, string name = null)
+        protected LexNfaAutomata.LexNfaGraph CreateLexNfaGraph(RegexExpr patternExpr, string name = null)
         {
             if (!string.IsNullOrEmpty(name))
             {
                 patternExpr.Name = name;
             }
 
-            var nfa = LexNfaBuilder.Create(patternExpr);
-            return nfa.ToNfaGraph();
+            var nfa = LexNfaAutomata.BuildNfa(patternExpr);
+            return (LexNfaAutomata.LexNfaGraph)nfa.ToNfaGraph();
         }
 
         protected DfaGraph CreateLexDfaGraph(RegexExpr patternExpr, string name = null)
@@ -70,8 +67,9 @@ namespace RapidPliant.App.ViewModels
                 patternExpr.Name = name;
             }
 
-            var nfa = LexNfaBuilder.Create(patternExpr);
-            var dfa = LexDfaBuilder.Create(nfa);
+            var nfa = LexNfaAutomata.BuildNfa(patternExpr);
+            var nfaGraph = nfa.ToNfaGraph();
+            var dfa = LexDfaAutomata.BuildDfa(nfaGraph);
             return dfa.ToDfaGraph();
         }
         #endregion

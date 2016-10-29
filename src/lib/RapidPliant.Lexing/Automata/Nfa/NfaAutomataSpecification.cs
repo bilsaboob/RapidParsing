@@ -165,6 +165,8 @@ namespace RapidPliant.Lexing.Automata
 
         protected Nfa(TNfaState startState, TNfaState endState)
         {
+            _this = (TNfa)this;
+
             Start = startState;
             End = endState;
         }
@@ -179,12 +181,6 @@ namespace RapidPliant.Lexing.Automata
 
         public IExpr Expression { get; set; }
 
-        public TNfa WithExpression(IExpr expression)
-        {
-            Expression = expression;
-            return Self;
-        }
-
         public abstract INfaGraph ToNfaGraph();
     }
     #endregion
@@ -192,6 +188,7 @@ namespace RapidPliant.Lexing.Automata
     #region State
     public interface INfaState
     {
+        int Id { get; }
         IReadOnlyList<INfaTransition> Transitions { get; }
         bool AddTransition(INfaTransition transition);
         IEnumerable<INfaState> GetExpandedTransitionStates();

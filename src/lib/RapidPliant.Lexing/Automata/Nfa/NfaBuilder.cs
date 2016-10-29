@@ -254,7 +254,7 @@ namespace RapidPliant.Lexing.Automata
         {
             using (var buildContext = CreateBuildContext())
             {
-                return BuildForExpression(buildContext, expr).WithExpression(expr);
+                return BuildForExpression(buildContext, expr);
             }
         }
 
