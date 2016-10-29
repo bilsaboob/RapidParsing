@@ -7,7 +7,7 @@ using RapidPliant.Common.Expression;
 
 namespace RapidPliant.Lexing.Pattern
 {
-    public abstract class PatternExpr<TExpr> : Expr<TExpr>, IPatternExpr
+    public abstract class PatternExpr<TExpr> : Expr<TExpr>
         where TExpr : PatternExpr<TExpr>
     {
         public PatternExpr()

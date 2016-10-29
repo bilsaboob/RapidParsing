@@ -8,6 +8,15 @@ namespace RapidPliant.Automata
         bool IsValid { get; }
     }
 
+    public interface IGraphTransition
+    {
+        IGraphState FromState { get; }
+        IGraphState ToState { get; }
+
+        void EnsureFromState(IGraphState fromState);
+        void EnsureToState(IGraphState toState);
+    }
+
     public abstract class GraphStateBase : IGraphState, IComparable<GraphStateBase>, IComparable, IDisposable
     {
         private int _guidHashCode;

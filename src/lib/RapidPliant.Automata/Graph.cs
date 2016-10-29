@@ -5,11 +5,30 @@ using RapidPliant.Util;
 
 namespace RapidPliant.Automata
 {
-    public abstract class Graph<TRoot, TState, TTransition, TBuildContext> : IDisposable
+    public interface IStateGraph
+    {
+        void EnsureCompiled();
+    }
+
+    public interface IStateGraph<TState> : IStateGraph
+    {
+        TState StartState { get; }
+        IReadOnlyList<TState> States { get; }
+    }
+
+    public interface IStateGraph<TRoot, TState> : IStateGraph<TState>
+    {
+        TRoot Root { get; }
+    }
+
+    public abstract class Graph<TRoot, TState, TTransition, TBuildContext> : IStateGraph<TRoot, TState>, IDisposable
         where TRoot : class
         where TState : class, IGraphState
+        where TTransition : IGraphTransition
         where TBuildContext : GraphBuildContext<TRoot, TState, TTransition>, new()
     {
+        private bool _hasBuilt;
+
         private UniqueList<TState> _states;
 
         private int NextAvailableStateId { get; set; }
@@ -44,6 +63,14 @@ namespace RapidPliant.Automata
 
         public IReadOnlyList<TState> States { get { return _states; } }
 
+        public void EnsureCompiled()
+        {
+            if(_hasBuilt)
+                return;
+
+            BuildForRoot(Root);
+        }
+
         protected bool AddState(TState state)
         {
             return _states.AddIfNotExists(state);
@@ -58,6 +85,8 @@ namespace RapidPliant.Automata
             {
                 BuildForState(buildContext, StartState);
             }
+
+            _hasBuilt = true;
         }
 
         protected virtual TBuildContext CreateBuildContext()
@@ -82,9 +111,13 @@ namespace RapidPliant.Automata
             //Build for the transitions
             foreach (var transition in transitions)
             {
+                transition.EnsureFromState(state);
+
                 var toState = GetTransitionToState(transition);
                 if (toState != null)
                 {
+                    transition.EnsureToState(toState);
+
                     c.EnterTransition(transition);
                     BuildForState(c, toState);
                 }
@@ -129,12 +162,13 @@ namespace RapidPliant.Automata
 
                 _states.ClearAndFree();
             }
-        }
+        }   
     }
 
     public abstract class Graph<TRoot, TState, TTransition> : Graph<TRoot, TState, TTransition, GraphBuildContext<TRoot, TState, TTransition>>
         where TRoot : class
         where TState : class, IGraphState
+        where TTransition : IGraphTransition
     {
         protected Graph()
             : base(null, null)

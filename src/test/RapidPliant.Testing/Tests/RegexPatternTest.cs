@@ -17,8 +17,6 @@ namespace RapidPliant.Testing.Tests
 {
     public class RegexPatternTest : TestBase
     {
-        private NfaBuilder NfaBuilder = new NfaBuilder();
-        private DfaBuilder DfaBuilder = new DfaBuilder();
         private RapidRegex Regex = new RapidRegex();
 
         protected override void Test()
@@ -61,10 +59,10 @@ namespace RapidPliant.Testing.Tests
             //var expr = CreateLexExpr("a(bc|bd)*e");
             var expr = CreateLexExpr("a([b-e])*bekj");
 
-            var nfa = NfaBuilder.Create(expr);
+            var nfa = LexNfaAutomata.BuildNfa(expr);
             var nfaGraph = nfa.ToNfaGraph();
 
-            var dfa = DfaBuilder.Create(nfa);
+            var dfa = LexDfaAutomata.BuildDfa(nfaGraph);
             var dfaGraph = dfa.ToDfaGraph();
 
             //Should pass:
@@ -156,8 +154,10 @@ namespace RapidPliant.Testing.Tests
 
         protected DfaGraph CreateLexDfa(IEnumerable<RegexExpr> expressions)
         {
-            var nfa = NfaBuilder.Create(expressions);
-            var dfa = DfaBuilder.Create(nfa);
+            var nfa = LexNfaAutomata.BuildNfa(expressions);
+            var nfaGraph = nfa.ToNfaGraph();
+
+            var dfa = LexDfaAutomata.BuildDfa(nfaGraph);
             return dfa.ToDfaGraph();
         }
     }

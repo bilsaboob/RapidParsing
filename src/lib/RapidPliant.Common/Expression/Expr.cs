@@ -20,8 +20,19 @@ namespace RapidPliant.Common.Expression
 
         void AddExpr(IExpr expr);
     }
+
+    public interface IExpr<TExpr>
+    {
+        TExpr Self { get; }
+
+        TExpr Root { get; }
+
+        IReadOnlyList<TExpr> Expressions { get; }
+
+        void AddExpr(TExpr expr);
+    }
     
-    public abstract partial class Expr<TExpr> : IExpr
+    public abstract partial class Expr<TExpr> : IExpr<TExpr>, IExpr
         where TExpr : Expr<TExpr>
     {
         protected readonly TExpr _this;
@@ -41,8 +52,11 @@ namespace RapidPliant.Common.Expression
             IsAlteration = isAlteration;
             IsProduction = isProduction;
         }
-
-        public IExpr Root { get; set; }
+        
+        public TExpr Self { get { return _this; } }
+        
+        public TExpr Root { get; set; }
+        IExpr IExpr.Root { get { return Root; } }
 
         public string Name { get; set; }
         public ExprOptions Options { get; set; }
@@ -106,7 +120,7 @@ namespace RapidPliant.Common.Expression
 
         #region Expr
 
-        public void EnsureRoot(IExpr rootExpr)
+        public void EnsureRoot(TExpr rootExpr)
         {
             if(Root != null)
                 return;
@@ -175,9 +189,15 @@ namespace RapidPliant.Common.Expression
         #region Group expr
         protected List<TExpr> _Expressions { get; private set; }
 
-        public IReadOnlyList<IExpr> Expressions { get { return _Expressions; } }
+        public IReadOnlyList<TExpr> Expressions { get { return _Expressions; } }
+        IReadOnlyList<IExpr> IExpr.Expressions { get { return _Expressions; } }
 
-        public void AddExpr(IExpr expr)
+        public void AddExpr(TExpr expr)
+        {
+            _AddExpr(expr);
+        }
+
+        void IExpr.AddExpr(IExpr expr)
         {
             _AddExpr((TExpr)expr);
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using RapidPliant.Collections;
@@ -9,19 +10,19 @@ namespace RapidPliant.Lexing.Automata
 {
     public class DfaBuildContext : IDisposable
     {
-        private Nfa _nfa;
+        private INfa _nfa;
         private ProcessOnceQueue<NfaClosure> _processQueue;
-        private SortedSet<NfaState> _transitionStates;
+        private SortedSet<INfaState> _transitionStates;
 
-        public DfaBuildContext(Nfa nfa)
+        public DfaBuildContext(INfa nfa)
         {
             _nfa = nfa;
 
             _processQueue = ReusableProcessOnceQueue<NfaClosure>.GetAndClear();
-            _transitionStates = ReusableSortedSet<NfaState>.GetAndClear();
+            _transitionStates = ReusableSortedSet<INfaState>.GetAndClear();
         }
 
-        public Nfa Nfa { get { return _nfa; } }
+        public INfa Nfa { get { return _nfa; } }
 
         public NfaClosure StartNfaClosure { get; set; }
         
@@ -43,31 +44,46 @@ namespace RapidPliant.Lexing.Automata
             return _processQueue.EnqueueOrGetExisting(closure);
         }
 
-        public NfaClosure Closure(IEnumerable<NfaTransition> nfaTransitions)
+        public NfaClosure Closure(INfaState toState)
+        {
+            var closure = new NfaClosure();
+            EvalClosureForState(closure, null, toState);
+            return closure;
+        }
+
+        public NfaClosure Closure(IEnumerable<INfaTransition> nfaTransitions)
         {
             var closure = new NfaClosure();
             foreach (var nfaTransition in nfaTransitions)
             {
                 var toState = nfaTransition.ToState;
-                if (toState == null)
-                    continue;
-
-                //Expand the transitions
-                var expandedStates = toState.GetExpandedTransitionStates();
-                foreach (var nfaState in expandedStates)
-                {
-                    var isFinalState = nfaState.Equals(Nfa.End);
-                    if (isFinalState)
-                    {
-                        closure.DfaState.IsFinal = true;
-                        closure.AddFinalTransition(nfaTransition);
-                    }
-                    
-                    closure.AddState(nfaState);
-                }
+                EvalClosureForState(closure, nfaTransition, toState);
             }
 
             return closure;
+        }
+
+        private void EvalClosureForState(NfaClosure closure, INfaTransition nfaTransition, INfaState toState)
+        {
+            if (toState == null)
+                return;
+
+            //Expand the transitions
+            var expandedStates = toState.GetExpandedTransitionStates();
+            foreach (var nfaState in expandedStates)
+            {
+                var isFinalState = nfaState.Equals(Nfa.End);
+                if (isFinalState)
+                {
+                    closure.DfaState.IsFinal = true;
+                    if (nfaTransition != null)
+                    {
+                        closure.AddFinalTransition(nfaTransition);
+                    }
+                }
+
+                closure.AddState(nfaState);
+            }
         }
 
         public void Dispose()
@@ -77,16 +93,19 @@ namespace RapidPliant.Lexing.Automata
         }
     }
 
-    public class DfaBuilder
+    public abstract class DfaBuilder<TTransitionValue, TStateBuilder, TDfaBuildContext>
+        where TStateBuilder : DfaStateBuilder<TTransitionValue, TDfaBuildContext>
+        where TDfaBuildContext : DfaBuildContext
     {
         public DfaBuilder()
         {
         }
 
-        public DfaState Create(Nfa nfa)
+        public DfaState Create(INfaGraph nfaGraph)
         {
-            if (!nfa.Start.IsValid)
-                nfa.ToNfaGraph();
+            nfaGraph.EnsureCompiled();
+
+            var nfa = nfaGraph.Nfa;
 
             using (var buildContext = BeginBuild(nfa))
             {
@@ -94,16 +113,19 @@ namespace RapidPliant.Lexing.Automata
             }
         }
 
-        private DfaBuildContext BeginBuild(Nfa nfa)
+        private TDfaBuildContext BeginBuild(INfa nfa)
         {
-            var c = new DfaBuildContext(nfa);
+            var c = CreateBuildContext(nfa);
             //Get the initial closure to start with!
-            c.StartNfaClosure = c.Closure(new[]{new NullNfaTransition(nfa.Start)});
+            c.StartNfaClosure = c.Closure(nfa.Start);
+
             c.Enqueue(c.StartNfaClosure);
             return c;
         }
 
-        public DfaState Build(DfaBuildContext c)
+        protected abstract TDfaBuildContext CreateBuildContext(INfa nfa);
+
+        public DfaState Build(TDfaBuildContext c)
         {
             //Keep processing closures until no more to process!
             while (true)
@@ -112,7 +134,7 @@ namespace RapidPliant.Lexing.Automata
                 if(closure == null)
                     break;
 
-                var stateBuilder = new DfaStateBuilder(closure);
+                var stateBuilder = CreateStateBuilder(closure);
 
                 if (closure.HasStates)
                 {
@@ -127,61 +149,56 @@ namespace RapidPliant.Lexing.Automata
             
             return c.StartNfaClosure.DfaState;
         }
+
+        protected abstract TStateBuilder CreateStateBuilder(NfaClosure closure);
     }
 
-    public class DfaStateBuilder
+    public abstract class DfaStateBuilder<TTransitionValue, TDfaBuildContext>
+        where TDfaBuildContext : DfaBuildContext
     {
         public DfaStateBuilder(NfaClosure closure)
         {
-            Transitions = new NfaClosureTransitions();
+            ClosureTransitions = new NfaClosureTransitions<TTransitionValue>();
             Closure = closure;
         }
 
         public NfaClosure Closure { get; set; }
 
-        public NfaClosureTransitions Transitions { get; set; }
+        public NfaClosureTransitions<TTransitionValue> ClosureTransitions { get; set; }
 
-        public void BuildForNfaState(DfaBuildContext c, NfaState nfaState)
+        public void BuildForNfaState(TDfaBuildContext c, INfaState nfaState)
         {
+            var transitions = nfaState.Transitions;
+            if(transitions == null)
+                return;
+
             //We will process the "from nfa state" to be part of this DFA state... basically we need to include the outgoing terminal transitions!
             foreach (var transition in nfaState.Transitions)
             {
-                var terminalTransition = transition as TerminalNfaTransition;
-                if (terminalTransition == null)
-                    continue;
-
-                //Here we must take into account the different char intervals a terminal can have!
-                Transitions.AddTerminalTransition((TerminalNfaTransition)terminalTransition.ThisOrClonedWithFromState(nfaState));
+                //Build for each transition!
+                BuildFornNfaTransition(transition);
             }
         }
 
-        public void Build(DfaBuildContext c)
+        protected abstract void BuildFornNfaTransition(INfaTransition transition);
+
+        public void Build(TDfaBuildContext c)
         {
-            var state = Closure.DfaState;
+            var dfaState = Closure.DfaState;
 
             //Process the transitions by unique symbol / terminal
-            var transitions = Transitions.GetTransitionsByTerminalIntervals();
-
-            //We need to split the terminal transitions into unique non overlapping intervals
-            var nonOverlappingIntervalTransitions = new NonOverlappingIntervalSet<NfaTransition>();
-            foreach (var transitionsByTerminalIntervals in transitions)
+            var nfaTransitionsByValueCollections = GetNfaTransitionsByValue();
+            
+            foreach (var nfaTransitionsByValue in nfaTransitionsByValueCollections)
             {
-                var interval = transitionsByTerminalIntervals.Interval;
-                var nfaTransitions = transitionsByTerminalIntervals.Transitions;
+                //Get the transitions!
+                var transitionValue = nfaTransitionsByValue.TransitionValue;
+                var nfaTransitions = nfaTransitionsByValue.Transitions;
 
-                //Add the interval, which will split into non overlapping intervals, but keep the association of the nfa transitions for each of the splits
-                nonOverlappingIntervalTransitions.AddInterval(interval, nfaTransitions);
-            }
-
-            //Now lets iterate each of the non overlapping intervall transitions
-            foreach (var transitionsByTerminalIntervals in nonOverlappingIntervalTransitions)
-            {
-                var terminalTransitions = transitionsByTerminalIntervals.AssociatedItems;
-                
                 //Get the closure for the transitions - basically expand the transitions one step ahead, following until a "terminal transition" is reached...
                 //We are basically expanding the "nfa path tree"
-                var closure = c.Closure(terminalTransitions);
-                
+                var closure = c.Closure(nfaTransitions);
+
                 //Only process each "location" once
                 var nextClosure = c.EnqueueOrGetExisting(closure);
                 if (nextClosure != closure)
@@ -190,92 +207,93 @@ namespace RapidPliant.Lexing.Automata
                     closure.Dispose();
                 }
                 
-                var interval = transitionsByTerminalIntervals.Interval;
-
                 //Add transition to the next DFA state
-                state.AddTransition(new DfaTransition(interval, terminalTransitions, nextClosure.FinalTransitions, nextClosure.DfaState));
+                var dfaTransition = CreateDfaTransition(transitionValue, nfaTransitions, nextClosure.FinalTransitions, nextClosure.DfaState);
+                dfaState.AddTransition(dfaTransition);
             }
         }
+        
+        protected abstract IEnumerable<INfaTransitionsByValue<TTransitionValue>> GetNfaTransitionsByValue();
+
+        protected abstract DfaTransition CreateDfaTransition(TTransitionValue transitionValue, IEnumerable<INfaTransition> nfaTransitions, HashSet<INfaTransition> finalNfaTransitions, DfaState toDfaState);
     }
 
-    public class NfaClosureTransitions
+    public class NfaClosureTransitions<TTransitionValue>
     {
-        private Dictionary<Interval, TransitionsEntry> _terminalIntervalTransitions;
+        private Dictionary<TTransitionValue, DfaTransitionsEntry> _nfaTransitionsByValue;
 
         public NfaClosureTransitions()
         {
-            _terminalIntervalTransitions = new Dictionary<Interval, TransitionsEntry>();
+            _nfaTransitionsByValue = new Dictionary<TTransitionValue, DfaTransitionsEntry>();
         }
-
-        public void AddTerminalTransition(TerminalNfaTransition terminalTransition)
+        
+        public DfaTransitionsEntry AddTransition(TTransitionValue transitionValue, INfaTransition valueNfaTransition)
         {
-            //Instead of storing transitions per terminal - we must store the transitions per character range part of the terminal
-            var terminal = terminalTransition.Terminal;
-
-            var intervals = terminal.GetIntervals();
-            foreach (var interval in intervals)
+            DfaTransitionsEntry transitionsForIntervalEntry;
+            if (!_nfaTransitionsByValue.TryGetValue(transitionValue, out transitionsForIntervalEntry))
             {
-                TransitionsEntry transitionsForIntervalEntry;
-                if (!_terminalIntervalTransitions.TryGetValue(interval, out transitionsForIntervalEntry))
-                {
-                    transitionsForIntervalEntry = new TransitionsEntry();
-                    transitionsForIntervalEntry.Interval = interval;
-                    _terminalIntervalTransitions[interval] = transitionsForIntervalEntry;
-                }
-
-                //Add the transition and terminal for the interval!
-                transitionsForIntervalEntry.AddTerminal(terminal);
-                transitionsForIntervalEntry.AddTransition(terminalTransition);
+                transitionsForIntervalEntry = new DfaTransitionsEntry();
+                transitionsForIntervalEntry.Value = transitionValue;
+                _nfaTransitionsByValue[transitionValue] = transitionsForIntervalEntry;
             }
-            
+
+            //Add the transition and terminal for the interval!
+            transitionsForIntervalEntry.AddTransition(valueNfaTransition);
+            return transitionsForIntervalEntry;
         }
 
-        public IEnumerable<TerminalTransitionsCollection> GetTransitionsByTerminalIntervals()
+        public IEnumerable<INfaTransitionsByValue<TTransitionValue>> GetTransitionsByTerminalIntervals()
         {
-            return _terminalIntervalTransitions.Select(p => new TerminalTransitionsCollection(p.Value));
+            return _nfaTransitionsByValue.Select(p => new ClosureNfaTransitionsByValue(p.Value));
         }
 
-        public class TransitionsEntry
+        public class DfaTransitionsEntry
         {
             private List<ITerminal> _terminals;
-            private List<NfaTransition> _transitions;
+            private List<INfaTransition> _transitions;
 
-            internal TransitionsEntry()
+            internal DfaTransitionsEntry()
             {
                 _terminals = new List<ITerminal>();
-                _transitions = new List<NfaTransition>();
+                _transitions = new List<INfaTransition>();
             }
 
-            public Interval Interval { get; set; }
+            public TTransitionValue Value { get; set; }
 
             public IReadOnlyList<ITerminal> Terminals { get { return _terminals; } }
 
-            public IReadOnlyList<NfaTransition> Transitions { get { return _transitions; } }
+            public IReadOnlyList<INfaTransition> Transitions { get { return _transitions; } }
 
             public void AddTerminal(ITerminal terminal)
             {
                 _terminals.Add(terminal);
             }
 
-            public void AddTransition(NfaTransition transition)
+            public void AddTransition(INfaTransition transition)
             {
                 _transitions.Add(transition);
             }
         }
 
-        public class TerminalTransitionsCollection
+        private class ClosureNfaTransitionsByValue : INfaTransitionsByValue<TTransitionValue>
         {
-            private TransitionsEntry _transitionEntry;
+            private DfaTransitionsEntry _transitionEntry;
 
-            public TerminalTransitionsCollection(TransitionsEntry transitionEntry)
+            public ClosureNfaTransitionsByValue(DfaTransitionsEntry transitionEntry)
             {
                 _transitionEntry = transitionEntry;
             }
 
-            public Interval Interval { get { return _transitionEntry.Interval; } }
+            public TTransitionValue TransitionValue { get { return _transitionEntry.Value; } }
             public IEnumerable<ITerminal> Terminals { get { return _transitionEntry.Terminals; } }
-            public IEnumerable<NfaTransition> Transitions { get { return _transitionEntry.Transitions; } }
+            public IEnumerable<INfaTransition> Transitions { get { return _transitionEntry.Transitions; } }
         }
+    }
+    
+    public interface INfaTransitionsByValue<TTransitionValue>
+    {
+        TTransitionValue TransitionValue { get; }
+        IEnumerable<INfaTransition> Transitions { get; }
     }
 
     public class NfaClosure : IComparable<NfaClosure>, IComparable, IDisposable
@@ -290,16 +308,16 @@ namespace RapidPliant.Lexing.Automata
         public DfaState DfaState { get; set; }
         
         public bool HasStates { get; private set; }
-        public SortedSet<NfaState> States { get; private set; }
+        public SortedSet<INfaState> States { get; private set; }
 
         public bool HasFinalTransitions { get; private set; }
-        public HashSet<NfaTransition> FinalTransitions { get; private set; }
+        public HashSet<INfaTransition> FinalTransitions { get; private set; }
 
-        public bool AddState(NfaState state)
+        public bool AddState(INfaState state)
         {
             if (States == null)
             {
-                States = ReusableSortedSet<NfaState>.GetAndClear();
+                States = ReusableSortedSet<INfaState>.GetAndClear();
                 HasStates = true;
             }
 
@@ -314,11 +332,11 @@ namespace RapidPliant.Lexing.Automata
             return added;
         }
 
-        public void AddFinalTransition(NfaTransition nfaTransition)
+        public void AddFinalTransition(INfaTransition nfaTransition)
         {
             if (FinalTransitions == null)
             {
-                FinalTransitions = ReusableHashSet<NfaTransition>.GetAndClear();
+                FinalTransitions = ReusableHashSet<INfaTransition>.GetAndClear();
                 HasFinalTransitions = true;
             }
 

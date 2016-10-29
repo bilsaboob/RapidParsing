@@ -426,7 +426,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
                 var rootExprSimplified = rootExpr.GetSimplified();
                 if (rootExprSimplified != null)
                 {
-                    return rootExprSimplified;
+                    rootExpr = rootExprSimplified;
                 }
             }
             

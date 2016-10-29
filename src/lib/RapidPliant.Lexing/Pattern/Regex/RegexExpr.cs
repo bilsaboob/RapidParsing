@@ -7,7 +7,7 @@ using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Pattern.Regex
 {
-    public class RegexExpr : PatternExpr<RegexExpr>
+    public class RegexExpr : PatternExpr<RegexExpr>, IPatternExpr
     {
         public RegexExpr()
             : this(false, false)
