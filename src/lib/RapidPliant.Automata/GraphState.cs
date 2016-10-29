@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RapidPliant.Automata
 {
     public interface IGraphState : IDisposable
     {
         int Id { get; set; }
-        bool IsValid { get; }
+        
+        IReadOnlyList<IGraphTransition> Transitions { get; }
     }
 
     public interface IGraphTransition
@@ -56,7 +58,7 @@ namespace RapidPliant.Automata
             }
         }
 
-        public bool IsValid { get { return _id > 0; } }
+        IReadOnlyList<IGraphTransition> IGraphState.Transitions { get { return null; } }
 
         public override int GetHashCode()
         {
@@ -100,9 +102,31 @@ namespace RapidPliant.Automata
             return $"{Id}";
         }
 
-        public virtual void Dispose()
+        #region Dispose
+        protected bool IsDisposed { get; set; }
+
+        ~GraphStateBase()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(false);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(true);
+            }
+        }
+
+        protected virtual void Dispose(bool isDisposing)
         {
         }
+        #endregion
     }
 
     public abstract class GraphStateBase<TState> : GraphStateBase, IComparable<TState>

@@ -29,7 +29,7 @@ namespace RapidPliant.App.ViewModels
             LoadDataForLexGraph(dfa);
         }
 
-        protected virtual void LoadDataForLexGraph(DfaGraph dfa)
+        protected virtual void LoadDataForLexGraph(IDfaGraph dfa)
         {
             //Iterate the lex def and create a graph!
             var states = dfa.States.OrderBy(s => s.Id).ToList();

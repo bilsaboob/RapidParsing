@@ -14,7 +14,7 @@ namespace RapidPliant.Lexing.Automata
     public interface ILexNfaNullTransition : ILexNfaTransition, INfaNullTransition
     {
     }
-    
+
     public interface ILexNfaSymbolTransition : ILexNfaTransition
     {
     }
@@ -24,70 +24,44 @@ namespace RapidPliant.Lexing.Automata
         ITerminal Terminal { get; }
     }
 
-    public partial class LexNfaAutomata
+    public class LexNfaTransition : NfaTransition, ILexNfaTransition
     {
-        public class LexNfa : NfaBase
-        {
-            public LexNfa(LexNfaState start, LexNfaState end) : base(start, end) { }
+    }
 
-            public override INfaGraph ToNfaGraph()
-            {
-                return LexAutomataExtensions.ToNfaGraph(this);
-            }
+    public abstract class LexNfaSymbolTransition : LexNfaTransition, ILexNfaSymbolTransition
+    {
+        public LexNfaSymbolTransition(ISymbol symbol)
+        {
+            Symbol = symbol;
         }
 
-        public class LexNfaState : NfaStateBase
+        public ISymbol Symbol { get; protected set; }
+
+        protected override string ToTransitionSymbolString()
         {
+            if (Symbol == null)
+                return "";
+
+            return Symbol.ToString();
+        }
+    }
+
+    public class LexNfaTerminalTransition : LexNfaSymbolTransition, ILexNfaTerminalTransition
+    {
+        public LexNfaTerminalTransition(ITerminal terminal)
+            : base(terminal)
+        {
+            Terminal = terminal;
         }
 
-        public class LexNfaTransition : NfaTransitionBase, ILexNfaTransition
+        public ITerminal Terminal { get; protected set; }
+    }
+
+    public class LexNfaNullTransition : LexNfaTransition, ILexNfaNullTransition
+    {
+        protected override string ToTransitionArrowString()
         {
-            public LexNfaTransition(LexNfaState toState) : base(null, toState)
-            {
-            }
-        }
-
-        public abstract class SymbolNfaTransition : LexNfaTransition, ILexNfaSymbolTransition
-        {
-            public SymbolNfaTransition(ISymbol symbol, LexNfaState toState)
-                : base(toState)
-            {
-                Symbol = symbol;
-            }
-
-            public ISymbol Symbol { get; protected set; }
-
-            protected override string ToTransitionSymbolString()
-            {
-                if (Symbol == null)
-                    return "";
-
-                return Symbol.ToString();
-            }
-        }
-
-        public class TerminalNfaTransition : SymbolNfaTransition, ILexNfaTerminalTransition
-        {
-            public TerminalNfaTransition(ITerminal terminal, LexNfaState toState)
-                : base(terminal, toState)
-            {
-                Terminal = terminal;
-            }
-
-            public ITerminal Terminal { get; protected set; }
-        }
-
-        public class NullNfaTransition : LexNfaTransition, ILexNfaNullTransition
-        {
-            public NullNfaTransition(LexNfaState toState)
-                : base(toState)
-            {
-            }
-
-            protected override string ToTransitionArrowString()
-            {
-                return "=>";
-            }
+            return "=>";
         }
     }
 

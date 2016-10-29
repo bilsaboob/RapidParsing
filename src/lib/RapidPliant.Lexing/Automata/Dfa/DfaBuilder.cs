@@ -8,24 +8,79 @@ using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Automata
 {
-    public class DfaBuildContext : IDisposable
+    public interface IDfaBuilder
     {
-        private INfa _nfa;
-        private ProcessOnceQueue<NfaClosure> _processQueue;
-        private SortedSet<INfaState> _transitionStates;
+        IDfaState Create(INfaGraph nfaGraph);
+    }
+    
+    public abstract class DfaBuilder : IDfaBuilder, IDisposable
+    {
+        protected ProcessOnceQueue<NfaClosure> _processQueue;
+        protected SortedSet<INfaState> _transitionStates;
 
-        public DfaBuildContext(INfa nfa)
+        public DfaBuilder()
         {
-            _nfa = nfa;
-
             _processQueue = ReusableProcessOnceQueue<NfaClosure>.GetAndClear();
             _transitionStates = ReusableSortedSet<INfaState>.GetAndClear();
         }
 
-        public INfa Nfa { get { return _nfa; } }
+        public IDfaState Create(INfaGraph nfaGraph)
+        {
+            nfaGraph.EnsureCompiled();
+
+            var nfa = nfaGraph.Nfa;
+
+            BeginBuild(nfa);
+
+            var dfaState = Build();
+
+            Nfa = null;
+
+            return dfaState;
+        }
+
+        private void BeginBuild(INfa nfa)
+        {
+            Nfa = nfa;
+            //Get the initial closure to start with!
+            StartNfaClosure = Closure(nfa.Start);
+
+            Enqueue(StartNfaClosure);
+        }
+        
+        public IDfaState Build()
+        {
+            //Keep processing closures until no more to process!
+            while (true)
+            {
+                var closure = GetNextClosureToProcess();
+                if(closure == null)
+                    break;
+
+                var stateBuilder = CreateStateBuilder(closure);
+
+                if (closure.HasStates)
+                {
+                    foreach (var nfaState in closure.States)
+                    {
+                        stateBuilder.BuildForNfaState(nfaState);
+                    }
+                }
+
+                stateBuilder.Build();
+            }
+            
+            return StartNfaClosure.DfaState;
+        }
+
+        protected abstract DfaStateBuilder CreateStateBuilder(NfaClosure closure);
+
+        #region Helpers
+        
+        protected INfa Nfa { get; private set; }
 
         public NfaClosure StartNfaClosure { get; set; }
-        
+
         public NfaClosure GetNextClosureToProcess()
         {
             if (_processQueue.Count == 0)
@@ -85,88 +140,63 @@ namespace RapidPliant.Lexing.Automata
                 closure.AddState(nfaState);
             }
         }
+        #endregion
+
+        #region Dispose
+        protected bool IsDisposed { get; set; }
+
+        ~DfaBuilder()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(false);
+            }
+        }
 
         public void Dispose()
         {
-            _processQueue.ClearAndFree();
-            _transitionStates.ClearAndFree();
-        }
-    }
-
-    public abstract class DfaBuilder<TTransitionValue, TStateBuilder, TDfaBuildContext>
-        where TStateBuilder : DfaStateBuilder<TTransitionValue, TDfaBuildContext>
-        where TDfaBuildContext : DfaBuildContext
-    {
-        public DfaBuilder()
-        {
-        }
-
-        public DfaState Create(INfaGraph nfaGraph)
-        {
-            nfaGraph.EnsureCompiled();
-
-            var nfa = nfaGraph.Nfa;
-
-            using (var buildContext = BeginBuild(nfa))
+            if (!IsDisposed)
             {
-                return Build(buildContext);
+                IsDisposed = true;
+                Dispose(true);
             }
         }
-
-        private TDfaBuildContext BeginBuild(INfa nfa)
+        
+        protected virtual void Dispose(bool isDisposing)
         {
-            var c = CreateBuildContext(nfa);
-            //Get the initial closure to start with!
-            c.StartNfaClosure = c.Closure(nfa.Start);
-
-            c.Enqueue(c.StartNfaClosure);
-            return c;
-        }
-
-        protected abstract TDfaBuildContext CreateBuildContext(INfa nfa);
-
-        public DfaState Build(TDfaBuildContext c)
-        {
-            //Keep processing closures until no more to process!
-            while (true)
+            if (_processQueue != null)
             {
-                var closure = c.GetNextClosureToProcess();
-                if(closure == null)
-                    break;
-
-                var stateBuilder = CreateStateBuilder(closure);
-
-                if (closure.HasStates)
-                {
-                    foreach (var nfaState in closure.States)
-                    {
-                        stateBuilder.BuildForNfaState(c, nfaState);
-                    }
-                }
-
-                stateBuilder.Build(c);
+                _processQueue.ClearAndFree();
+                _processQueue = null;
             }
-            
-            return c.StartNfaClosure.DfaState;
-        }
 
-        protected abstract TStateBuilder CreateStateBuilder(NfaClosure closure);
+            if (_transitionStates != null)
+            {
+                _transitionStates.ClearAndFree();
+                _transitionStates = null;
+            }
+        }
+        #endregion
     }
 
-    public abstract class DfaStateBuilder<TTransitionValue, TDfaBuildContext>
-        where TDfaBuildContext : DfaBuildContext
+    public abstract class DfaStateBuilder : IDisposable
     {
-        public DfaStateBuilder(NfaClosure closure)
+        protected DfaBuilder _dfaBuilder;
+
+        public DfaStateBuilder(DfaBuilder dfaBuilder, NfaClosure closure)
         {
-            ClosureTransitions = new NfaClosureTransitions<TTransitionValue>();
+            _dfaBuilder = dfaBuilder;
+
+            ClosureTransitions = new NfaClosureTransitions();
             Closure = closure;
         }
 
         public NfaClosure Closure { get; set; }
 
-        public NfaClosureTransitions<TTransitionValue> ClosureTransitions { get; set; }
+        public NfaClosureTransitions ClosureTransitions { get; set; }
 
-        public void BuildForNfaState(TDfaBuildContext c, INfaState nfaState)
+        public void BuildForNfaState(INfaState nfaState)
         {
             var transitions = nfaState.Transitions;
             if(transitions == null)
@@ -182,7 +212,7 @@ namespace RapidPliant.Lexing.Automata
 
         protected abstract void BuildFornNfaTransition(INfaTransition transition);
 
-        public void Build(TDfaBuildContext c)
+        public void Build()
         {
             var dfaState = Closure.DfaState;
 
@@ -197,10 +227,10 @@ namespace RapidPliant.Lexing.Automata
 
                 //Get the closure for the transitions - basically expand the transitions one step ahead, following until a "terminal transition" is reached...
                 //We are basically expanding the "nfa path tree"
-                var closure = c.Closure(nfaTransitions);
+                var closure = _dfaBuilder.Closure(nfaTransitions);
 
                 //Only process each "location" once
-                var nextClosure = c.EnqueueOrGetExisting(closure);
+                var nextClosure = _dfaBuilder.EnqueueOrGetExisting(closure);
                 if (nextClosure != closure)
                 {
                     //We have received an existing... dispose the other...
@@ -213,21 +243,51 @@ namespace RapidPliant.Lexing.Automata
             }
         }
         
-        protected abstract IEnumerable<INfaTransitionsByValue<TTransitionValue>> GetNfaTransitionsByValue();
+        protected abstract IEnumerable<INfaTransitionsByValue> GetNfaTransitionsByValue();
 
-        protected abstract DfaTransition CreateDfaTransition(TTransitionValue transitionValue, IEnumerable<INfaTransition> nfaTransitions, HashSet<INfaTransition> finalNfaTransitions, DfaState toDfaState);
+        protected abstract IDfaTransition CreateDfaTransition(object transitionValue, IEnumerable<INfaTransition> nfaTransitions, HashSet<INfaTransition> finalNfaTransitions, DfaState toDfaState);
+
+        #region Dispose
+        protected bool IsDisposed { get; set; }
+
+        ~DfaStateBuilder()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(false);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(true);
+            }
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (ClosureTransitions != null)
+            {
+                ClosureTransitions.Dispose();
+            }
+        }
+        #endregion
     }
 
-    public class NfaClosureTransitions<TTransitionValue>
+    public class NfaClosureTransitions
     {
-        private Dictionary<TTransitionValue, DfaTransitionsEntry> _nfaTransitionsByValue;
+        private Dictionary<object, DfaTransitionsEntry> _nfaTransitionsByValue;
 
         public NfaClosureTransitions()
         {
-            _nfaTransitionsByValue = new Dictionary<TTransitionValue, DfaTransitionsEntry>();
+            _nfaTransitionsByValue = new Dictionary<object, DfaTransitionsEntry>();
         }
         
-        public DfaTransitionsEntry AddTransition(TTransitionValue transitionValue, INfaTransition valueNfaTransition)
+        public DfaTransitionsEntry AddTransition(object transitionValue, INfaTransition valueNfaTransition)
         {
             DfaTransitionsEntry transitionsForIntervalEntry;
             if (!_nfaTransitionsByValue.TryGetValue(transitionValue, out transitionsForIntervalEntry))
@@ -242,10 +302,41 @@ namespace RapidPliant.Lexing.Automata
             return transitionsForIntervalEntry;
         }
 
-        public IEnumerable<INfaTransitionsByValue<TTransitionValue>> GetTransitionsByTerminalIntervals()
+        public IEnumerable<INfaTransitionsByValue> GetTransitionsByTerminalIntervals()
         {
             return _nfaTransitionsByValue.Select(p => new ClosureNfaTransitionsByValue(p.Value));
         }
+
+        #region Dispose
+        protected bool IsDisposed { get; set; }
+
+        ~NfaClosureTransitions()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(false);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(true);
+            }
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (_nfaTransitionsByValue != null)
+            {
+                _nfaTransitionsByValue.Clear();
+                _nfaTransitionsByValue = null;
+            }
+        }
+        #endregion
 
         public class DfaTransitionsEntry
         {
@@ -258,7 +349,7 @@ namespace RapidPliant.Lexing.Automata
                 _transitions = new List<INfaTransition>();
             }
 
-            public TTransitionValue Value { get; set; }
+            public object Value { get; set; }
 
             public IReadOnlyList<ITerminal> Terminals { get { return _terminals; } }
 
@@ -275,7 +366,7 @@ namespace RapidPliant.Lexing.Automata
             }
         }
 
-        private class ClosureNfaTransitionsByValue : INfaTransitionsByValue<TTransitionValue>
+        private class ClosureNfaTransitionsByValue : INfaTransitionsByValue
         {
             private DfaTransitionsEntry _transitionEntry;
 
@@ -284,15 +375,15 @@ namespace RapidPliant.Lexing.Automata
                 _transitionEntry = transitionEntry;
             }
 
-            public TTransitionValue TransitionValue { get { return _transitionEntry.Value; } }
+            public object TransitionValue { get { return _transitionEntry.Value; } }
             public IEnumerable<ITerminal> Terminals { get { return _transitionEntry.Terminals; } }
             public IEnumerable<INfaTransition> Transitions { get { return _transitionEntry.Transitions; } }
         }
     }
-    
-    public interface INfaTransitionsByValue<TTransitionValue>
+
+    public interface INfaTransitionsByValue
     {
-        TTransitionValue TransitionValue { get; }
+        object TransitionValue { get; }
         IEnumerable<INfaTransition> Transitions { get; }
     }
 
@@ -398,13 +489,5 @@ namespace RapidPliant.Lexing.Automata
             }
         }
     }
-    
-    public static class DfaExtensions
-    {
-        public static DfaGraph ToDfaGraph(this DfaState startState)
-        {
-            var g = new DfaGraph(startState);
-            return g;
-        }
-    }
+
 }

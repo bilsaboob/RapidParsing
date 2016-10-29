@@ -1,82 +1,40 @@
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Msagl.Drawing;
 using RapidPliant.Lexing.Automata;
+using RapidPliant.Util;
 
 namespace RapidPliant.App.ViewModels
 {
-    public class LexDfaMsaglGraphModel : MsaglGraphModel<DfaState, DfaTransition>
+    public class LexDfaMsaglGraphModel : DfaMsaglGraphModel
     {
-        public LexDfaMsaglGraphModel()
-        {
-        }
-
-        protected override Graph CreateGraph()
-        {
-            return new LexDfaMsaglGraph();
-        }
-
-        protected override int GetStateId(DfaState state)
-        {
-            return state.Id;
-        }
-
-        protected override IEnumerable<DfaTransition> GetStateTransitions(DfaState state)
-        {
-            return state.Transitions;
-        }
-
-        protected override DfaState GetTransitionToState(DfaTransition transition)
-        {
-            return transition.ToState;
-        }
-
-        protected override string GetStateLabel(DfaState state)
-        {
-            return state.Id.ToString();
-        }
-
-        protected override string GetTransitionLabel(DfaTransition transition)
+        protected override string GetTransitionLabel(IDfaTransition transition)
         {
             var intervalLabel = "";
-            var interval = transition.Interval;
-            if (interval.Min == interval.Max)
+            var interval = transition.TransitionValue as Interval;
+            if (interval != null)
             {
-                intervalLabel = $"'{interval.Min}'";
-            }
-            else
-            {
-                intervalLabel = interval.ToString();
+                if (interval.Min == interval.Max)
+                {
+                    intervalLabel = $"'{interval.Min}'";
+                }
+                else
+                {
+                    intervalLabel = interval.ToString();
+                }
             }
 
-            var terminals = transition.Terminals;
             var terminalsLabel = "";
-            foreach (var terminal in terminals)
+            var lexDfaTransition = transition as ILexDfaTransition;
+            if (lexDfaTransition != null)
             {
-                terminalsLabel += terminal.ToString() + ",";
+                var terminals = lexDfaTransition.Terminals;
+                
+                foreach (var terminal in terminals)
+                {
+                    terminalsLabel += terminal.ToString() + ",";
+                }
+                terminalsLabel = terminalsLabel.Trim(',');
             }
-            terminalsLabel = terminalsLabel.Trim(',');
-
+            
             return $"({intervalLabel}) for: {terminalsLabel}";
-
-            //return base.GetTransitionLabel(transition);
-        }
-
-        protected override bool IsFinalState(DfaState state)
-        {
-            var isFinal = base.IsFinalState(state);
-            if (isFinal)
-                return true;
-
-            return state.IsFinal;
-        }
-    }
-
-    public class LexDfaMsaglGraph : Graph
-    {
-        public override string ToString()
-        {
-            return base.ToString();
         }
     }
 }

@@ -1,72 +1,109 @@
 ﻿using System;
 using System.Collections.Generic;
 using RapidPliant.Automata;
+using RapidPliant.Collections;
 using RapidPliant.Common.Expression;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Automata
 {
-    public class DfaGraph : Graph<DfaState, DfaState, DfaTransition>
+    public interface IDfaGraph : IStateGraph
     {
-        public DfaGraph(DfaState startState)
-            : base(startState, startState)
-        {
-        }
+        new IDfaState StartState { get; }
+        new IReadOnlyList<IDfaState> States { get; }
+    }
 
-        protected override DfaState GetTransitionToState(DfaTransition transition)
+    public class DfaGraph : Graph<IDfaState>, IDfaGraph
+    {
+        public DfaGraph(IDfaState startState)
+            : base(startState)
         {
-            return transition.ToState;
-        }
-
-        protected override IEnumerable<DfaTransition> GetStateTransitions(DfaState state)
-        {
-            return state.Transitions;
         }
     }
 
-    public class DfaState : GraphStateBase<DfaState>
+    public interface IDfaState : IGraphState
     {
-        private List<DfaTransition> _transitions;
+        bool IsFinal { get; }
+
+        new IReadOnlyList<IDfaTransition> Transitions { get; }
+
+        bool AddTransition(IDfaTransition transition);
+
+        DfaGraph ToDfaGraph();
+    }
+
+    public class DfaState : GraphStateBase<DfaState>, IDfaState
+    {
+        private UniqueList<DfaTransition> _transitions;
         
         public DfaState()
         {
-            _transitions = ReusableList<DfaTransition>.GetAndClear();
+            _transitions = new UniqueList<DfaTransition>();
         }
         
         public bool IsFinal { get; set; }
 
         public IReadOnlyList<DfaTransition> Transitions { get { return _transitions; } }
+        IReadOnlyList<IDfaTransition> IDfaState.Transitions { get { return Transitions; } }
+        IReadOnlyList<IGraphTransition> IGraphState.Transitions { get { return Transitions; } }
 
-        public void AddTransition(DfaTransition transition)
+        public bool AddTransition(DfaTransition transition)
         {
-            _transitions.Add(transition);
+            return _transitions.AddIfNotExists(transition);
+        }
+        public bool AddTransition(IDfaTransition transition)
+        {
+            return AddTransition((DfaTransition) transition);
         }
 
-        public override void Dispose()
+        public virtual DfaGraph ToDfaGraph()
         {
+            var graph = new DfaGraph(this);
+            graph.EnsureCompiled();
+            return graph;
+        }
+
+        #region Dispose
+        protected override void Dispose(bool isDisposing)
+        {
+            base.Dispose(isDisposing);
+
             if (_transitions != null)
             {
-                _transitions.ClearAndFree();
+                _transitions.Clear();
+                _transitions = null;
             }
         }
+        #endregion
     }
 
-    public class DfaTransition : IDisposable, IGraphTransition
+    public interface IDfaTransition : IGraphTransition
     {
+        object TransitionValue { get; }
+
+        new IDfaState FromState { get; }
+        new IDfaState ToState { get; }
+
+        IEnumerable<DfaCompletion> CompletionsByExpression { get; }
+    }
+
+    public class DfaTransition : IDfaTransition, IDisposable
+    { 
         private HashSet<ITerminal> _terminals;
         private List<DfaCompletion> _completions;
 
-        public DfaTransition(Interval interval, IEnumerable<INfaTransition> nfaTransitons, IEnumerable<INfaTransition> nfaFinalTransitions, DfaState toState)
+        public DfaTransition(object transitionValue, IEnumerable<INfaTransition> nfaTransitons, IEnumerable<INfaTransition> nfaFinalTransitions, DfaState toState)
         {
             NfaTransitions = nfaTransitons;
             NfaFinalTransitions = nfaFinalTransitions;
 
-            Interval = interval;
+            TransitionValue = transitionValue;
             ToState = toState;
         }
 
         public DfaState FromState { get; set; }
+        IDfaState IDfaTransition.FromState { get { return FromState; } }
         IGraphState IGraphTransition.FromState { get { return FromState; } }
         void IGraphTransition.EnsureFromState(IGraphState fromState)
         {
@@ -75,6 +112,7 @@ namespace RapidPliant.Lexing.Automata
         }
 
         public DfaState ToState { get; private set; }
+        IDfaState IDfaTransition.ToState { get { return ToState; } }
         IGraphState IGraphTransition.ToState { get { return ToState; } }
         void IGraphTransition.EnsureToState(IGraphState toState)
         {
@@ -82,7 +120,7 @@ namespace RapidPliant.Lexing.Automata
                 ToState = (DfaState)toState;
         }
 
-        public Interval Interval { get; private set; }
+        public object TransitionValue { get; private set; }
 
         public IEnumerable<ITerminal> Terminals { get { return _terminals; } }
 
@@ -90,22 +128,7 @@ namespace RapidPliant.Lexing.Automata
         public IEnumerable<INfaTransition> NfaFinalTransitions { get; private set; }
 
         public IEnumerable<DfaCompletion> CompletionsByExpression { get { return _completions; } }
-
-        public void Dispose()
-        {
-            if (_terminals != null)
-            {
-                _terminals.Clear();
-                _terminals = null;
-            }
-
-            if (_completions != null)
-            {
-                _completions.Clear();
-                _completions = null;
-            }
-        }
-
+        
         public void AddCompletion(DfaCompletion completion)
         {
             if (_completions == null)
@@ -125,6 +148,43 @@ namespace RapidPliant.Lexing.Automata
 
             _terminals.Add(terminal);
         }
+
+        #region Dispose
+        protected bool IsDisposed { get; set; }
+
+        ~DfaTransition()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(false);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(true);
+            }
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
+            if (_terminals != null)
+            {
+                _terminals.Clear();
+                _terminals = null;
+            }
+
+            if (_completions != null)
+            {
+                _completions.Clear();
+                _completions = null;
+            }
+        }
+        #endregion
     }
 
     public class DfaCompletion : IDisposable
@@ -147,14 +207,36 @@ namespace RapidPliant.Lexing.Automata
         {
             _nfaTransitions.Add(nfaTransition);
         }
+        
+        #region Dispose
+        protected bool IsDisposed { get; set; }
+
+        ~DfaCompletion()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(false);
+            }
+        }
 
         public void Dispose()
         {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+                Dispose(true);
+            }
+        }
+
+        protected virtual void Dispose(bool isDisposing)
+        {
             if (_nfaTransitions != null)
             {
-                _nfaTransitions.ClearAndFree();
+                _nfaTransitions.Clear();
                 _nfaTransitions = null;
             }
         }
+        #endregion
     }
 }

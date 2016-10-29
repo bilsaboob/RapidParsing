@@ -20,8 +20,8 @@ namespace RapidPliant.Lexing.Lexer
 
     public interface IDfaRecognition
     {
-        DfaState FromState { get; }
-        DfaState ToState { get; }
+        IDfaState FromState { get; }
+        IDfaState ToState { get; }
         IReadOnlyList<IRecognizerCompletion> Completions { get; }
     }
 

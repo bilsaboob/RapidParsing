@@ -23,25 +23,25 @@ namespace RapidPliant.App.ViewModels
             return expr;
         }
 
-        protected LexNfaAutomata.LexNfaGraph CreateLexNfaGraph(string regexPattern, string name = null)
+        protected INfaGraph CreateLexNfaGraph(string regexPattern, string name = null)
         {
             var patternExpr = CreateLexExpr(regexPattern, name);
             return CreateLexNfaGraph(patternExpr, name);
         }
 
-        protected DfaGraph CreateLexDfaGraph(string regexPattern, string name = null)
+        protected IDfaGraph CreateLexDfaGraph(string regexPattern, string name = null)
         {
             var patternExpr = CreateLexExpr(regexPattern, name);
             return CreateLexDfaGraph(patternExpr, name);
         }
 
-        protected LexNfaAutomata.LexNfaGraph CreateLexNfaGraph(params RegexExpr[] patternExpressions)
+        protected INfaGraph CreateLexNfaGraph(params RegexExpr[] patternExpressions)
         {
             var nfa = LexNfaAutomata.BuildNfa(patternExpressions);
-            return (LexNfaAutomata.LexNfaGraph)nfa.ToNfaGraph();
+            return nfa.ToNfaGraph();
         }
 
-        protected DfaGraph CreateLexDfaGraph(params RegexExpr[] patternExpressions)
+        protected IDfaGraph CreateLexDfaGraph(params RegexExpr[] patternExpressions)
         {
             var nfa = LexNfaAutomata.BuildNfa(patternExpressions);
             var nfaGraph = nfa.ToNfaGraph();
@@ -49,7 +49,7 @@ namespace RapidPliant.App.ViewModels
             return dfa.ToDfaGraph();
         }
 
-        protected LexNfaAutomata.LexNfaGraph CreateLexNfaGraph(RegexExpr patternExpr, string name = null)
+        protected INfaGraph CreateLexNfaGraph(RegexExpr patternExpr, string name = null)
         {
             if (!string.IsNullOrEmpty(name))
             {
@@ -57,10 +57,10 @@ namespace RapidPliant.App.ViewModels
             }
 
             var nfa = LexNfaAutomata.BuildNfa(patternExpr);
-            return (LexNfaAutomata.LexNfaGraph)nfa.ToNfaGraph();
+            return nfa.ToNfaGraph();
         }
 
-        protected DfaGraph CreateLexDfaGraph(RegexExpr patternExpr, string name = null)
+        protected IDfaGraph CreateLexDfaGraph(RegexExpr patternExpr, string name = null)
         {
             if (!string.IsNullOrEmpty(name))
             {

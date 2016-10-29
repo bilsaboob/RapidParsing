@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using RapidPliant.Common.Expression;
 using RapidPliant.Common.Symbols;
@@ -8,22 +9,138 @@ using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Automata
 {
-    public abstract class NfaBuildContext<TNfa, TNfaState, TNfaTransition> : IDisposable
-        where TNfa : Nfa<TNfa, TNfaState, TNfaTransition>
-        where TNfaState : NfaState<TNfaState, TNfaTransition>
-        where TNfaTransition : NfaTransition<TNfaState, TNfaTransition>
+    public interface INfaBuilder
     {
-        protected NfaBuildContext()
+        INfa Create(IEnumerable<IExpr> expressions);
+        INfa Create(IExpr expr);
+    }
+
+    public abstract class NfaBuilder : INfaBuilder, IDisposable
+    {
+        #region Create
+
+        public INfa Create(IEnumerable<IExpr> expressions)
         {
+            //Prepare the build context
+            return BuildForAlterationExpression(null, expressions);
         }
 
+        public INfa Create(IExpr expr)
+        {
+            return BuildForExpression(expr);
+        }
+
+        #endregion
+
+        #region Build
+
+        private INfa BuildForExpression(IExpr expr)
+        {
+            var isLeaf = !expr.IsGroup;
+
+            INfa exprNfa;
+
+            if (isLeaf)
+            {
+                exprNfa = BuildForLeafExpression(expr);
+            }
+            else
+            {
+                exprNfa = BuildForGroupExpression(expr);
+            }
+
+            if (expr.HasOptions)
+            {
+                var exprOpt = expr.Options;
+                if (exprOpt.IsMany)
+                {
+                    if (exprOpt.IsOptional)
+                    {
+                        exprNfa = ZeroOrMore(exprNfa);
+                    }
+                    else
+                    {
+                        exprNfa = OneOrMore(exprNfa);
+                    }
+                }
+                else if (exprOpt.IsOptional)
+                {
+                    exprNfa = Optional(exprNfa);
+                }
+            }
+
+            return exprNfa;
+        }
+
+        protected virtual INfa BuildForLeafExpression(IExpr expr)
+        {
+            throw new Exception($"Unhandled leaf expression '{expr.ToString()}' of type '{expr.GetType().Name}'!");
+        }
+
+        protected INfa BuildForGroupExpression(IExpr expr)
+        {
+            var isProduction = expr.IsProduction;
+            var isAlteration = expr.IsAlteration;
+
+            if (isProduction)
+            {
+                return BuildForProductionExpression(expr);
+            }
+            else if (isAlteration)
+            {
+                return BuildForAlterationExpression(expr);
+            }
+            else
+            {
+                throw new Exception($"Invalid group expression '{expr.ToString()}' - should be either Production or Alteration!");
+            }
+        }
+
+        protected INfa BuildForProductionExpression(IExpr expr)
+        {
+            return BuildForProductionExpression(expr, expr.Expressions);
+        }
+
+        protected INfa BuildForProductionExpression(IExpr productionExpr, IEnumerable<IExpr> expressions)
+        {
+            var nfas = new List<INfa>();
+
+            foreach (var expr in expressions)
+            {
+                var nfa = BuildForExpression(expr);
+                nfas.Add(nfa);
+            }
+
+            return And(productionExpr, nfas);
+        }
+
+        protected INfa BuildForAlterationExpression(IExpr expr)
+        {
+            return BuildForAlterationExpression(expr, expr.Expressions);
+        }
+
+        protected INfa BuildForAlterationExpression(IExpr alterationExpr, IEnumerable<IExpr> expressions)
+        {
+            var nfas = new List<INfa>();
+
+            foreach (var expr in expressions)
+            {
+                var nfa = BuildForExpression(expr);
+                nfas.Add(nfa);
+            }
+
+            return Or(alterationExpr, nfas);
+        }
+
+        #endregion
+
         #region Operation helpers
-        public TNfa Or(IExpr orExpr, params TNfa[] nfas)
+        protected INfa Or(IExpr orExpr, params INfa[] nfas)
         {
             return Or(orExpr, nfas.AsEnumerable());
         }
 
-        public TNfa Or(IExpr orExpr, IEnumerable<TNfa> nfas)
+        protected INfa Or(IExpr orExpr, IEnumerable<INfa> nfas)
         {
             var start = CreateNfaState();
             var end = CreateNfaState();
@@ -36,36 +153,33 @@ namespace RapidPliant.Lexing.Automata
 
                 var startToOtherStart = CreateOpenOrTransition(start, nfa.Start, orExpr, nfa.Expression);
                 AssociateTransitionWithExpression(startToOtherStart, nfa.Expression);
-                start.AddTransistion(startToOtherStart);
+                start.AddTransition(startToOtherStart);
 
                 var otherEndToNewEnd = CreateCloseOrTransition(nfa.End, end, orExpr, nfa.Expression);
                 AssociateTransitionWithExpression(otherEndToNewEnd, nfa.Expression);
-                nfa.End.AddTransistion(otherEndToNewEnd);
+                nfa.End.AddTransition(otherEndToNewEnd);
             }
 
             var orNfa = CreateOrNfa(start, end, orExpr, orExpressions);
             AssociateNfaWithExpression(orNfa, orExpr);
             return orNfa;
         }
-    
-        public TNfa And(IExpr andExpr, params TNfa[] nfas)
+
+        protected INfa And(IExpr andExpr, params INfa[] nfas)
         {
             return And(andExpr, nfas.AsEnumerable());
         }
 
-        public TNfa And(IExpr andExpr, IEnumerable<TNfa> nfas)
+        protected INfa And(IExpr andExpr, IEnumerable<INfa> nfas)
         {
-            IExpr startNfaExpression = null;
+            INfaState start = null;
+            INfaState end = null;
 
-            TNfaState start = null;
-            TNfaState end = null;
-
-            TNfa prevNfa = null;
+            INfa prevNfa = null;
             foreach (var nfa in nfas)
             {
                 if (start == null)
                 {
-                    startNfaExpression = nfa.Expression;
                     start = nfa.Start;
                 }
 
@@ -73,7 +187,7 @@ namespace RapidPliant.Lexing.Automata
                 {
                     var andJoinTransition = CreateAndJoinTransition(prevNfa.End, nfa.Start, andExpr, nfa.Expression);
                     AssociateTransitionWithExpression(andJoinTransition, nfa.Expression);
-                    prevNfa.End.AddTransistion(andJoinTransition);
+                    prevNfa.End.AddTransition(andJoinTransition);
                 }
 
                 end = nfa.End;
@@ -87,39 +201,39 @@ namespace RapidPliant.Lexing.Automata
             return andNfa;
         }
 
-        public TNfa ZeroOrMore(TNfa nfa)
+        protected INfa ZeroOrMore(INfa nfa)
         {
             var start = CreateNfaState();
             var nullToNfaStart = CreateRepeatStartTransition(start, nfa.Start, nfa.Expression);
             AssociateTransitionWithExpression(nullToNfaStart, nfa.Expression);
 
-            start.AddTransistion(nullToNfaStart);
-            nfa.End.AddTransistion(nullToNfaStart);
+            start.AddTransition(nullToNfaStart);
+            nfa.End.AddTransition(nullToNfaStart);
 
             var end = CreateNfaState();
             var nullToNewEnd = CreateRepeatEndTransition(start, end, nfa.Expression);
             AssociateTransitionWithExpression(nullToNewEnd, nfa.Expression);
 
-            start.AddTransistion(nullToNewEnd);
-            nfa.End.AddTransistion(nullToNewEnd);
+            start.AddTransition(nullToNewEnd);
+            nfa.End.AddTransition(nullToNewEnd);
 
             var repeatNfa = CreateRepeatNfa(start, end, nfa.Expression);
             AssociateNfaWithExpression(repeatNfa, nfa.Expression);
 
             return repeatNfa;
         }
-        
-        public TNfa OneOrMore(TNfa nfa)
+
+        protected INfa OneOrMore(INfa nfa)
         {
             var end = CreateNfaState();
 
             var endToStart = CreateRepeatStartTransition(nfa.End, nfa.Start, nfa.Expression);
             AssociateTransitionWithExpression(endToStart, nfa.Expression);
-            nfa.End.AddTransistion(endToStart);
+            nfa.End.AddTransition(endToStart);
 
             var endToNewEnd = CreateRepeatEndTransition(nfa.End, end, nfa.Expression);
             AssociateTransitionWithExpression(endToNewEnd, nfa.Expression);
-            nfa.End.AddTransistion(endToNewEnd);
+            nfa.End.AddTransition(endToNewEnd);
 
             var repeatNfa = CreateRepeatNfa(nfa.Start, end, nfa.Expression);
             AssociateNfaWithExpression(repeatNfa, nfa.Expression);
@@ -127,7 +241,7 @@ namespace RapidPliant.Lexing.Automata
             return repeatNfa;
         }
 
-        public TNfa Optional(TNfa nfa)
+        protected INfa Optional(INfa nfa)
         {
             var start = CreateNfaState();
             var end = CreateNfaState();
@@ -135,17 +249,17 @@ namespace RapidPliant.Lexing.Automata
             //New "optional path" opening transition to the initial nfa => start for normal path
             var newStartToStart = CreateOptionalStartTransition(start, nfa.Start, nfa.Expression);
             AssociateTransitionWithExpression(newStartToStart, nfa.Expression);
-            start.AddTransistion(newStartToStart);
+            start.AddTransition(newStartToStart);
 
             //New "optional path" optional skip to end transition => skip over transition
             var optionalEndToNewEnd = CreateOptionalEndTransition(start, end, nfa.Expression);
             AssociateTransitionWithExpression(optionalEndToNewEnd, nfa.Expression);
-            start.AddTransistion(optionalEndToNewEnd);
+            start.AddTransition(optionalEndToNewEnd);
 
             //Initial nfa join to new end => this is the "normal path" taken
             var optionalEndToEnd = CreateOptionalEndTransition(nfa.End, end, nfa.Expression);
             AssociateTransitionWithExpression(optionalEndToEnd, nfa.Expression);
-            nfa.End.AddTransistion(optionalEndToEnd);
+            nfa.End.AddTransition(optionalEndToEnd);
 
             var optionalNfa = CreateOptionalNfa(start, end, nfa.Expression);
             AssociateNfaWithExpression(optionalNfa, nfa.Expression);
@@ -153,220 +267,111 @@ namespace RapidPliant.Lexing.Automata
             return optionalNfa;
         }
 
-        public TNfa Empty(IExpr expr)
+        protected INfa Empty(IExpr expr)
         {
             var start = CreateNfaState();
             var end = CreateNfaState();
 
             var startToEnd = CreateEmptyStartToEndTransition(start, end, expr);
             AssociateTransitionWithExpression(startToEnd, expr);
-            start.AddTransistion(startToEnd);
+            start.AddTransition(startToEnd);
 
             var emptyNfa = CreateEmptyNfa(start, end, expr);
             AssociateNfaWithExpression(emptyNfa, expr);
             return emptyNfa;
         }
 
-        
+
         #endregion
 
         #region Helpers
 
-        protected abstract TNfa CreateNfa(TNfaState start, TNfaState end, IExpr forExpression);
-        protected abstract TNfa CreateEmptyNfa(TNfaState start, TNfaState end, IExpr forExpression);
-        protected abstract TNfa CreateOrNfa(TNfaState start, TNfaState end, IExpr orExpr, IEnumerable<IExpr> forExpressions);
-        protected abstract TNfa CreateAndNfa(TNfaState start, TNfaState end, IExpr forExpression);
-        protected abstract TNfa CreateRepeatNfa(TNfaState start, TNfaState end, IExpr forExpression);
-        protected abstract TNfa CreateOptionalNfa(TNfaState start, TNfaState end, IExpr forExpression);
-
-        protected abstract TNfaState CreateNfaState();
-
-        protected abstract TNfaTransition CreateOpenOrTransition(TNfaState fromState, TNfaState toState, IExpr orExpr, IExpr forExpression);
-        protected abstract TNfaTransition CreateCloseOrTransition(TNfaState fromState, TNfaState toState, IExpr orExpr, IExpr forExpression);
-
-        protected abstract TNfaTransition CreateAndJoinTransition(TNfaState fromState, TNfaState toState, IExpr andExpr, IExpr forExpression);
-
-        protected abstract TNfaTransition CreateRepeatStartTransition(TNfaState fromState, TNfaState toState, IExpr forExpression);
-        protected abstract TNfaTransition CreateRepeatEndTransition(TNfaState fromState, TNfaState toState, IExpr forExpression);
-
-        protected abstract TNfaTransition CreateOptionalStartTransition(TNfaState fromState, TNfaState toState, IExpr forExpression);
-        protected abstract TNfaTransition CreateOptionalEndTransition(TNfaState fromState, TNfaState toState, IExpr forExpression);
-
-        protected abstract TNfaTransition CreateEmptyStartToEndTransition(TNfaState fromState, TNfaState toState, IExpr forExpression);
-
-        protected virtual void AssociateNfaWithExpression(TNfa nfa, IExpr expression)
+        protected virtual INfa CreateNfa(INfaState start, INfaState end, IExpr forExpression)
         {
-            if(nfa.Expression == null)
+            return new Nfa(start, end);
+        }
+
+        protected virtual INfa CreateEmptyNfa(INfaState start, INfaState end, IExpr forExpression)
+        {
+            return new Nfa(start, end);
+        }
+
+        protected virtual INfa CreateOrNfa(INfaState start, INfaState end, IExpr orExpr, IEnumerable<IExpr> forExpressions)
+        {
+            return new Nfa(start, end);
+        }
+
+        protected virtual INfa CreateAndNfa(INfaState start, INfaState end, IExpr forExpression)
+        {
+            return new Nfa(start, end);
+        }
+
+        protected virtual INfa CreateRepeatNfa(INfaState start, INfaState end, IExpr forExpression)
+        {
+            return new Nfa(start, end);
+        }
+
+        protected virtual INfa CreateOptionalNfa(INfaState start, INfaState end, IExpr forExpression)
+        {
+            return new Nfa(start, end);
+        }
+
+        protected virtual INfaState CreateNfaState()
+        {
+            return new NfaState();
+        }
+
+        protected abstract INfaTransition CreateNullTransition(INfaState fromState, INfaState toState, IExpr forExpression);
+
+        protected virtual INfaTransition CreateOpenOrTransition(INfaState fromState, INfaState toState, IExpr orExpr, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+        
+        protected virtual INfaTransition CreateCloseOrTransition(INfaState fromState, INfaState toState, IExpr orExpr, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+
+        protected virtual INfaTransition CreateAndJoinTransition(INfaState fromState, INfaState toState, IExpr andExpr, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+
+        protected virtual INfaTransition CreateRepeatStartTransition(INfaState fromState, INfaState toState, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+
+        protected virtual INfaTransition CreateRepeatEndTransition(INfaState fromState, INfaState toState, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+
+        protected virtual INfaTransition CreateOptionalStartTransition(INfaState fromState, INfaState toState, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+
+        protected virtual INfaTransition CreateOptionalEndTransition(INfaState fromState, INfaState toState, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+
+        protected virtual INfaTransition CreateEmptyStartToEndTransition(INfaState fromState, INfaState toState, IExpr forExpression)
+        {
+            return CreateNullTransition(fromState, toState, forExpression);
+        }
+
+        protected virtual void AssociateNfaWithExpression(INfa nfa, IExpr expression)
+        {
+            if (nfa.Expression == null)
                 nfa.Expression = expression;
         }
-        protected virtual void AssociateTransitionWithExpression(TNfaTransition transition, IExpr expression)
+        protected virtual void AssociateTransitionWithExpression(INfaTransition transition, IExpr expression)
         {
-            if(transition.Expression == null)
+            if (transition.Expression == null)
                 transition.Expression = expression;
-        }
-        #endregion
-
-        #region Dispose
-        protected bool IsDisposed { get; set; }
-
-        ~NfaBuildContext()
-        {
-            if (!IsDisposed)
-            {
-                IsDisposed = true;
-                Dispose(false);
-            }
-        }
-
-        public void Dispose()
-        {
-            if (!IsDisposed)
-            {
-                IsDisposed = true;
-                Dispose(true);
-            }
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-        }
-        #endregion
-    }
-
-    public abstract class NfaBuilder<TNfa, TNfaState, TNfaTransition, TNfaBuildContext> : IDisposable
-        where TNfa : Nfa<TNfa, TNfaState, TNfaTransition>
-        where TNfaState : NfaState<TNfaState, TNfaTransition>
-        where TNfaTransition : NfaTransition<TNfaState, TNfaTransition>
-        where TNfaBuildContext : NfaBuildContext<TNfa, TNfaState, TNfaTransition>, new()
-    {
-        #region Create
-
-        public TNfa Create(IEnumerable<IExpr> expressions)
-        {
-            //Prepare the build context
-            using (var buildContext = CreateBuildContext())
-            {
-                return BuildForAlterationExpression(buildContext, null, expressions);
-            }
-        }
-
-        public TNfa Create(IExpr expr)
-        {
-            using (var buildContext = CreateBuildContext())
-            {
-                return BuildForExpression(buildContext, expr);
-            }
-        }
-
-        #endregion
-
-        #region Build
-
-        private TNfa BuildForExpression(TNfaBuildContext c, IExpr expr)
-        {
-            var isLeaf = !expr.IsGroup;
-
-            TNfa exprNfa;
-
-            if (isLeaf)
-            {
-                exprNfa = BuildForLeafExpression(c, expr);
-            }
-            else
-            {
-                exprNfa = BuildForGroupExpression(c, expr);
-            }
-
-            if (expr.HasOptions)
-            {
-                var exprOpt = expr.Options;
-                if (exprOpt.IsMany)
-                {
-                    if (exprOpt.IsOptional)
-                    {
-                        exprNfa = c.ZeroOrMore(exprNfa);
-                    }
-                    else
-                    {
-                        exprNfa = c.OneOrMore(exprNfa);
-                    }
-                }
-                else if (exprOpt.IsOptional)
-                {
-                    exprNfa = c.Optional(exprNfa);
-                }
-            }
-
-            return exprNfa;
-        }
-
-        protected virtual TNfa BuildForLeafExpression(TNfaBuildContext c, IExpr expr)
-        {
-            throw new Exception($"Unhandled leaf expression '{expr.ToString()}' of type '{expr.GetType().Name}'!");
-        }
-
-        protected TNfa BuildForGroupExpression(TNfaBuildContext c, IExpr expr)
-        {
-            var isProduction = expr.IsProduction;
-            var isAlteration = expr.IsAlteration;
-
-            if (isProduction)
-            {
-                return BuildForProductionExpression(c, expr);
-            }
-            else if (isAlteration)
-            {
-                return BuildForAlterationExpression(c, expr);
-            }
-            else
-            {
-                throw new Exception($"Invalid group expression '{expr.ToString()}' - should be either Production or Alteration!");
-            }
-        }
-
-        protected TNfa BuildForProductionExpression(TNfaBuildContext c, IExpr expr)
-        {
-            return BuildForProductionExpression(c, expr, expr.Expressions);
-        }
-
-        protected TNfa BuildForProductionExpression(TNfaBuildContext c, IExpr productionExpr, IEnumerable<IExpr> expressions)
-        {
-            var nfas = new List<TNfa>();
-
-            foreach (var expr in expressions)
-            {
-                var nfa = BuildForExpression(c, expr);
-                nfas.Add(nfa);
-            }
-
-            return c.And(productionExpr, nfas);
-        }
-
-        protected TNfa BuildForAlterationExpression(TNfaBuildContext c, IExpr expr)
-        {
-            return BuildForAlterationExpression(c, expr, expr.Expressions);
-        }
-
-        protected TNfa BuildForAlterationExpression(TNfaBuildContext c, IExpr alterationExpr, IEnumerable<IExpr> expressions)
-        {
-            var nfas = new List<TNfa>();
-
-            foreach (var expr in expressions)
-            {
-                var nfa = BuildForExpression(c, expr);
-                nfas.Add(nfa);
-            }
-
-            return c.Or(alterationExpr, nfas);
-        }
-
-        #endregion
-
-        #region Helpers
-        
-        protected virtual TNfaBuildContext CreateBuildContext()
-        {
-            return new TNfaBuildContext();
         }
         #endregion
 

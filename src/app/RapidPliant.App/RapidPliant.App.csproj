@@ -52,7 +52,9 @@
     <Compile Include="Controls\GraphView.xaml.cs">
       <DependentUpon>GraphView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\DfaMsaglGraphModel.cs" />
     <Compile Include="Controls\LexDfaMsaglGraphModel.cs" />
+    <Compile Include="Controls\LexNfaMsaglGraphModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -72,7 +74,7 @@
     <Compile Include="ViewModels\LexNfaGraphViewModel.cs" />
     <Compile Include="ViewModels\GraphViewModel.cs" />
     <Compile Include="Controls\MsaglGraphModel.cs" />
-    <Compile Include="Controls\LexNfaMsaglGraphModel.cs" />
+    <Compile Include="Controls\NfaMsaglGraphModel.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

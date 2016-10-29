@@ -41,17 +41,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Automata\Dfa\Dfa.cs" />
-    <Compile Include="Automata\Dfa\DfaAutomataSpecification.cs" />
+    <Compile Include="Automata\Dfa\DfaAutomata.cs" />
     <Compile Include="Automata\Dfa\DfaBuilder.cs" />
-    <Compile Include="Automata\Dfa\LexDfa.cs" />
     <Compile Include="Automata\Dfa\LexDfaAutomata.cs" />
-    <Compile Include="Automata\Dfa\LexDfaBuilder.cs" />
-    <Compile Include="Automata\Dfa\LexDfaGraph.cs" />
     <Compile Include="Automata\Nfa\LexNfaAutomata.cs" />
-    <Compile Include="Automata\Nfa\LexNfaGraph.cs" />
     <Compile Include="Automata\Nfa\LexNfa.cs" />
     <Compile Include="Automata\Nfa\LexNfaBuilder.cs" />
-    <Compile Include="Automata\Nfa\NfaAutomataSpecification.cs" />
+    <Compile Include="Automata\Nfa\Nfa.cs" />
+    <Compile Include="Automata\Nfa\NfaAutomata.cs" />
     <Compile Include="Automata\Nfa\NfaBuilder.cs" />
     <Compile Include="Lexer\Recognizer.cs" />
     <Compile Include="Lexer\Lexer.cs" />

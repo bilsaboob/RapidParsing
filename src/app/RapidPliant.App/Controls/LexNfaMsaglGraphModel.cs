@@ -1,42 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Msagl.Drawing;
-using RapidPliant.Lexing.Automata;
+﻿using RapidPliant.Lexing.Automata;
 
 namespace RapidPliant.App.ViewModels
 {
-    public class LexNfaMsaglGraphModel : MsaglGraphModel<LexNfaAutomata.LexNfaState, LexNfaAutomata.LexNfaTransition>
+    public class LexNfaMsaglGraphModel : NfaMsaglGraphModel
     {
-        public LexNfaMsaglGraphModel()
-        {
-        }
-
-        protected override Graph CreateGraph()
-        {
-            return new LexNfaMsaglGraph();
-        }
-
-        protected override int GetStateId(LexNfaAutomata.LexNfaState state)
-        {
-            return state.Id;
-        }
-
-        protected override IEnumerable<LexNfaAutomata.LexNfaTransition> GetStateTransitions(LexNfaAutomata.LexNfaState state)
-        {
-            return state.Transitions;
-        }
-        
-        protected override LexNfaAutomata.LexNfaState GetTransitionToState(LexNfaAutomata.LexNfaTransition transition)
-        {
-            return transition.ToState;
-        }
-
-        protected override string GetStateLabel(LexNfaAutomata.LexNfaState state)
-        {
-            return state.Id.ToString();
-        }
-
-        protected override string GetTransitionLabel(LexNfaAutomata.LexNfaTransition transition)
+        protected override string GetTransitionLabel(INfaTransition transition)
         {
             var terminalTransition = transition as ILexNfaTerminalTransition;
             if (terminalTransition != null)
@@ -52,14 +20,6 @@ namespace RapidPliant.App.ViewModels
             }
 
             return base.GetTransitionLabel(transition);
-        }
-    }
-
-    public class LexNfaMsaglGraph : Graph
-    {
-        public override string ToString()
-        {
-            return base.ToString();
         }
     }
 }

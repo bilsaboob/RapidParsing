@@ -21,10 +21,10 @@ namespace RapidPliant.Lexing.Lexer
 
         protected virtual void Build(DfaGraph graph)
         {
-            var states = new Dictionary<DfaState, DfaTableRecognizerState>();
+            var states = new Dictionary<IDfaState, DfaTableRecognizerState>();
             var intervalsByIntervalLookupIndex = new Dictionary<int, Interval>();
             //We need to split the terminal transitions of all DFA transitions into unique non overlapping intervals
-            var nonOverlappingIntervalTransitions = new NonOverlappingIntervalSet<DfaTransition>();
+            var nonOverlappingIntervalTransitions = new NonOverlappingIntervalSet<IDfaTransition>();
 
             //Prepare recognizer states and simultaneously make sure to split transition intervals into non overlapping intervalls on DFA level... not on state level...
             foreach (var dfaFromState in graph.States)
@@ -34,10 +34,10 @@ namespace RapidPliant.Lexing.Lexer
                 //Process the dfa transitions, they are already non overlapping per state, but we need non overlapping per entire DFA
                 foreach (var dfaTransition in dfaFromState.Transitions)
                 {
-                    dfaTransition.FromState = dfaFromState;
+                    dfaTransition.EnsureFromState(dfaFromState);
 
-                    var interval = dfaTransition.Interval;
-                    nonOverlappingIntervalTransitions.AddInterval(interval, dfaTransition);
+                    var transitionValue = dfaTransition.TransitionValue;
+                    nonOverlappingIntervalTransitions.AddInterval((Interval)transitionValue, dfaTransition);
                 }
             }
 
@@ -148,14 +148,14 @@ namespace RapidPliant.Lexing.Lexer
     {
         private List<DfaTableRecognizerTransition> _transitions;
 
-        public DfaTableRecognizerState(DfaState dfaState)
+        public DfaTableRecognizerState(IDfaState dfaState)
         {
             DfaState = dfaState;
 
             _transitions = new List<DfaTableRecognizerTransition>();
         }
         
-        public DfaState DfaState { get; private set; }
+        public IDfaState DfaState { get; private set; }
 
         public IReadOnlyList<DfaTableRecognizerTransition> Transitions { get { return _transitions; } }
 
@@ -171,7 +171,7 @@ namespace RapidPliant.Lexing.Lexer
     {
         private List<IRecognizerCompletion> _completions;
 
-        public DfaTableRecognizerTransition(int intervalLookupIndex, Interval interval, DfaTransition dfaTransition, DfaTableRecognizerState fromState, DfaTableRecognizerState toState)
+        public DfaTableRecognizerTransition(int intervalLookupIndex, Interval interval, IDfaTransition dfaTransition, DfaTableRecognizerState fromState, DfaTableRecognizerState toState)
         {
             IntervalLookupIndex = intervalLookupIndex;
 
@@ -203,15 +203,15 @@ namespace RapidPliant.Lexing.Lexer
 
         public Interval Interval { get; private set; }
 
-        public DfaTransition DfaTransition { get; private set; }
+        public IDfaTransition DfaTransition { get; private set; }
 
         public DfaTableRecognizerState FromState { get; private set; }
         
         public DfaTableRecognizerState ToState { get; private set; }
-        
-        DfaState IDfaRecognition.ToState { get { return ToState.DfaState; } }
 
-        DfaState IDfaRecognition.FromState { get { return FromState.DfaState; } }
+        IDfaState IDfaRecognition.ToState { get { return ToState.DfaState; } }
+
+        IDfaState IDfaRecognition.FromState { get { return FromState.DfaState; } }
 
         public IReadOnlyList<IRecognizerCompletion> Completions { get { return _completions; } }
     }

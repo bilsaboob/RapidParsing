@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Policy;
@@ -11,193 +12,169 @@ using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Automata
 {
-    public abstract class LexDfaAutomataSpecification : DfaAutomataSpecification<
-        LexDfaAutomata,
-        Interval,
-        LexDfaAutomata.LexDfaBuilder,
-        LexDfaAutomata.LexDfaStateBuilder,
-        LexDfaAutomata.LexDfaBuildContext
-        >
+    public partial class LexDfaAutomata : DfaAutomata<LexDfaAutomata>
     {
-    }
-
-    public partial class LexDfaAutomata : LexDfaAutomataSpecification
-    {
-        #region static helpers
-        public static DfaState BuildDfa(INfa nfa)
-        {
-            return BuildDfa(nfa.ToNfaGraph());
-        }
-
-        public static DfaState BuildDfa(INfaGraph nfaGraph)
-        {
-            return Instance.CreateForNfa(nfaGraph);
-        }
-        #endregion
-
         public LexDfaAutomata()
+            : base(new LexDfaBuilder())
         {
-            DfaBuilder = new LexDfaBuilder();
-        }
-
-        public LexDfaBuilder DfaBuilder { get; private set; }
-
-        public DfaState CreateForNfa(INfaGraph nfaGraph)
-        {
-            return DfaBuilder.Create(nfaGraph);
         }
     }
-    
-    public partial class LexDfaAutomata : LexDfaAutomataSpecification
+
+    public interface ILexDfaTransition : IDfaTransition
     {
-        public class LexDfaBuildContext : DfaBuildContextBase
+        Interval Interval { get; }
+        IEnumerable<ITerminal> Terminals { get; }
+    }
+
+    public class LexDfaTransition : DfaTransition, ILexDfaTransition
+    {
+        public LexDfaTransition(Interval transitionValue, IEnumerable<INfaTransition> nfaTransitons, IEnumerable<INfaTransition> nfaFinalTransitions, DfaState toState)
+            : base(transitionValue, nfaTransitons, nfaFinalTransitions, toState)
         {
-            public LexDfaBuildContext(INfa nfa) : base(nfa) {}
+            Interval = transitionValue;
         }
 
-        public class LexDfaBuilder : DfaBuilderBase
+        public Interval Interval { get; protected set; }
+    }
+
+    public class LexDfaBuilder : DfaBuilder
+    {
+        protected override DfaStateBuilder CreateStateBuilder(NfaClosure closure)
         {
-            protected override LexDfaBuildContext CreateBuildContext(INfa nfa)
+            return new LexDfaStateBuilder(this, closure);
+        }
+    }
+
+    public class LexDfaStateBuilder : DfaStateBuilder
+    {
+        public LexDfaStateBuilder(DfaBuilder dfaBuilder, NfaClosure closure)
+            : base(dfaBuilder, closure)
+        {
+        }
+
+        protected override IDfaTransition CreateDfaTransition(object transitionValue, IEnumerable<INfaTransition> nfaTransitions, HashSet<INfaTransition> finalNfaTransitions, DfaState toDfaState)
+        {
+            var dfaTransition = new LexDfaTransition((Interval)transitionValue, nfaTransitions, finalNfaTransitions, toDfaState);
+
+            //Collect terminals for all nfa transitions
+            CollectTerminals(dfaTransition, nfaTransitions);
+
+            //Collect completions for final nfa transitions
+            CollectCompletions(dfaTransition, finalNfaTransitions);
+
+            return dfaTransition;
+        }
+
+        protected override void BuildFornNfaTransition(INfaTransition transition)
+        {
+            //We only handle terminal transitions for building the DFA!
+
+            var terminalTransition = transition as ILexNfaTerminalTransition;
+            if (terminalTransition == null)
+                return;
+
+            //Here we must take into account the different char intervals a terminal can have!
+            if (terminalTransition.FromState == null)
             {
-                return new LexDfaBuildContext(nfa);
+                throw new Exception("FromState is required!");
             }
 
-            protected override LexDfaStateBuilder CreateStateBuilder(NfaClosure closure)
+            //Instead of storing transitions per terminal - we must store the transitions per character range part of the terminal
+            var terminal = terminalTransition.Terminal;
+            if (terminal == null)
+                return;
+
+            var intervals = terminal.GetIntervals();
+            foreach (var interval in intervals)
             {
-                return new LexDfaStateBuilder(closure);
+                var transitionEntry = ClosureTransitions.AddTransition(interval, terminalTransition);
+
+                //Set the terminal too!
+                transitionEntry.AddTerminal(terminal);
             }
         }
 
-        public class LexDfaStateBuilder : DfaStateBuilderBase
+        protected override IEnumerable<INfaTransitionsByValue> GetNfaTransitionsByValue()
         {
-            public LexDfaStateBuilder(NfaClosure closure)
-                : base(closure)
+            //Get ther transitions, there is a risk that these may be overlapping!
+            var transitions = ClosureTransitions.GetTransitionsByTerminalIntervals();
+
+            //We need to split the terminal transitions into unique non overlapping intervals
+            var nonOverlappingIntervalTransitions = new NonOverlappingIntervalSet<INfaTransition>();
+            foreach (var transitionsByTerminalIntervals in transitions)
             {
+                var interval = (Interval)transitionsByTerminalIntervals.TransitionValue;
+                var nfaTransitions = transitionsByTerminalIntervals.Transitions;
+
+                //Add the interval, which will split into non overlapping intervals, but keep the association of the nfa transitions for each of the splits
+                nonOverlappingIntervalTransitions.AddInterval(interval, nfaTransitions);
             }
 
-            protected override DfaTransition CreateDfaTransition(Interval transitionValue, IEnumerable<INfaTransition> nfaTransitions, HashSet<INfaTransition> finalNfaTransitions, DfaState toDfaState)
+            //Return the non overlapping ones!
+            foreach (var transitionsByTerminalIntervals in nonOverlappingIntervalTransitions)
             {
-                var dfaTransition = new DfaTransition(transitionValue, nfaTransitions, finalNfaTransitions, toDfaState);
+                var transitionInterval = transitionsByTerminalIntervals.Interval;
+                var nfaTransitions = transitionsByTerminalIntervals.AssociatedItems;
 
-                //Collect terminals for all nfa transitions
-                CollectTerminals(dfaTransition, nfaTransitions);
+                yield return new NonOverlappingNfaTransitionsByValue(transitionInterval, nfaTransitions);
+            }
+        }
 
-                //Collect completions for final nfa transitions
-                CollectCompletions(dfaTransition, finalNfaTransitions);
-
-                return dfaTransition;
+        class NonOverlappingNfaTransitionsByValue : INfaTransitionsByValue
+        {
+            public NonOverlappingNfaTransitionsByValue(Interval interval, IEnumerable<INfaTransition> nfaTransitions)
+            {
+                Interval = interval;
+                Transitions = nfaTransitions;
             }
 
-            protected override void BuildFornNfaTransition(INfaTransition transition)
+            public Interval Interval { get; }
+            object INfaTransitionsByValue.TransitionValue { get { return Interval; } }
+            public IEnumerable<INfaTransition> Transitions { get; }
+        }
+
+        private void CollectTerminals(DfaTransition dfaTransition, IEnumerable<INfaTransition> nfaTransitions)
+        {
+            if (nfaTransitions == null)
+                return;
+
+            //Collect the terminals for the dfa transition
+            foreach (var nfaTransition in nfaTransitions)
             {
-                //We only handle terminal transitions for building the DFA!
-
-                var terminalTransition = transition as ILexNfaTerminalTransition;
-                if (terminalTransition == null)
-                    return;
-
-                //Here we must take into account the different char intervals a terminal can have!
-                if (terminalTransition.FromState == null)
+                var terminalTransition = nfaTransition as ILexNfaTerminalTransition;
+                if (terminalTransition != null)
                 {
-                    throw new Exception("FromState is required!");
-                }
-
-                //Instead of storing transitions per terminal - we must store the transitions per character range part of the terminal
-                var terminal = terminalTransition.Terminal;
-                if(terminal == null)
-                    return;
-
-                var intervals = terminal.GetIntervals();
-                foreach (var interval in intervals)
-                {
-                    var transitionEntry = ClosureTransitions.AddTransition(interval, terminalTransition);
-
-                    //Set the terminal too!
-                    transitionEntry.AddTerminal(terminal);
+                    dfaTransition.AddTerminal(terminalTransition.Terminal);
                 }
             }
+        }
 
-            protected override IEnumerable<INfaTransitionsByValue<Interval>> GetNfaTransitionsByValue()
+        private void CollectCompletions(DfaTransition dfaTransition, IEnumerable<INfaTransition> nfaTransitions)
+        {
+            if (nfaTransitions == null)
+                return;
+
+            var completionsByExpression = ReusableDictionary<IExpr, DfaCompletion>.GetAndClear();
+
+            //Collect the grouped dfa completions for the dfa transition - group by "Rule" / "Expresion"
+            foreach (var nfaTransition in nfaTransitions)
             {
-                //Get ther transitions, there is a risk that these may be overlapping!
-                var transitions = ClosureTransitions.GetTransitionsByTerminalIntervals();
+                var expr = nfaTransition.Expression;
+                if (expr == null)
+                    continue;
 
-                //We need to split the terminal transitions into unique non overlapping intervals
-                var nonOverlappingIntervalTransitions = new NonOverlappingIntervalSet<INfaTransition>();
-                foreach (var transitionsByTerminalIntervals in transitions)
+                DfaCompletion completion;
+                if (!completionsByExpression.TryGetValue(expr, out completion))
                 {
-                    var interval = transitionsByTerminalIntervals.TransitionValue;
-                    var nfaTransitions = transitionsByTerminalIntervals.Transitions;
-
-                    //Add the interval, which will split into non overlapping intervals, but keep the association of the nfa transitions for each of the splits
-                    nonOverlappingIntervalTransitions.AddInterval(interval, nfaTransitions);
+                    completion = new DfaCompletion(dfaTransition, expr);
+                    dfaTransition.AddCompletion(completion);
+                    completionsByExpression[expr] = completion;
                 }
 
-                //Return the non overlapping ones!
-                foreach (var transitionsByTerminalIntervals in nonOverlappingIntervalTransitions)
-                {
-                    var transitionInterval = transitionsByTerminalIntervals.Interval;
-                    var nfaTransitions = transitionsByTerminalIntervals.AssociatedItems;
-
-                    yield return new NonOverlappingNfaTransitionsByValue(transitionInterval, nfaTransitions);
-                }
-            }
-            
-            class NonOverlappingNfaTransitionsByValue : INfaTransitionsByValue<Interval>
-            {
-                public NonOverlappingNfaTransitionsByValue(Interval interval, IEnumerable<INfaTransition> nfaTransitions)
-                {
-                    TransitionValue = interval;
-                    Transitions = nfaTransitions;
-                }
-
-                public Interval TransitionValue { get; }
-                public IEnumerable<INfaTransition> Transitions { get; }
+                completion.AddNfaTransition(nfaTransition);
             }
 
-            private void CollectTerminals(DfaTransition dfaTransition, IEnumerable<INfaTransition> nfaTransitions)
-            {
-                if (nfaTransitions == null)
-                    return;
-
-                //Collect the terminals for the dfa transition
-                foreach (var nfaTransition in nfaTransitions)
-                {                    
-                    var terminalTransition = nfaTransition as ILexNfaTerminalTransition;
-                    if (terminalTransition != null)
-                    {
-                        dfaTransition.AddTerminal(terminalTransition.Terminal);
-                    }
-                }
-            }
-
-            private void CollectCompletions(DfaTransition dfaTransition, IEnumerable<INfaTransition> nfaTransitions)
-            {
-                if(nfaTransitions == null)
-                    return;
-
-                var completionsByExpression = ReusableDictionary<IExpr, DfaCompletion>.GetAndClear();
-
-                //Collect the grouped dfa completions for the dfa transition - group by "Rule" / "Expresion"
-                foreach (var nfaTransition in nfaTransitions)
-                {
-                    var expr = nfaTransition.Expression;
-                    if (expr == null)
-                        continue;
-
-                    DfaCompletion completion;
-                    if (!completionsByExpression.TryGetValue(expr, out completion))
-                    {
-                        completion = new DfaCompletion(dfaTransition, expr);
-                        dfaTransition.AddCompletion(completion);
-                        completionsByExpression[expr] = completion;
-                    }
-
-                    completion.AddNfaTransition(nfaTransition);
-                }
-
-                completionsByExpression.ClearAndFree();
-            }
+            completionsByExpression.ClearAndFree();
         }
     }
 }

@@ -7,68 +7,48 @@ namespace RapidPliant.Automata
 {
     public interface IStateGraph
     {
+        IGraphState StartState { get; }
+
+        IReadOnlyList<IGraphState> States { get; }
+
         void EnsureCompiled();
     }
-
-    public interface IStateGraph<TState> : IStateGraph
+    
+    public abstract class Graph<TState> : IStateGraph, IDisposable
+        where TState : IGraphState
     {
-        TState StartState { get; }
-        IReadOnlyList<TState> States { get; }
-    }
+        protected bool _hasBuilt;
 
-    public interface IStateGraph<TRoot, TState> : IStateGraph<TState>
-    {
-        TRoot Root { get; }
-    }
+        protected UniqueList<TState> _states;
 
-    public abstract class Graph<TRoot, TState, TTransition, TBuildContext> : IStateGraph<TRoot, TState>, IDisposable
-        where TRoot : class
-        where TState : class, IGraphState
-        where TTransition : IGraphTransition
-        where TBuildContext : GraphBuildContext<TRoot, TState, TTransition>, new()
-    {
-        private bool _hasBuilt;
-
-        private UniqueList<TState> _states;
-
-        private int NextAvailableStateId { get; set; }
+        protected int NextAvailableStateId { get; set; }
 
         protected Graph()
-            : this(null, null)
+            : this(default(TState))
         {
         }
-
-        protected Graph(TRoot root)
-            : this(root, null)
-        {
-        }
-
-        protected Graph(TRoot root, TState startState)
+        
+        protected Graph(TState startState)
         {
             StartState = startState;
 
             _states = ReusableUniqueList<TState>.GetAndClear();
 
             NextAvailableStateId = 1;
-
-            if (root != null)
-            {
-                BuildForRoot(root);
-            }
         }
 
-        public TRoot Root { get; protected set; }
-
         public TState StartState { get; protected set; }
+        IGraphState IStateGraph.StartState { get { return StartState; } }
 
         public IReadOnlyList<TState> States { get { return _states; } }
+        IReadOnlyList<IGraphState> IStateGraph.States { get { return (IReadOnlyList<IGraphState>)States; } }
 
         public void EnsureCompiled()
         {
             if(_hasBuilt)
                 return;
 
-            BuildForRoot(Root);
+            BuildForRoot();
         }
 
         protected bool AddState(TState state)
@@ -76,35 +56,26 @@ namespace RapidPliant.Automata
             return _states.AddIfNotExists(state);
         }
 
-        protected void BuildForRoot(TRoot root)
+        protected void BuildForRoot()
         {
-            Root = root;
-            StartState = GetStartState(root);
+            var startState = GetStartState();
+            if(startState == null)
+                return;
 
-            using (var buildContext = CreateBuildContext())
-            {
-                BuildForState(buildContext, StartState);
-            }
+            BuildForState(startState);
 
             _hasBuilt = true;
         }
 
-        protected virtual TBuildContext CreateBuildContext()
+        protected void BuildForState(TState state)
         {
-            return new TBuildContext();
-        }
-
-        protected void BuildForState(TBuildContext c, TState state)
-        {
-            if (!state.IsValid)
-            {
+            if(state.Id == 0)
                 state.Id = GenerateStateId(state);
-            }
-            
-            if(!AddState(state))
+
+            if (!AddState(state))
                 return;
-            
-            BuildState(c, state);
+
+            BuildState(state);
 
             var transitions = GetStateTransitions(state);
 
@@ -112,37 +83,40 @@ namespace RapidPliant.Automata
             foreach (var transition in transitions)
             {
                 transition.EnsureFromState(state);
-
+                
                 var toState = GetTransitionToState(transition);
                 if (toState != null)
                 {
                     transition.EnsureToState(toState);
-
-                    c.EnterTransition(transition);
-                    BuildForState(c, toState);
+                    
+                    BuildForState((TState)toState);
                 }
             }
         }
 
-        protected virtual void BuildState(TBuildContext c, TState state)
+        protected virtual void BuildState(TState state)
         {
         }
 
-        protected virtual TState GetStartState(TRoot root)
+        protected virtual TState GetStartState()
         {
-            if (StartState != null)
-                return StartState;
-
-            throw new Exception("No start state available!");
+            return StartState;
         }
 
         protected virtual int GenerateStateId(TState state)
         {
             return NextAvailableStateId++;
         }
+        
+        protected virtual IEnumerable<IGraphTransition> GetStateTransitions(IGraphState state)
+        {
+            return state.Transitions;
+        }
 
-        protected abstract TState GetTransitionToState(TTransition transition);
-        protected abstract IEnumerable<TTransition> GetStateTransitions(TState state);
+        protected virtual IGraphState GetTransitionToState(IGraphTransition transition)
+        {
+            return transition.ToState;
+        }
 
         public virtual void Dispose()
         {
@@ -163,43 +137,5 @@ namespace RapidPliant.Automata
                 _states.ClearAndFree();
             }
         }   
-    }
-
-    public abstract class Graph<TRoot, TState, TTransition> : Graph<TRoot, TState, TTransition, GraphBuildContext<TRoot, TState, TTransition>>
-        where TRoot : class
-        where TState : class, IGraphState
-        where TTransition : IGraphTransition
-    {
-        protected Graph()
-            : base(null, null)
-        {
-        }
-
-        protected Graph(TRoot root)
-            : base(root, null)
-        {
-        }
-
-        protected Graph(TRoot root, TState startState)
-            : base(root, startState)
-        {
-        }
-    }
-
-    public class GraphBuildContext<TRoot, TState, TTransition> : IDisposable
-        where TRoot : class
-        where TState : class, IGraphState
-    {
-        public GraphBuildContext()
-        {
-        }
-
-        public virtual void EnterTransition(TTransition transition)
-        {
-        }
-
-        public virtual void Dispose()
-        {
-        }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Lexing.Automata;
+using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Lexer
 {
@@ -20,7 +21,7 @@ namespace RapidPliant.Lexing.Lexer
 
         protected virtual void Build(DfaGraph graph)
         {
-            var states = new Dictionary<DfaState, DfaRecognizerState>();
+            var states = new Dictionary<IDfaState, DfaRecognizerState>();
 
             //Prepare the recognizer states, wrappers around the dfa states
             foreach (var dfaState in graph.States)
@@ -68,7 +69,7 @@ namespace RapidPliant.Lexing.Lexer
             {
                 var transition = transitions[i];
 
-                var interval = transition.DfaTransition.Interval;
+                var interval = transition.DfaTransition.TransitionValue as Interval;
                 if (interval == null)
                     continue;
 
@@ -89,14 +90,14 @@ namespace RapidPliant.Lexing.Lexer
     {
         private List<DfaRecognizerTransition> _transitions;
 
-        public DfaRecognizerState(DfaState dfaState)
+        public DfaRecognizerState(IDfaState dfaState)
         {
             DfaState = dfaState;
 
             _transitions = new List<DfaRecognizerTransition>();
         }
 
-        public DfaState DfaState { get; private set; }
+        public IDfaState DfaState { get; private set; }
 
         public IReadOnlyList<DfaRecognizerTransition> Transitions { get { return _transitions; } }
 
@@ -110,7 +111,7 @@ namespace RapidPliant.Lexing.Lexer
     {
         private List<IRecognizerCompletion> _completions;
 
-        public DfaRecognizerTransition(DfaTransition dfaTransition, DfaRecognizerState fromState, DfaRecognizerState toState)
+        public DfaRecognizerTransition(IDfaTransition dfaTransition, DfaRecognizerState fromState, DfaRecognizerState toState)
         {
             DfaTransition = dfaTransition;
 
@@ -134,15 +135,15 @@ namespace RapidPliant.Lexing.Lexer
             }
         }
 
-        public DfaTransition DfaTransition { get; private set; }
+        public IDfaTransition DfaTransition { get; private set; }
 
         public DfaRecognizerState FromState { get; private set; }
 
         public DfaRecognizerState ToState { get; private set; }
 
-        DfaState IDfaRecognition.ToState { get { return ToState.DfaState; } }
+        IDfaState IDfaRecognition.ToState { get { return ToState.DfaState; } }
 
-        DfaState IDfaRecognition.FromState { get { return FromState.DfaState; } }
+        IDfaState IDfaRecognition.FromState { get { return FromState.DfaState; } }
 
         public IReadOnlyList<IRecognizerCompletion> Completions { get { return _completions; } }
     }
