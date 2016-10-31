@@ -17,20 +17,42 @@ namespace RapidPliant.Automata.Nfa
 
         public INfa Create(IEnumerable<IExpr> expressions)
         {
-            //Prepare the build context
-            return BuildForAlterationExpression(null, expressions);
+            var nfas = new List<INfa>();
+
+            //Build the root nfas
+            foreach (var expr in expressions)
+            {
+                var nfa = BuildForExpression(expr);
+                nfas.Add(nfa);
+            }
+
+            var finalNfas = OnCreated(nfas);
+
+            return Or(null, finalNfas);
         }
 
         public INfa Create(IExpr expr)
         {
-            return BuildForExpression(expr);
+            var nfa =  BuildForExpression(expr);
+            var finalNfa = OnCreated(nfa);
+            return finalNfa;
+        }
+
+        protected virtual INfa OnCreated(INfa nfa)
+        {
+            return nfa;
+        }
+
+        protected virtual IEnumerable<INfa> OnCreated(IEnumerable<INfa> nfas)
+        {
+            return nfas;
         }
 
         #endregion
 
         #region Build
 
-        private INfa BuildForExpression(IExpr expr)
+        protected INfa BuildForExpression(IExpr expr)
         {
             var isLeaf = !expr.IsGroup;
 
@@ -289,27 +311,27 @@ namespace RapidPliant.Automata.Nfa
 
         protected virtual INfa CreateEmptyNfa(INfaState start, INfaState end, IExpr forExpression)
         {
-            return new Nfa(start, end);
+            return CreateNfa(start, end, forExpression);
         }
 
         protected virtual INfa CreateOrNfa(INfaState start, INfaState end, IExpr orExpr, IEnumerable<IExpr> forExpressions)
         {
-            return new Nfa(start, end);
+            return CreateNfa(start, end, orExpr);
         }
 
         protected virtual INfa CreateAndNfa(INfaState start, INfaState end, IExpr forExpression)
         {
-            return new Nfa(start, end);
+            return CreateNfa(start, end, forExpression);
         }
 
         protected virtual INfa CreateRepeatNfa(INfaState start, INfaState end, IExpr forExpression)
         {
-            return new Nfa(start, end);
+            return CreateNfa(start, end, forExpression);
         }
 
         protected virtual INfa CreateOptionalNfa(INfaState start, INfaState end, IExpr forExpression)
         {
-            return new Nfa(start, end);
+            return CreateNfa(start, end, forExpression);
         }
 
         protected virtual INfaState CreateNfaState()

@@ -12,19 +12,30 @@ namespace RapidPliant.Grammar
 {
     public interface IGrammarModel
     {
-        IEnumerable<ILexDef> GetLexDefinitions();
-        IEnumerable<IRuleDef> GetRuleDefinitions();
         IEnumerable<IRuleDef> GetStartRules();
+        
+        IGrammarDef GetDefById(int id);
+
+        void EnsureBuild();
     }
 
     public interface IGrammarDef
     {
+        int Id { get; }
+
         string Name { get; }
     }
 
     public abstract class GrammarDef : IGrammarDef
     {
+        public int Id { get; set; }
+
         public string Name { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Name}";
+        }
 
         #region helpers
         public static RuleRefExpr RuleRef(RuleDef ruleDef)

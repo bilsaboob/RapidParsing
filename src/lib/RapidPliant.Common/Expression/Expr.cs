@@ -18,6 +18,8 @@ namespace RapidPliant.Common.Expression
         
         IReadOnlyList<IExpr> Expressions { get; }
 
+        object Owner { get; set; }
+
         void AddExpr(IExpr expr);
     }
 
@@ -57,6 +59,8 @@ namespace RapidPliant.Common.Expression
         
         public TExpr Root { get; set; }
         IExpr IExpr.Root { get { return Root; } }
+
+        public object Owner { get; set; }
 
         public string Name { get; set; }
         public ExprOptions Options { get; set; }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RapidPliant.Automata.Nfa;
 using RapidPliant.Collections;
+using RapidPliant.Common.Expression;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Util;
 
@@ -101,14 +102,19 @@ namespace RapidPliant.Automata.Dfa
 
         public NfaClosure Closure(INfaState toState)
         {
-            var closure = new NfaClosure();
+            var closure = new NfaClosure(CreateDfaState());
             EvalClosureForState(closure, null, toState);
             return closure;
         }
 
+        protected virtual DfaState CreateDfaState()
+        {
+            return new DfaState();
+        }
+
         public NfaClosure Closure(IEnumerable<INfaTransition> nfaTransitions)
         {
-            var closure = new NfaClosure();
+            var closure = new NfaClosure(CreateDfaState());
             foreach (var nfaTransition in nfaTransitions)
             {
                 var toState = nfaTransition.ToState;
@@ -242,7 +248,35 @@ namespace RapidPliant.Automata.Dfa
                 dfaState.AddTransition(dfaTransition);
             }
         }
-        
+
+        protected virtual void CollectCompletions(DfaTransition dfaTransition, IEnumerable<INfaTransition> nfaTransitions)
+        {
+            if (nfaTransitions == null)
+                return;
+
+            var completionsByExpression = ReusableDictionary<IExpr, DfaCompletion>.GetAndClear();
+
+            //Collect the grouped dfa completions for the dfa transition - group by "Rule" / "Expresion"
+            foreach (var nfaTransition in nfaTransitions)
+            {
+                var expr = nfaTransition.Expression;
+                if (expr == null)
+                    continue;
+
+                DfaCompletion completion;
+                if (!completionsByExpression.TryGetValue(expr, out completion))
+                {
+                    completion = new DfaCompletion(dfaTransition, expr);
+                    dfaTransition.AddCompletion(completion);
+                    completionsByExpression[expr] = completion;
+                }
+
+                completion.AddNfaTransition(nfaTransition);
+            }
+
+            completionsByExpression.ClearAndFree();
+        }
+
         protected abstract IEnumerable<INfaTransitionsByValue> GetNfaTransitionsByValue();
 
         protected abstract IDfaTransition CreateDfaTransition(object transitionValue, IEnumerable<INfaTransition> nfaTransitions, HashSet<INfaTransition> finalNfaTransitions, DfaState toDfaState);
@@ -302,7 +336,7 @@ namespace RapidPliant.Automata.Dfa
             return transitionsForIntervalEntry;
         }
 
-        public IEnumerable<INfaTransitionsByValue> GetTransitionsByTerminalIntervals()
+        public IEnumerable<INfaTransitionsByValue> GetTransitionsByTransitionValues()
         {
             return _nfaTransitionsByValue.Select(p => new ClosureNfaTransitionsByValue(p.Value));
         }
@@ -391,9 +425,9 @@ namespace RapidPliant.Automata.Dfa
     {
         private int _hashCode;
         
-        public NfaClosure()
+        public NfaClosure(DfaState dfaState)
         {
-            DfaState = new DfaState();
+            DfaState = dfaState;
         }
 
         public DfaState DfaState { get; set; }

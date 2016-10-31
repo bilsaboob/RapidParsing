@@ -53,7 +53,9 @@
       <DependentUpon>GraphView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\DfaMsaglGraphModel.cs" />
+    <Compile Include="Controls\EarleyDfaMsaglGraphModel.cs" />
     <Compile Include="Controls\LexDfaMsaglGraphModel.cs" />
+    <Compile Include="Controls\EarleyNfaMsaglGraphModel.cs" />
     <Compile Include="Controls\LexNfaMsaglGraphModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
@@ -69,8 +71,11 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="RapidPliantAppliction.cs" />
+    <Compile Include="ViewModels\EarleyDfaGraphViewModel.cs" />
     <Compile Include="ViewModels\LexDfaGraphViewModel.cs" />
+    <Compile Include="ViewModels\EarleyGraphViewModel.cs" />
     <Compile Include="ViewModels\LexGraphViewModel.cs" />
+    <Compile Include="ViewModels\EarleyNfaGraphViewModel.cs" />
     <Compile Include="ViewModels\LexNfaGraphViewModel.cs" />
     <Compile Include="ViewModels\GraphViewModel.cs" />
     <Compile Include="Controls\MsaglGraphModel.cs" />
@@ -123,6 +128,10 @@
     <ProjectReference Include="..\..\lib\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
       <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
       <Name>RapidPliant.Lexing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Parsing\RapidPliant.Parsing.csproj">
+      <Project>{93848c30-bc99-4da2-8388-1b29124a3311}</Project>
+      <Name>RapidPliant.Parsing</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\lib\RapidPliant\RapidPliant.csproj">
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>

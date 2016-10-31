@@ -46,11 +46,11 @@
     <Compile Include="Automata\Nfa\LexNfaAutomata.cs" />
     <Compile Include="Automata\Nfa\LexNfa.cs" />
     <Compile Include="Automata\Nfa\LexNfaBuilder.cs" />
-    <Compile Include="Lexer\Recognizer.cs" />
     <Compile Include="Lexer\Lexer.cs" />
-    <Compile Include="Lexer\LexDfaTableTransitionRecognizer.cs" />
-    <Compile Include="Lexer\LexDfaStateTransitionRecognizer.cs" />
+    <Compile Include="Lexer\Recognition\LexDfaTableTransitionRecognizer.cs" />
+    <Compile Include="Lexer\Recognition\LexDfaStateTransitionRecognizer.cs" />
     <Compile Include="Lexer\DfaLexer.cs" />
+    <Compile Include="Lexer\Recognition\ILexRecognizer.cs" />
     <Compile Include="Pattern\PatternExpr.cs" />
     <Compile Include="Pattern\Regex\RapidRegex.cs" />
     <Compile Include="Pattern\Regex\RegexExpr.cs" />

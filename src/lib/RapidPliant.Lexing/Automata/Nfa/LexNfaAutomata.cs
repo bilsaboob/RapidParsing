@@ -4,9 +4,9 @@ namespace RapidPliant.Lexing.Automata.Nfa
 {
     public class LexNfaAutomata : NfaAutomata<LexNfaAutomata>
     {
-        public LexNfaAutomata()
-            : base(new LexNfaBuilder())
+        protected override INfaBuilder CreateBuilder()
         {
+            return new LexNfaBuilder();
         }
     }
 }

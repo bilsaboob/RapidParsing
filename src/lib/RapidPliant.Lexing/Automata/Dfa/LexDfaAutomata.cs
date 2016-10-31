@@ -4,9 +4,9 @@ namespace RapidPliant.Lexing.Automata.Dfa
 {
     public class LexDfaAutomata : DfaAutomata<LexDfaAutomata>
     {
-        public LexDfaAutomata()
-            : base(new LexDfaBuilder())
+        protected override IDfaBuilder CreateBuilder()
         {
+            return new LexDfaBuilder();
         }
     }
 }

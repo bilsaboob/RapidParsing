@@ -11,6 +11,7 @@ using RapidPliant.Lexing.Automata;
 using RapidPliant.Lexing.Automata.Dfa;
 using RapidPliant.Lexing.Automata.Nfa;
 using RapidPliant.Lexing.Lexer;
+using RapidPliant.Lexing.Lexer.Recognition;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Lexing.Pattern.Regex;
 using RapidPliant.Test;
@@ -86,7 +87,7 @@ namespace RapidPliant.Testing.Tests
             //return TestLexing(dfaGraph, input, new LexDfaStateTransitionRecognizer(dfaGraph));
         }
 
-        private bool TestLexing(DfaGraph dfaGraph, string input, IDfaRecognizer<char> recognizer)
+        private bool TestLexing(DfaGraph dfaGraph, string input, ILexRecognizer recognizer)
         {
             var lexer = new DfaLexer(recognizer);
             var inputReader = new StringReader(input);

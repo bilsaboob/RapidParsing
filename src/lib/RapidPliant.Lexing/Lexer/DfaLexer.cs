@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Automata.Dfa;
 using RapidPliant.Common.Expression;
 using RapidPliant.Lexing.Automata;
+using RapidPliant.Lexing.Lexer.Recognition;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Util;
 
@@ -16,9 +18,9 @@ namespace RapidPliant.Lexing.Lexer
         
         private bool _canContinue;
 
-        protected IDfaRecognizer<char> _recognizer;
+        protected ILexRecognizer _recognizer;
         
-        public DfaLexer(IDfaRecognizer<char> recognizer)
+        public DfaLexer(ILexRecognizer recognizer)
         {
             _recognizer = recognizer;
             

@@ -20,7 +20,7 @@ namespace RapidPliant.Lexing.Automata.Nfa
         ITerminal Terminal { get; }
     }
 
-    public class LexNfaTransition : NfaTransition, ILexNfaTransition
+    public abstract class LexNfaTransition : NfaTransition, ILexNfaTransition
     {
     }
 

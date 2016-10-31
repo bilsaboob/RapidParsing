@@ -26,17 +26,12 @@ namespace RapidPliant.Automata.Dfa
         }
         
         #endregion
-
-        public DfaAutomata(IDfaBuilder dfaBuilder)
-        {
-            DfaBuilder = dfaBuilder;
-        }
-
-        protected IDfaBuilder DfaBuilder { get; set; }
-
+        
         public virtual IDfaState CreateNfaForNfaGraph(INfaGraph nfaGraph)
         {
-            return DfaBuilder.Create(nfaGraph);
+            return CreateBuilder().Create(nfaGraph);
         }
+
+        protected abstract IDfaBuilder CreateBuilder();
     }
 }

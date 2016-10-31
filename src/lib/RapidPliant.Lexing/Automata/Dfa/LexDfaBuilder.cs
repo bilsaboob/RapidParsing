@@ -71,7 +71,7 @@ namespace RapidPliant.Lexing.Automata.Dfa
         protected override IEnumerable<INfaTransitionsByValue> GetNfaTransitionsByValue()
         {
             //Get ther transitions, there is a risk that these may be overlapping!
-            var transitions = ClosureTransitions.GetTransitionsByTerminalIntervals();
+            var transitions = ClosureTransitions.GetTransitionsByTransitionValues();
 
             //We need to split the terminal transitions into unique non overlapping intervals
             var nonOverlappingIntervalTransitions = new NonOverlappingIntervalSet<INfaTransition>();
@@ -121,34 +121,6 @@ namespace RapidPliant.Lexing.Automata.Dfa
                     dfaTransition.AddTerminal(terminalTransition.Terminal);
                 }
             }
-        }
-
-        private void CollectCompletions(DfaTransition dfaTransition, IEnumerable<INfaTransition> nfaTransitions)
-        {
-            if (nfaTransitions == null)
-                return;
-
-            var completionsByExpression = ReusableDictionary<IExpr, DfaCompletion>.GetAndClear();
-
-            //Collect the grouped dfa completions for the dfa transition - group by "Rule" / "Expresion"
-            foreach (var nfaTransition in nfaTransitions)
-            {
-                var expr = nfaTransition.Expression;
-                if (expr == null)
-                    continue;
-
-                DfaCompletion completion;
-                if (!completionsByExpression.TryGetValue(expr, out completion))
-                {
-                    completion = new DfaCompletion(dfaTransition, expr);
-                    dfaTransition.AddCompletion(completion);
-                    completionsByExpression[expr] = completion;
-                }
-
-                completion.AddNfaTransition(nfaTransition);
-            }
-
-            completionsByExpression.ClearAndFree();
         }
     }
 }

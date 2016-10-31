@@ -5,10 +5,15 @@ using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Expression;
 using RapidPliant.Grammar.Definitions;
+using RapidPliant.Util;
 
 namespace RapidPliant.Grammar.Expression
 {
-    public partial class GrammarExpr : Expr<GrammarExpr>
+    public interface IGrammarExpr : IExpr
+    {
+    }
+
+    public partial class GrammarExpr : Expr<GrammarExpr>, IGrammarExpr
     {
         public GrammarExpr()
             : this(false, false)
@@ -28,6 +33,11 @@ namespace RapidPliant.Grammar.Expression
         protected override GrammarExpr CreateProductionExpr()
         {
             return new GrammarExpr(false, true);
+        }
+
+        protected override string _ToStringRef()
+        {
+            return ToString();
         }
     }
 
@@ -118,7 +128,7 @@ namespace RapidPliant.Grammar.Expression
         #endregion
     }
 
-    public interface IRuleRefExpr : IExpr
+    public interface IRuleRefExpr : IGrammarExpr
     {
         IRuleDef RuleDef { get; }
     }
@@ -131,9 +141,14 @@ namespace RapidPliant.Grammar.Expression
         }
 
         public IRuleDef RuleDef { get; private set; }
+
+        protected override void _ToStringExpr(IText text)
+        {
+            text.Append(RuleDef.Name);
+        }
     }
 
-    public interface ILexRefExpr : IExpr
+    public interface ILexRefExpr : IGrammarExpr
     {
         ILexDef LexDef { get; }
     }
@@ -146,5 +161,10 @@ namespace RapidPliant.Grammar.Expression
         }
 
         public ILexDef LexDef { get; private set; }
+
+        protected override void _ToStringExpr(IText text)
+        {
+            text.Append(LexDef.Name);
+        }
     }
 }

@@ -5,11 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Automata.Dfa;
 using RapidPliant.Lexing.Automata;
+using RapidPliant.Lexing.Lexer.Recognition;
 using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Lexer
 {
-    public class LexDfaStateTransitionRecognizer : IDfaRecognizer<char>
+    public class LexDfaStateTransitionRecognizer : ILexRecognizer
     {
         public LexDfaStateTransitionRecognizer(DfaGraph dfaGraph)
         {

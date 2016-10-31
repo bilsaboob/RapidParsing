@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Util;
 
 namespace RapidPliant.Grammar
 {
@@ -19,18 +20,10 @@ namespace RapidPliant.Grammar
 
         public char Char { get; private set; }
 
-        /*public override string ToStringRef()
+        public override string ToString()
         {
-            if (string.IsNullOrEmpty(Name))
-                return ToString();
-
-            return base.ToStringRef();
+            return $"'{Char}'";
         }
-
-        public override void ToString(StringBuilder sb)
-        {
-            sb.Append("'" + Char.ToString() + "'");
-        }*/
     }
 
     public class LexSpellingModel : LexModel, ILexSpellingModel
@@ -42,18 +35,10 @@ namespace RapidPliant.Grammar
 
         public string Spelling { get; private set; }
 
-        /*public override string ToStringRef()
+        public override string ToString()
         {
-            if (string.IsNullOrEmpty(Name))
-                return ToString();
-
-            return base.ToStringRef();
+            return $"\"{Spelling}\"";
         }
-
-        public override void ToString(StringBuilder sb)
-        {
-            sb.Append("\"" + Spelling + "\"");
-        }*/
     }
 
     public class LexPatternModel : LexModel, ILexPatternModel
@@ -65,17 +50,9 @@ namespace RapidPliant.Grammar
 
         public string Pattern { get; private set; }
 
-        /*public override string ToStringRef()
+        public override string ToString()
         {
-            if (string.IsNullOrEmpty(Name))
-                return ToString();
-
-            return base.ToStringRef();
+            return $"<{Pattern}>";
         }
-
-        public override void ToString(StringBuilder sb)
-        {
-            sb.Append("<" + Pattern + ">");
-        }*/
     }
 }

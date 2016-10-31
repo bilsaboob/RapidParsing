@@ -19,6 +19,11 @@ namespace RapidPliant.Grammar.Definitions
         {
             LexModel = lexModel;
         }
+
+        public override string ToString()
+        {
+            return $"L:{Name}";
+        }
     }
     
 
@@ -37,14 +42,14 @@ namespace RapidPliant.Grammar.Definitions
         }
 
         #region And
-        public static GrammarExpr operator +(LexDef lhs, GrammarExpr rhs)
+        /*public static GrammarExpr operator +(LexDef lhs, GrammarExpr rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.LexRef(lhs), rhs);
-        }
-        public static GrammarExpr operator +(GrammarExpr lhs, LexDef rhs)
+        }*/
+        /*public static GrammarExpr operator +(GrammarExpr lhs, LexDef rhs)
         {
             return GrammarExpr.AddWithAnd(lhs, GrammarDef.LexRef(rhs));
-        }
+        }*/
         public static GrammarExpr operator +(LexDef lhs, LexDef rhs)
         {
             return GrammarExpr.AddWithAnd(GrammarDef.LexRef(lhs), GrammarDef.LexRef(rhs));
@@ -69,13 +74,13 @@ namespace RapidPliant.Grammar.Definitions
         #endregion
 
         #region Or
-        public static GrammarExpr operator |(GrammarExpr lhs, LexDef rhs)
-        {
-            return GrammarExpr.AddWithOr(lhs, GrammarDef.LexRef(rhs));
-        }
         public static GrammarExpr operator |(LexDef lhs, GrammarExpr rhs)
         {
             return GrammarExpr.AddWithOr(GrammarDef.LexRef(lhs), rhs);
+        }
+        public static GrammarExpr operator |(GrammarExpr lhs, LexDef rhs)
+        {
+            return GrammarExpr.AddWithOr(lhs, GrammarDef.LexRef(rhs));
         }
         public static GrammarExpr operator |(LexDef lhs, LexDef rhs)
         {

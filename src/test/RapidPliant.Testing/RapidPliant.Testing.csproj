@@ -45,8 +45,9 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tests\NonOverlappingSetTest.cs" />
-    <Compile Include="Tests\RegexPatternTest.cs" />
+    <Compile Include="Tests\Grammar\SimpleGrammarTest.cs" />
+    <Compile Include="Tests\Other\NonOverlappingSetTest.cs" />
+    <Compile Include="Tests\Lexing\RegexPatternTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -60,9 +61,17 @@
       <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
       <Name>RapidPliant.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
+      <Project>{D045878A-7813-4480-9DC5-2A37C60346E2}</Project>
+      <Name>RapidPliant.Grammar</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\lib\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
       <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
       <Name>RapidPliant.Lexing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Parsing\RapidPliant.Parsing.csproj">
+      <Project>{93848C30-BC99-4DA2-8388-1B29124A3311}</Project>
+      <Name>RapidPliant.Parsing</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\lib\RapidPliant\RapidPliant.csproj">
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Test;
 using RapidPliant.Testing.Tests;
+using RapidPliant.Testing.Tests.Grammar;
 
 namespace RapidPliant.Testing
 {
@@ -12,8 +13,9 @@ namespace RapidPliant.Testing
     {
         static void Main(string[] args)
         {
-            TestRunner.Run<RegexPatternTest>();
+            //TestRunner.Run<RegexPatternTest>();
             //TestRunner.Run<NonOverlappingSetTest>();
+            TestRunner.Run<SimpleGrammarTest>();
         }
     }
 }

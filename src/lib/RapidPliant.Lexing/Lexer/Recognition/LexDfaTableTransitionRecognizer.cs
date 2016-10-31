@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using RapidPliant.Automata.Dfa;
 using RapidPliant.Lexing.Automata;
+using RapidPliant.Lexing.Lexer.Recognition;
 using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Lexer
 {
-    public class LexDfaTableTransitionRecognizer : IDfaRecognizer<char>
+    public class LexDfaTableTransitionRecognizer : ILexRecognizer
     {
         public LexDfaTableTransitionRecognizer(DfaGraph dfaGraph)
         {

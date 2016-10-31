@@ -21,6 +21,11 @@ namespace RapidPliant.Grammar.Definitions
         {
             Expression = expr;
         }
+        
+        public override string ToString()
+        {
+            return $"R:{Name}";
+        }
     }
 
     public partial class RuleDef

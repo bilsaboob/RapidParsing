@@ -43,6 +43,7 @@
     <Compile Include="Dfa\Dfa.cs" />
     <Compile Include="Dfa\DfaAutomata.cs" />
     <Compile Include="Dfa\DfaBuilder.cs" />
+    <Compile Include="Dfa\Recognizer.cs" />
     <Compile Include="Graph.cs" />
     <Compile Include="GraphState.cs" />
     <Compile Include="Nfa\Nfa.cs" />

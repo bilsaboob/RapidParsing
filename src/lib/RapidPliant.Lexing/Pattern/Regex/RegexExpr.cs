@@ -28,12 +28,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
         {
             return new RegexExpr(false, true);
         }
-
-        protected override string _ToStringRef()
-        {
-            return ToString();
-        }
-
+        
         public static RegexExpr Production()
         {
             return new RegexExpr(false, true);
@@ -42,6 +37,11 @@ namespace RapidPliant.Lexing.Pattern.Regex
         public static RegexExpr Alteration()
         {
             return new RegexExpr(true, false);
+        }
+
+        protected override string _ToStringRef()
+        {
+            return ToString();
         }
     }
     

@@ -72,6 +72,8 @@ namespace RapidPliant.Automata.Nfa
 
         bool AddTransition(INfaTransition transition);
 
+        void RemoveTransition(INfaTransition transition);
+
         IEnumerable<INfaState> GetExpandedTransitionStates();
     }
     
@@ -96,9 +98,19 @@ namespace RapidPliant.Automata.Nfa
             return _transitions.AddIfNotExists(transition);
         }
 
+        public void RemoveTransition(NfaTransition transition)
+        {
+            _transitions.Remove(transition);
+        }
+
         bool INfaState.AddTransition(INfaTransition transition)
         {
             return AddTransition((NfaTransition) transition);
+        }
+
+        public void RemoveTransition(INfaTransition transition)
+        {
+            RemoveTransition((NfaTransition)transition);
         }
 
         public IEnumerable<INfaState> GetExpandedTransitionStates()

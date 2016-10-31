@@ -34,17 +34,12 @@ namespace RapidPliant.Automata.Nfa
 
         #endregion
         
-        public NfaAutomata(INfaBuilder nfaBuilder)
-        {
-            NfaBuilder = nfaBuilder;
-        }
-
-        protected INfaBuilder NfaBuilder { get; set; }
-
         public virtual INfa CreateNfaForExpression(IExpr expr)
         {
-            return NfaBuilder.Create(expr);
+            return CreateBuilder().Create(expr);
         }
+
+        protected abstract INfaBuilder CreateBuilder();
 
         public INfa CreateNfaForExpressions(params IExpr[] expressions)
         {
@@ -59,7 +54,7 @@ namespace RapidPliant.Automata.Nfa
             if (expressions == null)
                 return null;
 
-            return NfaBuilder.Create(expressions);
+            return CreateBuilder().Create(expressions);
         }
     }
 }

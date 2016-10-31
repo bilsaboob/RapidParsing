@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Collections;
 using RapidPliant.Common.Expression;
 using RapidPliant.Grammar.Definitions;
 using RapidPliant.Grammar.Expression;
@@ -14,87 +15,214 @@ namespace RapidPliant.Grammar
     public abstract class GrammarModel<TGrammarModel> : IGrammarModel
         where TGrammarModel : GrammarModel<TGrammarModel>
     {
-        protected GrammarDefinitionCollecion<RuleDef, IRuleDef> StartRuleDefinitions { get; set; }
-        protected List<GrammarDef> AllDefinitions { get; set; }
+        private class GrammarDefEntry
+        {
+            public GrammarDefEntry(GrammarDef grammarDef)
+                : this(null, grammarDef)
+            {
+            }
 
-        protected GrammarDefinitionCollecion<RuleDef, IRuleDef> RuleDefinitions { get; set; }
-        protected GrammarDefinitionCollecion<LexDef, ILexDef> LexDefinitions { get; set; }
+            public GrammarDefEntry(GrammarDefMember member, GrammarDef grammarDef)
+            {
+                Member = member;
+                IsDefinedByMember = Member != null;
 
-        private Dictionary<string, GrammarDef> _preBuildDefinitions;
-        
+                if (IsDefinedByMember)
+                {
+                    MemberGrammarDefName = grammarDef.Name;
+                }
+
+                GrammarDef = grammarDef;
+            }
+
+            public GrammarDef GrammarDef { get; set; }
+            
+            public bool IsDefinedByMember { get; private set; }
+            public GrammarDefMember Member { get; private set; }
+
+            public string MemberGrammarDefName { get; private set; }
+        }
+
+        private List<GrammarDefEntry> _allDefs;
+        private List<GrammarDefEntry> _memberDefs;
+
+        private List<GrammarDefEntry> _lexDefs;
+        private List<GrammarDefEntry> _ruleDefs;
+
+        private List<GrammarDefEntry> _startRuleDefs;
+        private List<GrammarDefMember> _grammarDefMembers;
+
+        private bool _hasBuilt;
+
         public GrammarModel()
         {
-            AllDefinitions = new List<GrammarDef>();
-            RuleDefinitions = new GrammarDefinitionCollecion<RuleDef, IRuleDef>();
-            LexDefinitions = new GrammarDefinitionCollecion<LexDef, ILexDef>();
+            _allDefs = new List<GrammarDefEntry>();
+            _memberDefs = new List<GrammarDefEntry>();
+            _ruleDefs = new List<GrammarDefEntry>();
+            _lexDefs = new List<GrammarDefEntry>();
+            _startRuleDefs = new List<GrammarDefEntry>();
 
-            StartRuleDefinitions = new GrammarDefinitionCollecion<RuleDef, IRuleDef>();
+            NextDefinitionId = 1;
+        }
+        
+        protected int NextDefinitionId { get; set; }
 
-            _preBuildDefinitions = new Dictionary<string, GrammarDef>();
+        protected List<GrammarDefMember> GrammarDefMembers
+        {
+            get
+            {
+                if (_grammarDefMembers == null)
+                {
+                    _grammarDefMembers = FindGrammarDefMembers();
+                }
+                return _grammarDefMembers;
+            }
+        }
+        
+        public void Build()
+        {
+            //Start by initializing the definition members
+            InitializeGrammarDefMembers();
+
+            //Define the grammar
+            Define();
+
+            //Initialize the defined grammar defs - any defs that weren't defined as members... "in place definitions" such as "custom patterns" etc...
+            CollectGrammarDefs();
+
+            //Now ensure every definition has a name
+            EnsureDefNames();
+
+            //Ensure each expression has an associated "ruledef" owner
+            EnsureExpressionOwners();
+
+            AssignIds();
+
+            OnBuilt();
+
+            _hasBuilt = true;
         }
 
         protected abstract void Define();
 
-        public void Build()
+        protected virtual void OnBuilt()
         {
-            InitializeExpressions();
-
-            //Define the grammar!
-            Define();
-
-            CollectDefinitions();
-
-            EnsureExpressionNames();
-
-            OnBuilt();
         }
 
-        private void InitializeExpressions()
+        #region IGrammarModel
+        public void EnsureBuild()
         {
-            var fields = this.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
-            var exprFields = fields.Where(f => typeof(IExpr).IsAssignableFrom(f.FieldType)).ToList();
-            foreach (var exprField in exprFields)
-            {
-                var expr = EnsureDefinition(exprField.GetValue(this), exprField.FieldType);
-                exprField.SetValue(this, expr);
-                EnsureDefinitionName(expr, exprField.Name);
-                _preBuildDefinitions[exprField.Name] = expr;
-            }
+            if(!_hasBuilt)
+                Build();
+        }
 
-            var props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
-            var exprProps = props.Where(f => typeof(IExpr).IsAssignableFrom(f.PropertyType)).ToList();
-            foreach (var exprProp in exprProps)
+        public IEnumerable<IRuleDef> GetStartRules()
+        {
+            return _startRuleDefs.Select(d => d.GrammarDef as IRuleDef).Where(d => d != null).ToList();
+        }
+
+        public IGrammarDef GetDefById(int id)
+        {
+            var defEntry = FindDefEntryById(id);
+            if (defEntry == null)
+                return null;
+
+            return defEntry.GrammarDef;
+        }
+        #endregion
+
+        #region AssignIds
+        private void AssignIds()
+        {
+            foreach (var defEntry in _allDefs)
             {
-                try
-                {
-                    var expr = EnsureDefinition(exprProp.GetValue(this), exprProp.PropertyType);
-                    exprProp.SetValue(this, expr);
-                    EnsureDefinitionName(expr, exprProp.Name);
-                    _preBuildDefinitions[exprProp.Name] = expr;
-                }
-                catch (Exception)
-                {
-                    //Doesn't matter
-                }
+                var def = defEntry.GrammarDef;
+                if (def.Id != 0)
+                    continue;
+
+                def.Id = GenerateNextDefinitionId();
             }
         }
 
-        private GrammarDef EnsureDefinition(object exprObj, Type exprType)
+        protected virtual int GenerateNextDefinitionId()
         {
-            if (exprObj == null)
-            {
-                if (typeof(LexDef).IsAssignableFrom(exprType))
-                {
-                    return new LexDef();
-                }
+            return NextDefinitionId++;
+        }
+        #endregion
 
-                if (typeof(RuleDef).IsAssignableFrom(exprType))
+        #region InitializeGrammarDefMembers
+        private void InitializeGrammarDefMembers()
+        {
+            var grammarDefMembers = GrammarDefMembers;
+            
+            foreach (var lexDefMember in grammarDefMembers.Where(m=>m.IsLexDef))
+            {
+                var grammarDef = InitializeGrammarDef(lexDefMember);
+                AddMemberGrammarDef(lexDefMember, grammarDef);
+            }
+            
+            foreach (var ruleDefMember in grammarDefMembers.Where(m => m.IsRuleDef))
+            {
+                var grammarDef = InitializeGrammarDef(ruleDefMember);
+                AddMemberGrammarDef(ruleDefMember, grammarDef);
+            }
+
+            foreach (var memberDef in _memberDefs)
+            {
+                AddDefinition(memberDef);
+            }
+        }
+
+        private void AddMemberGrammarDef(GrammarDefMember defMember, GrammarDef grammarDef)
+        {
+            if (_memberDefs.Exists(e => e.Member == defMember))
+                return;
+
+            _memberDefs.Add(new GrammarDefEntry(defMember, grammarDef));
+        }
+
+        private GrammarDef InitializeGrammarDef(GrammarDefMember defMember)
+        {
+            var grammarDef = EnsureDefinition(defMember);
+            EnsureDefinitionName(grammarDef, defMember.MemberName);
+            return grammarDef;
+        }
+        
+        private GrammarDef EnsureDefinition(GrammarDefMember defMember)
+        {
+            var memberGrammarDef = defMember.GetDef();
+            var grammarDef = GetOrCreateGrammarDef(defMember);
+            if (grammarDef != memberGrammarDef)
+            {
+                defMember.SetDef(grammarDef);
+            }
+            return grammarDef;
+        }
+
+        private GrammarDef GetOrCreateGrammarDef(GrammarDefMember defMember)
+        {
+            var memberGrammarDef = defMember.GetDef();
+            
+            if (memberGrammarDef == null)
+            {
+                var defType = defMember.MemberType;
+
+                if (typeof(LexDef).IsAssignableFrom(defType))
                 {
-                    return new RuleDef();
+                    memberGrammarDef = new LexDef();
+                }
+                else if (typeof(RuleDef).IsAssignableFrom(defType))
+                {
+                    memberGrammarDef = new RuleDef();
                 }
             }
 
-            return (GrammarDef)exprObj;
+            if (memberGrammarDef == null)
+            {
+                throw new Exception($"Unhandled grammar def member '{defMember.MemberName}' of type '{defMember.MemberType.Name}'!");
+            }
+            
+            return (GrammarDef)memberGrammarDef;
         }
 
         private void EnsureDefinitionName(GrammarDef grammarDef, string name)
@@ -110,136 +238,171 @@ namespace RapidPliant.Grammar
                 grammarDef.Name = name.Trim(' ', '_');
             }
         }
+        #endregion
 
-        private void EnsureExpressionNames()
+        #region EnsureDefNames
+        private void EnsureDefNames()
         {
-            var fields = this.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
-            var defFields = fields.Where(f => typeof(GrammarDef).IsAssignableFrom(f.FieldType)).ToList();
-            foreach (var defField in defFields)
+            foreach (var defEntry in _allDefs)
             {
-                var def = defField.GetValue(this) as GrammarDef;
-                if(def == null)
+                var grammarDef = defEntry.GrammarDef;
+                if(!string.IsNullOrEmpty(grammarDef.Name))
                     continue;
 
-                var name = GetDeclaredDefinitionName(defField.Name);
-                EnsureDefinitionName(def, name);
+                if(!defEntry.IsDefinedByMember)
+                    throw new Exception($"Definition must have explicit name if no backing member is defined!");
+                
+                var initiliaDefinedName = defEntry.MemberGrammarDefName;
+                EnsureDefinitionName(grammarDef, initiliaDefinedName);
             }
+        }
 
-            var props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
-            var defProps = props.Where(f => typeof(GrammarDef).IsAssignableFrom(f.PropertyType)).ToList();
-            foreach (var defProp in defProps)
+        #endregion
+        
+        #region CollectGrammarDefs
+        
+        private void CollectGrammarDefs()
+        {
+            //Collect all grammar defs, member definitions as well as "in place" definitions
+            var memberRuleDefEntries = _memberDefs.Where(d => d.Member.IsRuleDef).ToList();
+            foreach (var memberRuleDefEntry in memberRuleDefEntries)
             {
-                var def = defProp.GetValue(this) as GrammarDef;
-                if (def == null)
+                //Add the definition to the "all defs"
+                if (!AddDefinition(memberRuleDefEntry))
                     continue;
 
-                var name = GetDeclaredDefinitionName(defProp.Name);
-                EnsureDefinitionName(def, name);
+                //Collect grammar defs for the referenced defs in the expression
+                var ruleDef = (IRuleDef) memberRuleDefEntry.GrammarDef;
+                CollectGrammarDefsForExpression(ruleDef.Expression);
             }
         }
 
-        private string GetDeclaredDefinitionName(string memberName)
+        private bool AddDefinition(GrammarDefEntry defEntry)
         {
-            GrammarDef declDef;
-            if (_preBuildDefinitions.TryGetValue(memberName, out declDef))
+            if (_allDefs.Contains(defEntry))
+                return false;
+
+            _allDefs.Add(defEntry);
+
+            var grammarDef = defEntry.GrammarDef;
+
+            var ruleDef = grammarDef as IRuleDef;
+            if (ruleDef != null)
             {
-                return declDef.Name ?? memberName;
+                _ruleDefs.Add(defEntry);
             }
-            return memberName;
-        }
 
-        public IEnumerable<ILexDef> GetLexDefinitions()
-        {
-            return LexDefinitions.External;
-        }
-
-        public IEnumerable<IRuleDef> GetRuleDefinitions()
-        {
-            return RuleDefinitions.External;
-        }
-
-        public IEnumerable<IRuleDef> GetStartRules()
-        {
-            return StartRuleDefinitions.External;
-        }
-
-        protected virtual void OnBuilt()
-        {
-        }
-
-        #region Build
-
-
-        private void CollectDefinitions()
-        {
-            foreach (var startRule in StartRuleDefinitions)
+            var lexDef = grammarDef as ILexDef;
+            if (lexDef != null)
             {
-                if (!AddDefinition(startRule))
-                    return;
-
-                CollectDefinitions(startRule.Expression);
+                _lexDefs.Add(defEntry);
             }
+
+            return true;
         }
 
-        private void CollectDefinitions(IExpr expr)
+        private GrammarDefEntry FindDefEntryByDef(GrammarDef grammarDef)
+        {
+            return _allDefs.Find(e => e.GrammarDef == grammarDef);
+        }
+
+        private GrammarDefEntry FindDefEntryById(int id)
+        {
+            return _allDefs.Find(e => e.GrammarDef.Id == id);
+        }
+
+        private GrammarDefEntry FindDefEntryByName(string name)
+        {
+            return _allDefs.Find(e => e.GrammarDef.Name == name);
+        }
+
+        private bool AddDefinition(GrammarDef grammarDef)
+        {
+            var defEntry = FindDefEntryByDef(grammarDef);
+            if (defEntry == null)
+            {
+                defEntry = new GrammarDefEntry(grammarDef);
+                return AddDefinition(defEntry);
+            }
+            return false;
+        }
+
+        private void CollectGrammarDefsForExpression(IExpr expr)
         {
             if (expr.IsGroup)
             {
+                if (expr.Expressions == null)
+                    return;
+                
+                //Collect for the children
                 foreach (var childExpr in expr.Expressions)
                 {
-                    CollectDefinitions(childExpr);
+                    CollectGrammarDefsForExpression(childExpr);
                 }
-
-                return;
             }
             
             var lexRef = expr as ILexRefExpr;
             if (lexRef != null)
             {
-                AddLexDefinition(lexRef.LexDef);
-                return;
+                //Just add the definition
+                AddDefinition((GrammarDef)lexRef.LexDef);
             }
 
             var ruleRef = expr as IRuleRefExpr;
             if (ruleRef != null)
             {
-                AddRuleDefinition(ruleRef.RuleDef);
-                CollectDefinitions(ruleRef.RuleDef.Expression);
+                //Add the definition and collect for the rule itself
+                var added = AddDefinition((GrammarDef) ruleRef.RuleDef);
+
+                if (added)
+                {
+                    CollectGrammarDefsForExpression(ruleRef.RuleDef.Expression);
+                }
+            }
+        }
+
+        #endregion
+
+        #region EnsureOwners
+        private void EnsureExpressionOwners()
+        {
+            foreach (var defEntry in _allDefs)
+            {
+                var ruleDef = defEntry.GrammarDef as IRuleDef;
+                if(ruleDef == null)
+                    continue;
+                
+                EnsureExpressionOwner(ruleDef, ruleDef.Expression);
+            }
+        }
+
+        private void EnsureExpressionOwner(IRuleDef ruleDef, IExpr expr)
+        {
+            if(expr == null)
                 return;
-            }
-        }
 
-        private bool AddDefinition(GrammarDef def)
-        {
-            if (!AllDefinitions.Contains(def))
+            if (expr.Owner != null)
+                return;
+
+            expr.Owner = ruleDef;
+
+            if (expr.IsGroup)
             {
-                AllDefinitions.Add(def);
-                return true;
+                if (expr.Expressions == null)
+                    return;
+
+                //Collect for the children
+                foreach (var childExpr in expr.Expressions)
+                {
+                    EnsureExpressionOwner(ruleDef, childExpr);
+                }
             }
-
-            return false;
-        }
-
-        private bool AddRuleDefinition(IRuleDef ruleDef)
-        {
-            if (!RuleDefinitions.Contains(ruleDef))
+            
+            var ruleRef = expr as IRuleRefExpr;
+            if (ruleRef != null)
             {
-                RuleDefinitions.Add(ruleDef);
-                return true;
+                EnsureExpressionOwner(ruleRef.RuleDef, ruleRef.RuleDef.Expression);
             }
-
-            return false;
-        }
-
-        private bool AddLexDefinition(ILexDef lexDef)
-        {
-            if (!LexDefinitions.Contains(lexDef))
-            {
-                LexDefinitions.Add(lexDef);
-                return true;
-            }
-
-            return false;
         }
         #endregion
 
@@ -252,18 +415,130 @@ namespace RapidPliant.Grammar
 
         #endregion
 
-        #region Helpers
+        #region Convenience helpers
 
-        protected void Start(RuleDef startRuleExpr)
+        protected void Start(RuleDef startRuleDef)
         {
-            StartRuleDefinitions.Add(startRuleExpr);
-        }
+            var defEntry = FindDefEntryByDef(startRuleDef);
+            if(defEntry == null) 
+                throw new Exception("No GrammarDef entry found for the specified start rule!");
 
+            _startRuleDefs.Add(defEntry);
+        }
+        
         protected LexPatternModel LexPattern(string pattern)
         {
             return CreateLexPatternExpr(pattern);
         }
 
+        #endregion
+
+        #region Internal Helpers
+        private List<GrammarDefMember> FindGrammarDefMembers()
+        {
+            var grammarDefMembers = new List<GrammarDefMember>();
+
+            var fields = this.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
+            var grammarDefFields = fields.Where(f => typeof(IGrammarDef).IsAssignableFrom(f.FieldType)).ToList();
+            grammarDefMembers.AddRange(grammarDefFields.Select(f => new GrammarDefFieldMember(this, f)));
+
+            var props = this.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).ToList();
+            var grammarDefProperties = props.Where(f => typeof(IGrammarDef).IsAssignableFrom(f.PropertyType)).ToList();
+            grammarDefMembers.AddRange(grammarDefProperties.Select(p => new GrammarDefPropertyMember(this, p)));
+
+            return grammarDefMembers;
+        }
+
+        protected abstract class GrammarDefMember
+        {
+            public GrammarDefMember(IGrammarModel grammarModel, Type memberType)
+            {
+                GrammarModel = grammarModel;
+                MemberType = memberType;
+
+                if (typeof(ILexDef).IsAssignableFrom(MemberType))
+                {
+                    IsLexDef = true;
+                }
+                else if (typeof(IRuleDef).IsAssignableFrom(MemberType))
+                {
+                    IsRuleDef = true;
+                }
+            }
+
+            public IGrammarModel GrammarModel { get; set; }
+
+            public string MemberName { get; protected set; }
+
+            public Type MemberType { get; protected set; }
+
+            public bool IsLexDef { get; protected set; }
+
+            public bool IsRuleDef { get; protected set; }
+
+            public IGrammarDef GetDef(IGrammarModel grammarModel = null)
+            {
+                if (grammarModel == null)
+                    grammarModel = GrammarModel;
+
+                return GetGrammarDef(grammarModel);
+            }
+
+            public void SetDef(IGrammarDef def, IGrammarModel grammarModel = null)
+            {
+                if (grammarModel == null)
+                    grammarModel = GrammarModel;
+
+                SetGrammarDef(grammarModel, def);
+            }
+
+            protected abstract IGrammarDef GetGrammarDef(IGrammarModel grammarModel);
+            protected abstract void SetGrammarDef(IGrammarModel grammarModel, IGrammarDef def);
+        }
+
+        protected class GrammarDefFieldMember : GrammarDefMember
+        {
+            public GrammarDefFieldMember(IGrammarModel grammarModel, FieldInfo fieldInfo)
+                : base(grammarModel, fieldInfo.FieldType)
+            {
+                FieldInfo = fieldInfo;
+                MemberName = fieldInfo.Name;
+            }
+
+            public FieldInfo FieldInfo { get; private set; }
+
+            protected override IGrammarDef GetGrammarDef(IGrammarModel grammarModel)
+            {
+                return (IGrammarDef)FieldInfo.GetValue(grammarModel);
+            }
+
+            protected override void SetGrammarDef(IGrammarModel grammarModel, IGrammarDef def)
+            {
+                FieldInfo.SetValue(grammarModel, def);
+            }
+        }
+
+        protected class GrammarDefPropertyMember : GrammarDefMember
+        {
+            public GrammarDefPropertyMember(IGrammarModel grammarModel, PropertyInfo propInfo)
+                : base(grammarModel, propInfo.PropertyType)
+            {
+                PropertyInfo = propInfo;
+                MemberName = propInfo.Name;
+            }
+
+            public PropertyInfo PropertyInfo { get; private set; }
+
+            protected override IGrammarDef GetGrammarDef(IGrammarModel grammarModel)
+            {
+                return (IGrammarDef)PropertyInfo.GetValue(grammarModel);
+            }
+
+            protected override void SetGrammarDef(IGrammarModel grammarModel, IGrammarDef def)
+            {
+                PropertyInfo.SetValue(grammarModel, def);
+            }
+        }
         #endregion
     }
 

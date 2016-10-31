@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Expression\Expr.cs" />
+    <Compile Include="Parsing\TokenType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Symbols\AnyTerminal.cs" />
     <Compile Include="Symbols\CharacterRangeTerminal.cs" />
