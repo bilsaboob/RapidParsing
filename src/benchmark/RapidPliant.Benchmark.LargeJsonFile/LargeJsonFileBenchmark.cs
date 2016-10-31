@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using RapidPliant.Grammar;
-using RapidPliant.Runtime.Earley.Grammar;
+using RapidPliant.Parsing.Earley;
 
 namespace RapidPliant.Benchmark.LargeJsonFile
 {
@@ -19,10 +19,10 @@ namespace RapidPliant.Benchmark.LargeJsonFile
             return g;
         }
 
-        protected override IEarleyGrammar CreateGrammar()
+        protected override EarleyGrammar CreateGrammar()
         {
             var g = new EarleyGrammar(GrammarModel);
-            g.Compile();
+            g.EnsureBuild();
             return g;
         }
 

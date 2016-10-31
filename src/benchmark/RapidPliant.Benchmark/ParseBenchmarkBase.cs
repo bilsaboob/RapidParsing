@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using RapidPliant.Grammar;
-using RapidPliant.Runtime.Earley.Grammar;
+using RapidPliant.Parsing.Earley;
 
 namespace RapidPliant.Benchmark
 {
@@ -43,7 +43,7 @@ namespace RapidPliant.Benchmark
         }
 
         protected abstract IGrammarModel CreateGrammarModel();
-        protected abstract IEarleyGrammar CreateGrammar();
+        protected abstract EarleyGrammar CreateGrammar();
 
         protected abstract object CreateEngine();
         protected abstract object CreateParser();
