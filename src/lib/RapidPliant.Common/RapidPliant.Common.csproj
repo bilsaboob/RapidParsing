@@ -55,10 +55,6 @@
     <Compile Include="Symbols\WordTerminal.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RapidPliant.Runtime\RapidPliant.Runtime.csproj">
-      <Project>{7E1B0F34-2E20-439D-921D-008D2323FB8C}</Project>
-      <Name>RapidPliant.Runtime</Name>
-    </ProjectReference>
     <ProjectReference Include="..\RapidPliant\RapidPliant.csproj">
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
       <Name>RapidPliant</Name>
