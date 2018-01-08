@@ -46,16 +46,22 @@
     <Compile Include="Automata\Nfa\LexNfaAutomata.cs" />
     <Compile Include="Automata\Nfa\LexNfa.cs" />
     <Compile Include="Automata\Nfa\LexNfaBuilder.cs" />
+    <Compile Include="Lexer\RangeSpellingCapture.cs" />
+    <Compile Include="Lexer\SingleCaptureDfaTokenizer.cs" />
+    <Compile Include="Lexer\IToken.cs" />
     <Compile Include="Lexer\Lexer.cs" />
+    <Compile Include="Lexer\Tokenizer.cs" />
     <Compile Include="Lexer\Recognition\LexDfaTableTransitionRecognizer.cs" />
     <Compile Include="Lexer\Recognition\LexDfaStateTransitionRecognizer.cs" />
-    <Compile Include="Lexer\DfaLexer.cs" />
+    <Compile Include="Lexer\DfaTokenizer.cs" />
     <Compile Include="Lexer\Recognition\ILexRecognizer.cs" />
     <Compile Include="Pattern\PatternExpr.cs" />
     <Compile Include="Pattern\Regex\RapidRegex.cs" />
     <Compile Include="Pattern\Regex\RegexExpr.cs" />
     <Compile Include="Pattern\Regex\RegexPatternParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Text\Buffer.cs" />
+    <Compile Include="Text\TextRange.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RapidPliant.Automata\RapidPliant.Automata.csproj">

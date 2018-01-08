@@ -15,6 +15,8 @@ using RapidPliant.Lexing.Lexer;
 using RapidPliant.Lexing.Lexer.Recognition;
 using RapidPliant.Lexing.Pattern;
 using RapidPliant.Lexing.Pattern.Regex;
+using RapidPliant.Lexing.Text;
+using RapidPliant.Parsing.Earley;
 using RapidPliant.Test;
 using RapidPliant.Util;
 
@@ -68,11 +70,17 @@ namespace RapidPliant.Testing.Tests
             TestLexing(dfaGraph, "_SomeName");
             TestLexing(dfaGraph, "1_SomeName");*/
 
-            //TestLexInput(dfaGraph, @"public class Test { def MyCoolMethod() {} }");
+            //TestLexInput(dfaGraph, @"public class Test { def MyCool      () {} }");
 
-            TestLexFile(dfaGraph, @"testfiles\test.txt");
+            //TestLexFile(dfaGraph, @"testfiles\test_10000.txt");
+            //TestLexFile(dfaGraph, @"testfiles\test_1000.txt");
+            //TestLexFile(dfaGraph, @"testfiles\test_300.txt");
+
+            //TestLexFile2(dfaGraph, @"testfiles\test_10000.txt");
+            TestLexFile2(dfaGraph, @"testfiles\test_1000.txt");
+            //TestLexFile2(dfaGraph, @"testfiles\test_300.txt");
         }
-        
+
         class TestToken
         {
             public TestToken(string name, string spelling, int line, int col, int endLine, int endCol)
@@ -102,7 +110,7 @@ namespace RapidPliant.Testing.Tests
         {
             var input = File.ReadAllText(filePath);
             var recognizer = new LexDfaTableTransitionRecognizer(dfaGraph);
-            var lexer = new DfaLexer(recognizer);
+            var lexer = new DfaTokenizer(recognizer);
             
             var count = 100;
             var sw = new Stopwatch();
@@ -113,29 +121,81 @@ namespace RapidPliant.Testing.Tests
 
                 sw.Start();
                 TestLexInput(lexer, inputReader);
+                /*var tokens = TestLexInput(tokenizer, inputReader);
+                foreach (var token in tokens)
+                {
+                    Console.Write(token.Spelling + " ");
+                }*/
                 sw.Stop();
             }
             
             Console.WriteLine($"{sw.ElapsedMilliseconds/count}");
+        }
 
-            /*foreach (var token in tokens)
+        private void TestLexFile2(DfaGraph dfaGraph, string filePath)
+        {
+            var input = File.ReadAllText(filePath);
+            var inputBuffer = new StringBuffer(input);
+            var recognizer = new LexDfaTableTransitionRecognizer(dfaGraph);
+            var tokenizer = new SingleCaptureDfaTokenizer(recognizer);
+            var lexer = new Lexer(tokenizer);
+            
+            var count = 100;
+            var sw = new Stopwatch();
+
+            for (var i = 0; i < count; ++i)
             {
-                Console.Write(token.Spelling + " ");
-            }*/
+                sw.Start();
+
+                LexInput(lexer, inputBuffer);
+
+                /*var tokens = LexInput(lexer, inputBuffer);
+                foreach (var token in tokens)
+                {
+                    var text = inputBuffer.GetText(new TextRange(token.Index, token.Index+token.Length));
+                    Console.Write(text + " ");
+                }*/
+
+                sw.Stop();
+            }
+
+            Console.WriteLine($"{sw.ElapsedMilliseconds / count}");
+        }
+
+        private List<IToken> LexInput(Lexer lexer, IBuffer inputBuffer)
+        {
+            var tokens = new List<IToken>();
+
+            lexer.Init(inputBuffer);
+
+            while (lexer.CanContinue)
+            {
+                var token = lexer.Lex();
+                if (token == null)
+                    break;
+                tokens.Add(token);
+            }
+
+            return tokens;
         }
 
         private void TestLexInput(DfaGraph dfaGraph, string input)
         {
             var recognizer = new LexDfaTableTransitionRecognizer(dfaGraph);
-            var lexer = new DfaLexer(recognizer);
+            var lexer = new DfaTokenizer(recognizer);
             var inputReader = new StringReader(input);
-            TestLexInput(lexer, inputReader);
+            var tokens = TestLexInput(lexer, inputReader);
+
+            foreach (var token in tokens)
+            {
+                Console.Write(token.Spelling + " ");
+            }
         }
 
-        private List<TestToken> TestLexInput(DfaLexer lexer, StringReader inputReader)
+        private List<TestToken> TestLexInput(DfaTokenizer tokenizer, StringReader inputReader)
         {
             var tokens = new List<TestToken>();
-            var allCaptures = new List<ISpellingCapture>();
+            //var allCaptures = new List<ISpellingCapture>();
             var lexContext = new LexContext();
 
             var lineNo = 0;
@@ -150,9 +210,9 @@ namespace RapidPliant.Testing.Tests
             while (true)
             {
                 var success = false;
-                allCaptures.Clear();
-                lexContext.ClearCaptures();
-                lexer.Init();
+                /*allCaptures.Clear();
+                lexContext.ClearCaptures();*/
+                tokenizer.Init(0);
 
                 ISpellingCapture lastCapture = null;
                 
@@ -179,18 +239,22 @@ namespace RapidPliant.Testing.Tests
                     //Prepare the lex context for the next lex
                     
                     lexContext.CharToLex = ch;
-                    lexContext.ClearCaptures();
+                    //lexContext.ClearCaptures();
 
-                    //Lex!
-                    lexer.Lex(lexContext);
+                    //Tokenize!
+                    tokenizer.Tokenize(lexContext);
 
                     //Check the captures that were captured for this lex pass
                     //There can be multiple captures with same spelling, in case of multiple rules that match the same input
-                    var capture = lexContext.Captures.LastOrDefault();
+                    /*var capture = lexContext.Captures.LastOrDefault();
+                    if (capture != null)
+                        lastCapture = capture;*/
+
+                    var capture = lexContext.Capture;
                     if (capture != null)
                         lastCapture = capture;
 
-                    if(!lexer.CanContinue)
+                    if(!tokenizer.CanContinue)
                         break;
 
                     i = inputReader.Read();
@@ -213,24 +277,14 @@ namespace RapidPliant.Testing.Tests
                         break;
                     }
                 }
-
-                if (success)
-                {
-                    break;
-                }
-
+                
                 if (lastCapture != null)
                 {
                     var name = lastCapture.Expression.Root.Name;
-                    var spelling = lastCapture.Spelling;
-                    tokens.Add(new TestToken(name, spelling, tokenStartLine, tokenStartCol, lineNo, colNo-1));
+                    //var spelling = lastCapture.Spelling;
+                    tokens.Add(new TestToken(name, lastCapture.Spelling, tokenStartLine, tokenStartCol, lineNo, colNo-1));
                 }
-                else
-                {
-                    // failed to read toke
-                    throw new Exception("Failed to read token");
-                }
-
+                
                 // skip whitepace after new token
                 while (true)
                 {
@@ -247,6 +301,17 @@ namespace RapidPliant.Testing.Tests
                     ch = (char)i;
 
                     colNo++;
+                }
+
+                if (success)
+                {
+                    // we have reached end of input
+                    break;
+                }
+                else if(lastCapture == null)
+                {
+                    // failed to read a token
+                    throw new Exception("Failed to read token");
                 }
 
                 tokenStartLine = lineNo;
@@ -299,14 +364,14 @@ namespace RapidPliant.Testing.Tests
 
         private bool TestLexing(DfaGraph dfaGraph, string input)
         {
-            //Lex using dfault state transition recognizer
+            //Tokenize using dfault state transition recognizer
             return TestLexing(dfaGraph, input, new LexDfaTableTransitionRecognizer(dfaGraph));
             //return TestLexing(dfaGraph, input, new LexDfaStateTransitionRecognizer(dfaGraph));
         }
 
         private bool TestLexing(DfaGraph dfaGraph, string input, ILexRecognizer recognizer)
         {
-            var lexer = new DfaLexer(recognizer);
+            var lexer = new DfaTokenizer(recognizer);
             var inputReader = new StringReader(input);
             var success = false;
 
@@ -328,8 +393,8 @@ namespace RapidPliant.Testing.Tests
                 lexContext.CharToLex = ch;
                 lexContext.ClearCaptures();
 
-                //Lex!
-                lexer.Lex(lexContext);
+                //Tokenize!
+                lexer.Tokenize(lexContext);
 
                 //Check the captures that were captured for this lex pass
                 //There can be multiple captures with same spelling, in case of multiple rules that match the same input
