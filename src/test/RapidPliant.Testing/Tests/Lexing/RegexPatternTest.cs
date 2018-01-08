@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -26,7 +27,8 @@ namespace RapidPliant.Testing.Tests
         protected override void Test()
         {
             //TestSingle();
-            TestMerged();
+            //TestMerged();
+            TestMerged2();
         }
 
         private List<int> GenerateItems(int count)
@@ -37,6 +39,221 @@ namespace RapidPliant.Testing.Tests
                 items.Add(i);
             }
             return items;
+        }
+
+        private void TestMerged2()
+        {
+            var dfaGraph = CreateLexDfa(
+                CreateLexExpr("[0-9]*", "NUMBER"),
+                CreateLexExpr("([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|[0-9])*", "IDENTIFIER"),
+
+                CreateLexExpr("public", "PUBLIC"),
+                CreateLexExpr("static", "STATIC"),
+                CreateLexExpr("class", "CLASS"),
+                
+                CreateLexExpr("def", "DEF"),
+
+                CreateLexExpr("{", "LB"),
+                CreateLexExpr("}", "RB"),
+                CreateLexExpr("\\(", "LP"),
+                CreateLexExpr("\\)", "RP")
+            );
+
+            /*TestLexing(dfaGraph, "public");
+            TestLexing(dfaGraph, "static");
+            TestLexing(dfaGraph, "class");
+            TestLexing(dfaGraph, "10593");
+            TestLexing(dfaGraph, "MyCoolName");
+            TestLexing(dfaGraph, "MyCool_Name123_test");
+            TestLexing(dfaGraph, "_SomeName");
+            TestLexing(dfaGraph, "1_SomeName");*/
+
+            //TestLexInput(dfaGraph, @"public class Test { def MyCoolMethod() {} }");
+
+            TestLexFile(dfaGraph, @"testfiles\test.txt");
+        }
+        
+        class TestToken
+        {
+            public TestToken(string name, string spelling, int line, int col, int endLine, int endCol)
+            {
+                Name = name;
+                Spelling = spelling;
+                Line = line;
+                Col = col;
+                EndLine = endLine;
+                EndCol = endCol;
+            }
+
+            public string Name { get; set; }
+            public string Spelling { get; set; }
+            public int Line { get; set; }
+            public int Col { get; set; }
+            public int EndLine { get; set; }
+            public int EndCol { get; set; }
+
+            public override string ToString()
+            {
+                return $"({Line}:{Col})({Name}:{Spelling})";
+            }
+        }
+
+        private void TestLexFile(DfaGraph dfaGraph, string filePath)
+        {
+            var input = File.ReadAllText(filePath);
+            var recognizer = new LexDfaTableTransitionRecognizer(dfaGraph);
+            var lexer = new DfaLexer(recognizer);
+            
+            var count = 100;
+            var sw = new Stopwatch();
+            
+            for (var i = 0; i < count; ++i)
+            {
+                var inputReader = new StringReader(input);
+
+                sw.Start();
+                TestLexInput(lexer, inputReader);
+                sw.Stop();
+            }
+            
+            Console.WriteLine($"{sw.ElapsedMilliseconds/count}");
+
+            /*foreach (var token in tokens)
+            {
+                Console.Write(token.Spelling + " ");
+            }*/
+        }
+
+        private void TestLexInput(DfaGraph dfaGraph, string input)
+        {
+            var recognizer = new LexDfaTableTransitionRecognizer(dfaGraph);
+            var lexer = new DfaLexer(recognizer);
+            var inputReader = new StringReader(input);
+            TestLexInput(lexer, inputReader);
+        }
+
+        private List<TestToken> TestLexInput(DfaLexer lexer, StringReader inputReader)
+        {
+            var tokens = new List<TestToken>();
+            var allCaptures = new List<ISpellingCapture>();
+            var lexContext = new LexContext();
+
+            var lineNo = 0;
+            var colNo = 0;
+
+            // init as whitespace
+            char ch = ' ';
+            int i = ch;
+            int tokenStartLine = lineNo;
+            int tokenStartCol = colNo;
+            
+            while (true)
+            {
+                var success = false;
+                allCaptures.Clear();
+                lexContext.ClearCaptures();
+                lexer.Init();
+
+                ISpellingCapture lastCapture = null;
+                
+                // skip whitepace before
+                while (true)
+                {
+                    if (!char.IsWhiteSpace(ch))
+                        break;
+
+                    if (ch == '\n')
+                    {
+                        lineNo++;
+                        colNo = 0;
+                    }
+
+                    i = inputReader.Read();
+                    ch = (char)i;
+
+                    colNo++;
+                }
+
+                while (true)
+                {
+                    //Prepare the lex context for the next lex
+                    
+                    lexContext.CharToLex = ch;
+                    lexContext.ClearCaptures();
+
+                    //Lex!
+                    lexer.Lex(lexContext);
+
+                    //Check the captures that were captured for this lex pass
+                    //There can be multiple captures with same spelling, in case of multiple rules that match the same input
+                    var capture = lexContext.Captures.LastOrDefault();
+                    if (capture != null)
+                        lastCapture = capture;
+
+                    if(!lexer.CanContinue)
+                        break;
+
+                    i = inputReader.Read();
+                    ch = (char)i;
+
+                    if (ch == '\n')
+                    {
+                        lineNo++;
+                        colNo = 0;
+                    }
+                    else
+                    {
+                        colNo++;
+                    }
+
+                    if (i == -1)
+                    {
+                        //TODO: currently no captures... but if we get here... it means we have successfully recognized the input up until this point...
+                        success = true;
+                        break;
+                    }
+                }
+
+                if (success)
+                {
+                    break;
+                }
+
+                if (lastCapture != null)
+                {
+                    var name = lastCapture.Expression.Root.Name;
+                    var spelling = lastCapture.Spelling;
+                    tokens.Add(new TestToken(name, spelling, tokenStartLine, tokenStartCol, lineNo, colNo-1));
+                }
+                else
+                {
+                    // failed to read toke
+                    throw new Exception("Failed to read token");
+                }
+
+                // skip whitepace after new token
+                while (true)
+                {
+                    if (!char.IsWhiteSpace(ch))
+                        break;
+
+                    if (ch == '\n')
+                    {
+                        lineNo++;
+                        colNo = 0;
+                    }
+
+                    i = inputReader.Read();
+                    ch = (char)i;
+
+                    colNo++;
+                }
+
+                tokenStartLine = lineNo;
+                tokenStartCol = colNo;
+            }
+            
+            return tokens;
         }
 
         private void TestMerged()

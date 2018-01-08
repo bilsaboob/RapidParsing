@@ -13,9 +13,9 @@ namespace RapidPliant.Testing
     {
         static void Main(string[] args)
         {
-            //TestRunner.Run<RegexPatternTest>();
+            TestRunner.Run<RegexPatternTest>();
             //TestRunner.Run<NonOverlappingSetTest>();
-            TestRunner.Run<SimpleGrammarTest>();
+            //TestRunner.Run<SimpleGrammarTest>();
         }
     }
 }

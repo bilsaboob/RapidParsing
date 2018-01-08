@@ -15,9 +15,10 @@ namespace RapidPliant.Grammar.Definitions
 
         public ILexModel LexModel { get; protected set; }
 
-        public void As(ILexModel lexModel)
+        public LexDef As(ILexModel lexModel)
         {
             LexModel = lexModel;
+            return this;
         }
 
         public override string ToString()

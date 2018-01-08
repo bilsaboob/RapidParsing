@@ -15,7 +15,7 @@ namespace RapidPliant.Grammar
     public abstract class GrammarModel<TGrammarModel> : IGrammarModel
         where TGrammarModel : GrammarModel<TGrammarModel>
     {
-        private class GrammarDefEntry
+        protected class GrammarDefEntry
         {
             public GrammarDefEntry(GrammarDef grammarDef)
                 : this(null, grammarDef)
@@ -316,7 +316,7 @@ namespace RapidPliant.Grammar
             return _allDefs.Find(e => e.GrammarDef.Name == name);
         }
 
-        private bool AddDefinition(GrammarDef grammarDef)
+        protected bool AddDefinition(GrammarDef grammarDef)
         {
             var defEntry = FindDefEntryByDef(grammarDef);
             if (defEntry == null)
@@ -408,7 +408,7 @@ namespace RapidPliant.Grammar
 
         #region Customizable helpers
 
-        internal virtual LexPatternModel CreateLexPatternExpr(string pattern)
+        protected virtual LexPatternModel CreateLexPatternExpr(string pattern)
         {
             return new LexPatternModel(pattern);
         }

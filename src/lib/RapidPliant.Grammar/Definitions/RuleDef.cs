@@ -17,9 +17,10 @@ namespace RapidPliant.Grammar.Definitions
         public GrammarExpr Expression { get; private set; }
         IExpr IRuleDef.Expression { get { return Expression; } }
 
-        public void As(GrammarExpr expr)
+        public RuleDef As(GrammarExpr expr)
         {
             Expression = expr;
+            return this;
         }
         
         public override string ToString()

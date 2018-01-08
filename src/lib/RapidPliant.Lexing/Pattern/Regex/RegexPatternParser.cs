@@ -35,11 +35,16 @@ namespace RapidPliant.Lexing.Pattern.Regex
             while (c.MoveNext())
             {
                 RegexCharExpr termExpr;
+	            ExprOptions options = null;
                 if (c.IsEscaped)
                 {
                     //Just consume as a normal character!?
                     termExpr = CreateTerminalExpr(c);
-                    termExpr.Options = ParseOptions(c);
+
+	                options = ParseOptions(c);
+	                if (termExpr.Options == null)
+		                termExpr.Options = options;
+					
                     c.AddExpr(termExpr);
                     continue;
                 }
@@ -57,8 +62,13 @@ namespace RapidPliant.Lexing.Pattern.Regex
                 {
                     //Parse the group
                     var groupExpr = ParseGroup(c.New());
-                    groupExpr.Options = ParseOptions(c);
-                    c.AddExpr(groupExpr);
+
+	                options = ParseOptions(c);
+					if (groupExpr.Options == null)
+		                groupExpr.Options = options;
+	                groupExpr.Options = options;
+
+					c.AddExpr(groupExpr);
                     continue;
                 }
 
@@ -66,9 +76,13 @@ namespace RapidPliant.Lexing.Pattern.Regex
                 if (c == '(')
                 {
                     var blockExpr = ParseBlock(c.New());
-                    blockExpr.Options = ParseOptions(c);
-                    //Explicit block expressions are not allowed to be simplified!
-                    blockExpr.CanBeSimplified = false;
+
+                    options = ParseOptions(c);
+	                if (blockExpr.Options == null)
+		                blockExpr.Options = options;
+
+					//Explicit block expressions are not allowed to be simplified!
+					blockExpr.CanBeSimplified = false;
                     c.AddExpr(blockExpr);
                     continue;
                 }
@@ -83,7 +97,11 @@ namespace RapidPliant.Lexing.Pattern.Regex
 
                 //Create a term expression!
                 termExpr = CreateTerminalExpr(c);
-                termExpr.Options = ParseOptions(c);
+
+                options = ParseOptions(c);
+	            if (termExpr.Options == null)
+		            termExpr.Options = options;
+
                 c.AddExpr(termExpr);
             }
         }

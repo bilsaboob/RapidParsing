@@ -10,7 +10,9 @@ namespace RapidPliant.Lexing.Lexer
 {
     public interface ILexer
     {
+	    void Init();
         bool Lex(ILexContext context);
+	    bool CanContinue { get; }
     }
 
     public interface ILexContext
