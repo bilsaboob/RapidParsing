@@ -8,11 +8,12 @@ namespace RapidPliant.Common.Expression
         IExpr Root { get; }
 
         string Name { get; }
+        object Tag { get; }
 
         bool IsGroup { get; }
         bool IsProduction { get; }
         bool IsAlteration { get; }
-
+        
         bool HasOptions { get; }
         ExprOptions Options { get; }
         
@@ -63,6 +64,7 @@ namespace RapidPliant.Common.Expression
         public object Owner { get; set; }
 
         public string Name { get; set; }
+        public object Tag { get; set; }
         public ExprOptions Options { get; set; }
 
         public bool IsGroup { get; private set; }

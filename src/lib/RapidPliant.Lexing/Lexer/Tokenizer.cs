@@ -32,7 +32,7 @@ namespace RapidPliant.Lexing.Lexer
         IExpr Expression { get; }
     }
 
-    public class LexContext : ILexContext, IDisposable
+    public class  LexContext : ILexContext, IDisposable
     {
         protected List<ISpellingCapture> _captures;
 
@@ -64,6 +64,11 @@ namespace RapidPliant.Lexing.Lexer
                 _captures.ClearAndFree();
                 _captures = null;
             }
+        }
+
+        public void Reset()
+        {
+            Capture = null;
         }
     }
 }

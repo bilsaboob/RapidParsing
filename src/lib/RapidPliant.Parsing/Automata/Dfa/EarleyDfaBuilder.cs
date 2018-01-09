@@ -59,14 +59,14 @@ namespace RapidPliant.Parsing.Automata.Dfa
             var ruleTransition = transition as IEarleyNfaResolveRuleTransition;
             if (ruleTransition != null)
             {
-                //Rule transitions are treated the same way... except we want to add "predict information" to the "source state"
+                //R transitions are treated the same way... except we want to add "predict information" to the "source state"
                 //We also want to add "completion information" to the transition
             }
 
             var lexTransition = transition as IEarleyNfaLexTransition;
             if (lexTransition != null)
             {
-                //Token transitions are treated the same way... except we want to add "scan information" to the transition
+                //T transitions are treated the same way... except we want to add "scan information" to the transition
             }
 
             //Here we must take into account the different char intervals a terminal can have!

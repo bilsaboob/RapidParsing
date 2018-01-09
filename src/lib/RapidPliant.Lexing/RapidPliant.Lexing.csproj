@@ -46,6 +46,8 @@
     <Compile Include="Automata\Nfa\LexNfaAutomata.cs" />
     <Compile Include="Automata\Nfa\LexNfa.cs" />
     <Compile Include="Automata\Nfa\LexNfaBuilder.cs" />
+    <Compile Include="Lexer\Builder\DfaLexerBuilder.cs" />
+    <Compile Include="Lexer\LexerTokenStream.cs" />
     <Compile Include="Lexer\RangeSpellingCapture.cs" />
     <Compile Include="Lexer\SingleCaptureDfaTokenizer.cs" />
     <Compile Include="Lexer\IToken.cs" />

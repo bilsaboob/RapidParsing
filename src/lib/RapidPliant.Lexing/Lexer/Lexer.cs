@@ -55,6 +55,7 @@ namespace RapidPliant.Lexing.Lexer
             _col = startPosition.Col;
 
             _tokenizer.Init(_index);
+            _lexContext.Reset();
             _canContinue = true;
         }
 
@@ -64,6 +65,7 @@ namespace RapidPliant.Lexing.Lexer
             
             ISpellingCapture capture = null;
             ISpellingCapture lastCapture = null;
+            _lexContext.Reset();
 
             // Initialize a first advance
             if (_i == 0)
@@ -108,7 +110,7 @@ namespace RapidPliant.Lexing.Lexer
                 if (startIndex > 0)
                     startIndex = startIndex - 1;
 
-                var token = new Token(startIndex, startLine, startCol, _index - startIndex - 1);
+                var token = new Token(startIndex, startLine, startCol, _index - startIndex - 1, lastCapture.Expression.Root.Tag);
 
                 // skip any ignores after the token
                 if (CanContinue)
@@ -172,17 +174,20 @@ namespace RapidPliant.Lexing.Lexer
 
     class Token : IToken
     {
-        public Token(int index, int line, int col, int length)
+        public Token(int index, int line, int col, int length, object tokenType)
         {
             Index = index;
             Line = line;
             Col = col;
             Length = length;
+            TokenType = tokenType;
         }
 
         public int Index { get; }
         public int Line { get; }
         public int Col { get; }
         public int Length { get; }
+
+        public object TokenType { get; set; }
     }
 }

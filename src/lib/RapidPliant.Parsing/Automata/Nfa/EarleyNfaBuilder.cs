@@ -287,8 +287,8 @@ namespace RapidPliant.Parsing.Automata.Nfa
             var ruleRefExpr = expr as IRuleRefExpr;
             if (ruleRefExpr != null)
             {
-                //Rule refs need to be built as a separate nfa and joined in later...
-                //Add a "Rule Nfa node", which we will later build a separate nfa for and then be replaced with this nfa!
+                //R refs need to be built as a separate nfa and joined in later...
+                //Add a "R Nfa node", which we will later build a separate nfa for and then be replaced with this nfa!
                 return NfaForRule(ruleRefExpr.RuleDef, ruleRefExpr);
             }
             

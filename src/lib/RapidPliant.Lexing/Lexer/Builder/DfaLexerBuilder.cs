@@ -22,9 +22,9 @@ namespace RapidPliant.Lexing.Lexer.Builder
             _lexExpressions = new List<RegexExpr>();
         }
 
-        public DfaLexerBuilder Pattern(string pattern, string name)
+        public DfaLexerBuilder Pattern(string pattern, object tag, string name = null)
         {
-            var lexExpr = CreateLexExpr(pattern, name);
+            var lexExpr = CreateLexExpr(pattern, tag, name);
             _lexExpressions.Add(lexExpr);
             return this;
         }
@@ -39,11 +39,15 @@ namespace RapidPliant.Lexing.Lexer.Builder
 
         #region Nfa / Dfa helpers
 
-        protected RegexExpr CreateLexExpr(string regexPattern, string name = null)
+        protected RegexExpr CreateLexExpr(string regexPattern, object tag, string name = null)
         {
             var expr = _regex.FromPattern(regexPattern);
-            if (!string.IsNullOrEmpty(name))
-                expr.Name = name;
+            expr.Tag = tag;
+
+            if (string.IsNullOrEmpty(name))
+                name = tag.ToString();
+
+            expr.Name = name;
             return expr;
         }
 
@@ -66,71 +70,46 @@ namespace RapidPliant.Lexing.Lexer.Builder
 
     public static class DfaLexerBuilderExtensions
     {
-        public static DfaLexerBuilder Identifier(this DfaLexerBuilder b, string name)
+        public static DfaLexerBuilder Identifier(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|[0-9])*+", name);
+            b.Pattern("([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|[0-9])*", tag, name);
             return b;
         }
 
-        public static DfaLexerBuilder IntegerLiteral(this DfaLexerBuilder b, string name)
+        public static DfaLexerBuilder IntegerLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([0-9])+", name);
+            b.Pattern("([0-9])+", tag, name);
             return b;
         }
 
-        public static DfaLexerBuilder BoolLiteral(this DfaLexerBuilder b, string name)
+        public static DfaLexerBuilder BoolLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([0-9])+", name);
+            b.Pattern("([0-9])+", tag, name);
             return b;
         }
 
-        public static DfaLexerBuilder StringLiteral(this DfaLexerBuilder b, string name)
+        public static DfaLexerBuilder StringLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("\"(\\.)*\"", name);
+            b.Pattern("\"(\\.)*\"", tag, name);
             return b;
         }
 
-        public static DfaLexerBuilder CharStringLiteral(this DfaLexerBuilder b, string name)
+        public static DfaLexerBuilder CharStringLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("'(\\.)*'", name);
+            b.Pattern("'(\\.)*'", tag, name);
             return b;
         }
 
-        public static DfaLexerBuilder CharLiteral(this DfaLexerBuilder b, string name)
+        public static DfaLexerBuilder CharLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("'(\\.)'", name);
+            b.Pattern("'(\\.)'", tag, name);
             return b;
         }
 
-        public static DfaLexerBuilder False(this DfaLexerBuilder b, string name)
+        public static DfaLexerBuilder False(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([0-9])+", name);
+            b.Pattern("([0-9])+", tag, name);
             return b;
-        }
-    }
-
-    public class TestBuilder
-    {
-        public void Test()
-        {
-            var b = new DfaLexerBuilder();
-
-            // Always start with the ones that are dynamic
-            b.Identifier("IDENTIFIER");
-            b.IntegerLiteral("INTEGER");
-
-            // Finish with overrides - the keywords and finally symbols
-            b.Pattern("public", "PUBLIC");
-            b.Pattern("static", "STATIC");
-
-            b.Pattern("{", "LB");
-            b.Pattern("}", "RB");
-
-            var lexer = b.CreateLexer();
-
-            // finish with the symbols, always highest priority
-
-            //etc...
         }
     }
 }

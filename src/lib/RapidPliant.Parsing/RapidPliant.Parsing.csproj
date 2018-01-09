@@ -49,6 +49,7 @@
     <Compile Include="Earley\EarleyEngine.cs" />
     <Compile Include="Earley\EarleyGrammar.cs" />
     <Compile Include="Earley\EarleyParser.cs" />
+    <Compile Include="Earley\HandRolled\RapidBnfGrammar.cs" />
     <Compile Include="Earley\IEarleyParser.cs" />
     <Compile Include="Earley\Recognition\EarleyDfaStateTransitionRecognizer.cs" />
     <Compile Include="Earley\Recognition\IEarleyRecognizer.cs" />
@@ -67,6 +68,10 @@
     <ProjectReference Include="..\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
       <Project>{D045878A-7813-4480-9DC5-2A37C60346E2}</Project>
       <Name>RapidPliant.Grammar</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
+      <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
+      <Name>RapidPliant.Lexing</Name>
     </ProjectReference>
     <ProjectReference Include="..\RapidPliant\RapidPliant.csproj">
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
