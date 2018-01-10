@@ -133,11 +133,11 @@ namespace RapidPliant.Lexing.Lexer
         {
             char ch;
             //skip any ignore tokens - per default it's any whitespace
-            while (CanContinue)
+            while (!IsAtEnd)
             {
                 ch = _ch;
 
-                if (!char.IsWhiteSpace(ch))
+                if (!IsIgnoreChar(ch))
                     break;
 
                 if (ch == '\n')
@@ -148,6 +148,11 @@ namespace RapidPliant.Lexing.Lexer
 
                 Advance();
             }
+        }
+
+        private bool IsIgnoreChar(char ch)
+        {
+            return char.IsWhiteSpace(ch);
         }
 
         private void Advance(bool updatePosition = true)
@@ -170,6 +175,78 @@ namespace RapidPliant.Lexing.Lexer
                 }
             }
         }
+         
+        public IToken SkipUntilPossibleNextStart()
+        {
+            var startIndex = _index;
+            var startLine = _line;
+            var startCol = _col;
+
+            while (!IsAtEnd)
+            {
+                // skip one
+                Advance();
+
+                // now check if this could possibly be tokenized
+                _lexContext.Reset();
+                _tokenizer.Init(_index);
+                _lexContext.CharToLex = _ch;
+
+                if (IsIgnoreChar(_ch))
+                {
+                    break;
+                }
+
+                if (_tokenizer.Tokenize(_lexContext))
+                {
+                    // could be tokenized at this state
+                    break;
+                }
+            }
+
+            _canContinue = true;
+
+            // return the diff as a bad token
+            return new Token(startIndex, startLine, startCol, _index - startIndex - 1, null) {IsBadToken = true};
+        }
+        
+        #region State
+
+        public object GetState()
+        {
+            return new LexerState(_ch, _index, _line, _col);
+        }
+
+        public void Reset(object state)
+        {
+            var s = (LexerState) state;
+            _ch = s.Char;
+            _i = _ch;
+            _line = s.Line;
+            _col = s.Col;
+            _index = s.Index;
+        }
+
+        class LexerState
+        {
+            public LexerState(char ch, int index, int line, int col)
+            {
+                Char = ch;
+                Index = index;
+                Line = line;
+                Col = col;
+            }
+
+            public char Char { get; set; }
+
+            public int Index { get; set; }
+
+            public int Line { get; set; }
+
+            public int Col { get; set; }
+        }
+
+        #endregion
     }
 
     class Token : IToken
@@ -189,5 +266,7 @@ namespace RapidPliant.Lexing.Lexer
         public int Length { get; }
 
         public object TokenType { get; set; }
+
+        public bool IsBadToken { get; internal set; }
     }
 }

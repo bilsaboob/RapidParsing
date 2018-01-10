@@ -9,9 +9,17 @@ using RapidPliant.Lexing.Lexer.Builder;
 
 namespace RapidPliant.Parsing.Earley.HandRolled
 {
-    public class GrammarElement
+    public class RbnfTokenType : TokenType
     {
-        public GrammarElement(int id, string name)
+        public RbnfTokenType(int id, string name)
+            : base(id, name)
+        {
+        }
+    }
+    
+    public class RuleType : IGrammarElement
+    {
+        public RuleType(int id, string name)
         {
             Id = id;
             Name = name;
@@ -24,26 +32,6 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         {
             return $"{Id}:{Name}";
         }
-    }
-
-    public class TokenType : GrammarElement
-    {
-        public TokenType(int id, string name)
-            : base(id, name)
-        {
-        }
-    }
-
-    public class RuleType : GrammarElement
-    {
-        public RuleType(int id, string name)
-            : base(id, name)
-        {
-        }
-    }
-    
-    public class Token
-    {
     }
     
     public class ParseContext
@@ -73,8 +61,31 @@ namespace RapidPliant.Parsing.Earley.HandRolled
 
         public void AdvanceToken()
         {
-            _tokens.MoveNext();
+            // can't advance if we are at end
+            if(IsAtEnd) return;
+
+            if (!_tokens.MoveNext())
+            {
+                // failed to go to any next one?
+                throw new InvalidOperationException("Failed to move to next token");
+            }
+
+            var token = _tokens.Token;
+            if (token != null && token.IsBadToken)
+            {
+                // we have encountered a bad token
+                BadToken(token);
+                // but continue, simply move to the next again
+                AdvanceToken();
+                return;
+            }
+
             _advancedAny = true;
+        }
+
+        private void BadToken(IToken token)
+        {
+            // bad token encountered... log this...
         }
 
         public void Expected(TokenType tt)
@@ -97,7 +108,7 @@ namespace RapidPliant.Parsing.Earley.HandRolled
 
             Frame = new ParseFrame();
             Frame.Rule = rule;
-            Frame.TokenState = _tokens.State;
+            Frame.TokenState = _tokens.GetState();
         }
 
         public void PopFrame(bool resetTokens)
@@ -105,24 +116,29 @@ namespace RapidPliant.Parsing.Earley.HandRolled
             if (Frame == null)
                 throw new InvalidOperationException("No frame on stack");
 
-            Frame = null;
+            // when resetting state, use the state when entered the frame
+            var tokenStateWhenEntered = Frame.TokenState;
 
-            // pop the next frame if any available
-            if (_frames.Count > 0)
+            if (_frames.Count == 0)
+            {
+                // reset empty frame
+                Frame = null;
+            }
+            else
             {
                 Frame = _frames.Pop();
+            }
 
-                // continue from the previous token state
-                if (resetTokens)
-                {
-                    _tokens.Init(Frame.TokenState);
-                }
+            // continue from the previous token state
+            if (resetTokens)
+            {
+                _tokens.Reset(tokenStateWhenEntered);
             }
         }
 
         public class ParseFrame
         {
-            private List<GrammarElement> _expectations;
+            private List<IGrammarElement> _expectations;
 
             public ParseFrame()
             {
@@ -131,13 +147,13 @@ namespace RapidPliant.Parsing.Earley.HandRolled
             public object TokenState { get; set; }
             public ParseRule Rule { get; set; }
 
-            public IEnumerable<GrammarElement> Expectations => _expectations;
+            public IEnumerable<IGrammarElement> Expectations => _expectations;
 
-            public void Expected(GrammarElement elem)
+            public void Expected(IGrammarElement elem)
             {
                 if (_expectations == null)
                 {
-                    _expectations = new List<GrammarElement>();
+                    _expectations = new List<IGrammarElement>();
                 }
 
                 _expectations.Add(elem);
@@ -317,15 +333,17 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         
         public static class T
         {
-            public static readonly TokenType IDENTIFIER = new TokenType(1, "Identifier");
+            public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(1, "Identifier");
             
-            public static TokenType STRING_LITERAL = new TokenType(2, "StringLiteral");
+            public static RbnfTokenType STRING_LITERAL = new RbnfTokenType(2, "StringLiteral");
 
-            public static readonly TokenType OP_EQUALS = new TokenType(3, "=");
+            public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(3, "=");
 
-            public static readonly TokenType OP_OR = new TokenType(4, "|");
+            public static readonly RbnfTokenType OP_OR = new RbnfTokenType(4, "|");
 
-            public static readonly TokenType SEMI = new TokenType(5, ";");
+            public static readonly RbnfTokenType SEMI = new RbnfTokenType(5, ";");
+
+            public static readonly RbnfTokenType SLASH = new RbnfTokenType(6, "/");
         }
 
         public static Lexer CreateLexer()
@@ -345,6 +363,7 @@ namespace RapidPliant.Parsing.Earley.HandRolled
             b.Pattern("=", T.OP_EQUALS);
             b.Pattern("\\|", T.OP_OR);
             b.Pattern(";", T.SEMI);
+            b.Pattern("/", T.SLASH);
 
             var lexer = b.CreateLexer();
             return lexer;
@@ -418,7 +437,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled
             protected override void Parse()
             {
                 // given at least one rule expression, we accept this as a list
-                if (Parse(RuleExpression)) Accept();
+                if (!Parse(RuleExpression)) { return; }
+
+                Accept();
 
                 while (true)
                 {
@@ -436,9 +457,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled
             protected override void Parse()
             {
                 // parse an expression
-                if (Parse(RefExpression)) { Accept(); }
-                else if (Parse(RegexExpression)) { Accept(); }
-                else if (Parse(SpellingExpression)) { Accept(); }
+                if (Parse(RegexExpression)) { Accept(); return; }
+                if (Parse(RefExpression)) { Accept(); return; }
+                if (Parse(SpellingExpression)) { Accept(); return; }
             }
         }
 
@@ -447,8 +468,18 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         {
             protected override void Parse()
             {
-                if(AdvanceToken(T.IDENTIFIER))
-                    Accept();
+                /*if(AdvanceToken(T.IDENTIFIER))
+                    Accept();*/
+
+                if (!AdvanceToken(T.IDENTIFIER)) return;
+
+                if (!AdvanceToken(T.SLASH)) return;
+
+                if (!AdvanceToken(T.IDENTIFIER)) return;
+
+                if (!AdvanceToken(T.SLASH)) return;
+
+                Accept();
             }
         }
 
@@ -457,6 +488,17 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         {
             protected override void Parse()
             {
+                if (!AdvanceToken(T.IDENTIFIER)) return;
+
+                if (!AdvanceToken(T.SLASH)) return;
+
+                if (!AdvanceToken(T.IDENTIFIER)) return;
+
+                if (!AdvanceToken(T.IDENTIFIER)) return;
+
+                if (!AdvanceToken(T.SLASH)) return;
+
+                Accept();
             }
         }
 
@@ -465,7 +507,7 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         {
             protected override void Parse()
             {
-                if (AdvanceToken(T.STRING_LITERAL))
+                if(AdvanceToken(T.IDENTIFIER))
                     Accept();
             }
         }

@@ -22,11 +22,14 @@ namespace RapidPliant.Testing.Tests.Grammar
             
             var count = 100;
             var sw = new Stopwatch();
+            
+            var tokens = new BufferTokenStream(new LexerTokenStream(lexer).ReadAllTokens());
 
             for (var i = 0; i < count; ++i)
             {
                 lexer.Init(input);
-                var tokens = new LexerTokenStream(lexer);
+                //var tokens = new LexerTokenStream(lexer);
+                tokens.Reset();
                 var context = new ParseContext(tokens);
 
                 sw.Start();                
@@ -48,7 +51,7 @@ namespace RapidPliant.Testing.Tests.Grammar
 
         #region input
         private static readonly string inputText = @"
-RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
+RuleA = RuleB / RuleY / RuleZ RuleI +++ RuleJ;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
