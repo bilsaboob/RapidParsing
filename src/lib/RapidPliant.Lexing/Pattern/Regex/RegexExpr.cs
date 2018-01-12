@@ -44,6 +44,8 @@ namespace RapidPliant.Lexing.Pattern.Regex
             return ToString();
         }
     }
+
+
     
     public class RegexCharExpr : RegexExpr, IPatternTerminalCharExpr
     {
@@ -57,6 +59,21 @@ namespace RapidPliant.Lexing.Pattern.Regex
         protected override void _ToStringExpr(IText text)
         {
             text.Append(Char.ToString());
+        }
+    }
+
+    public class RegexCharClassExpr : RegexExpr, IPatternCharClassExpr
+    {
+        public RegexCharClassExpr(string charClass)
+        {
+            CharClass = charClass;
+        }
+
+        public string CharClass { get; set; }
+
+        protected override void _ToStringExpr(IText text)
+        {
+            text.Append(CharClass.ToString());
         }
     }
 

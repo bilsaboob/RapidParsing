@@ -28,9 +28,9 @@ namespace RapidPliant.Testing.Tests
 
         protected override void Test()
         {
-            //TestSingle();
+            TestSingle();
             //TestMerged();
-            TestMerged2();
+            //TestMerged2();
         }
 
         private List<int> GenerateItems(int count)
@@ -343,7 +343,8 @@ namespace RapidPliant.Testing.Tests
         private void TestSingle()
         {
             //var expr = CreateLexExpr("a(bc|bd)*e");
-            var expr = CreateLexExpr("a([b-e])*bekj");
+            //var expr = CreateLexExpr("a([b-e])*bekj");
+            var expr = CreateLexExpr("'\\.+'");
 
             var nfa = LexNfaAutomata.BuildNfa(expr);
             var nfaGraph = nfa.ToNfaGraph();
@@ -352,7 +353,9 @@ namespace RapidPliant.Testing.Tests
             var dfaGraph = dfa.ToDfaGraph();
 
             //Should pass:
-            var passed = TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekj");
+            //var passed = TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekj");
+
+            var passed = TestLexing(dfaGraph, "'testing'");
 
             //Should fail:
             //var passed = TestLexing(dfaGraph, "abbbbbeeeeecccccddddeeeeebekkj");

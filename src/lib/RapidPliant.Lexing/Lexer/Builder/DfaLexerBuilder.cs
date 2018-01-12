@@ -96,7 +96,7 @@ namespace RapidPliant.Lexing.Lexer.Builder
 
         public static DfaLexerBuilder CharStringLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("'(\\.)*'", tag, name);
+            b.Pattern("'\\.*'", tag, name);
             return b;
         }
 

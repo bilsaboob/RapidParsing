@@ -19,6 +19,8 @@ namespace RapidPliant.Lexing.Lexer
             _index = 0;
         }
 
+        public IReadOnlyList<IToken> Tokens => _tokens;
+
         public IToken Token => _token;
         
         public bool IsAtEnd => _index >= _tokens.Count;

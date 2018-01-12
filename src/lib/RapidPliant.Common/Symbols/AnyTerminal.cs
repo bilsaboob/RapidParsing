@@ -5,7 +5,10 @@ namespace RapidPliant.Common.Symbols
 {
     public class AnyTerminal : BaseTerminal
     {
-        private static readonly Interval[] _interals = { new Interval(char.MinValue, char.MaxValue) };
+        // full UTF
+        //private static readonly Interval[] _interals = { new Interval(char.MinValue, char.MaxValue) };
+
+        private static readonly Interval[] _interals = { new Interval((char)0, (char)256) };
 
         private static int _hashCode = true.GetHashCode();
 

@@ -54,6 +54,7 @@
     <Compile Include="Earley\Recognition\EarleyDfaStateTransitionRecognizer.cs" />
     <Compile Include="Earley\Recognition\IEarleyRecognizer.cs" />
     <Compile Include="Earley\Token.cs" />
+    <Compile Include="ParseTree\AstNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

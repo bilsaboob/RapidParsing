@@ -26,6 +26,12 @@ namespace RapidPliant.Lexing.Automata.Nfa
                 return NfaForCharRange(termRangeExpr.FromChar, termRangeExpr.ToChar, expr);
             }
 
+            var charClassExpr = expr as IPatternCharClassExpr;
+            if (charClassExpr != null)
+            {
+                return NfaForCharClass(charClassExpr.CharClass, expr);
+            }
+
             throw new Exception($"Unhandled leaf expression '{expr.ToString()}' of type '{expr.GetType().Name}'!");
         }
 
@@ -130,6 +136,10 @@ namespace RapidPliant.Lexing.Automata.Nfa
                 break;
                 case "W":
                 terminal = new WordTerminal();
+                negate = false;
+                break;
+                case ".":
+                terminal = new AnyTerminal();
                 negate = false;
                 break;
             }

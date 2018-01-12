@@ -16,7 +16,7 @@ namespace RapidPliant.Testing.Tests.Grammar
     {
         protected override void Test()
         {
-            var input = new StringBuffer(inputText);
+            var input = new StringBuffer(grammarInputText);
             var lexer = RapidBnfGrammar.CreateLexer();
             lexer.Init(input);
             
@@ -25,12 +25,25 @@ namespace RapidPliant.Testing.Tests.Grammar
             
             var tokens = new BufferTokenStream(new LexerTokenStream(lexer).ReadAllTokens());
 
+            /*var badTokensCount = tokens.Tokens.Where(t => t.IsBadToken).ToList();
+            foreach (var token in badTokensCount)
+            {
+                var text = input.GetText(token.Range());
+            }
+
+            foreach (var token in tokens.Tokens)
+            {
+                var text = input.GetText(token.Range());
+            }*/
+
             for (var i = 0; i < count; ++i)
             {
                 lexer.Init(input);
                 //var tokens = new LexerTokenStream(lexer);
                 tokens.Reset();
                 var context = new ParseContext(tokens);
+
+                //TestAst(context);
 
                 sw.Start();                
                 
@@ -49,10 +62,69 @@ namespace RapidPliant.Testing.Tests.Grammar
             Console.WriteLine($"{sw.ElapsedMilliseconds / count}");
         }
 
-        #region input
-        private static readonly string inputText = @"
+        private void TestAst(ParseContext context)
+        {
+            // do we need to explicitly build a parse tree at all? or should this be done lazily by the node implementation?
+            var g = context.RbnfGrammarNode();
+
+            var topStatements = g.TopStatements;
+
+            // iterate the declarations
+            foreach (var decl in g.TopStatements?.TopDeclarations)
+            {
+                // iterate the expressions of each declaration
+                foreach (var e in decl.RuleDeclaration?.RuleDefinition?.RuleExpressions?.RuleExpressions)
+                {
+                    var expr = e.RuleExpression;
+                    if (e.OP_OR != null)
+                    {
+                        // we have a new production
+                    }
+                    else
+                    {
+                        // it's part of same production
+                        var refExpr = expr.RefExpression;
+                        if (refExpr != null)
+                        {
+                            // it's a ref expr
+                            continue;
+                        }
+
+                        var regexExpr = expr.RegexExpression;
+                        if (regexExpr != null)
+                        {
+                            // it's a regex expr
+                            continue;
+                        }
+
+                        var spellExpr = expr.SpellingExpression;
+                        if (spellExpr != null)
+                        {
+                            // it's a spelling expr
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        private RapidBnfGrammar.GrammarRule.GrammarNode BuildParseTree(ParseContext context)
+        {
+            return null;
+        }
+
+        #region input 
+        private static readonly string grammarInputText = @"
+RuleA = RuleB | 'some' RuleC
+RuleB = 'test'
+RuleC = RuleA
+";
+        #endregion
+
+        #region big input
+        private static readonly string bigInputText = @"
 RuleA = RuleB / RuleY / RuleZ RuleI +++ RuleJ;
-RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
+RuleA = RuleB | RuleC | RuleC | RuleD ++ | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;

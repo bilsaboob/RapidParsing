@@ -4,8 +4,10 @@ using System.Linq;
 using System.Resources;
 using System.Text;
 using System.Threading.Tasks;
+using RapidPliant.Common.Symbols;
 using RapidPliant.Lexing.Lexer;
 using RapidPliant.Lexing.Lexer.Builder;
+using RapidPliant.Parsing.ParseTree;
 
 namespace RapidPliant.Parsing.Earley.HandRolled
 {
@@ -33,8 +35,22 @@ namespace RapidPliant.Parsing.Earley.HandRolled
             return $"{Id}:{Name}";
         }
     }
+
+    public partial class ParseContext
+    {
+        public ParseNode ParseRoot { get; set; }
+        public AstNode AstRoot { get; set; }
+    }
+
+    public static class RbnfParseContextExtensions
+    {
+        public static RapidBnfGrammar.GrammarRule.GrammarNode RbnfGrammarNode(this ParseContext context)
+        {
+            return context.AstRoot.GetNode<RapidBnfGrammar.GrammarRule.GrammarNode>(0);
+        }
+    }
     
-    public class ParseContext
+    public partial class ParseContext
     {
         private Stack<ParseFrame> _frames;
         private ITokenStream _tokens;
@@ -333,25 +349,30 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         
         public static class T
         {
-            public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(1, "Identifier");
+            public static int id = 1;
+
+            public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(id++, "Identifier");
             
-            public static RbnfTokenType STRING_LITERAL = new RbnfTokenType(2, "StringLiteral");
+            public static RbnfTokenType STRING_LITERAL = new RbnfTokenType(id++, "StringLiteral");
 
-            public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(3, "=");
+            public static RbnfTokenType CHAR_STRING_LITERAL = new RbnfTokenType(id++, "CharStringLiteral");
 
-            public static readonly RbnfTokenType OP_OR = new RbnfTokenType(4, "|");
+            public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(id++, "=");
 
-            public static readonly RbnfTokenType SEMI = new RbnfTokenType(5, ";");
+            public static readonly RbnfTokenType OP_OR = new RbnfTokenType(id++, "|");
 
-            public static readonly RbnfTokenType SLASH = new RbnfTokenType(6, "/");
+            public static readonly RbnfTokenType SEMI = new RbnfTokenType(id++, ";");
+
+            public static readonly RbnfTokenType SLASH = new RbnfTokenType(id++, "/");
         }
 
         public static Lexer CreateLexer()
         {
             var b = new DfaLexerBuilder();
 
+            b.CharStringLiteral(T.CHAR_STRING_LITERAL);
             b.Identifier(T.IDENTIFIER);
-            //b.IntegerLiteral(T.STRING_LITERAL);
+            //b.IntegerLiteral(T.CHAR_STRING_LITERAL);
 
             // Finish with overrides - the keywords and finally symbols
             //b.Pattern("public", null, "PUBLIC");
@@ -372,6 +393,11 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly GrammarRule Grammar = new GrammarRule();
         public class GrammarRule : GrammarParseRule
         {
+            public class GrammarNode : AstNode
+            {
+                public TopStatementsRule.TopStatementsNode TopStatements => GetNode<TopStatementsRule.TopStatementsNode>(0);
+            }
+
             protected override void Parse()
             {
                 if(Parse(TopStatements)) { Accept(); }
@@ -381,6 +407,11 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly TopStatementsRule TopStatements = new TopStatementsRule();
         public class TopStatementsRule : GrammarParseRule
         {
+            public class TopStatementsNode : AstNode
+            {
+                public IReadOnlyList<TopDeclarationRule.TopDeclarationNode> TopDeclarations => GetNodes<TopDeclarationRule.TopDeclarationNode>(0);
+            }
+
             protected override void Parse()
             {
                 while (!IsAtEnd)
@@ -400,6 +431,11 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly TopDeclarationRule TopDeclaration = new TopDeclarationRule();
         public class TopDeclarationRule : GrammarParseRule
         {
+            public class TopDeclarationNode : AstNode
+            {
+                public RuleDeclarationRule.RuleDeclarationNode RuleDeclaration => GetNode<RuleDeclarationRule.RuleDeclarationNode>(0);
+            }
+
             protected override void Parse()
             {
                 if (Parse(RuleDeclaration)) { Accept();}
@@ -409,6 +445,15 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly RuleDeclarationRule RuleDeclaration = new RuleDeclarationRule();
         public class RuleDeclarationRule : GrammarParseRule
         {
+            public class RuleDeclarationNode : AstNode
+            {
+                public ITerminalParseNode IDENTIFIER => GetTerminal(0, T.IDENTIFIER);
+
+                public ITerminalParseNode OP_EQUALS => GetTerminal(1, T.IDENTIFIER);
+
+                public RuleDefinitionRule.RuleDefinitionNode RuleDefinition => GetNode<RuleDefinitionRule.RuleDefinitionNode>(2);
+            }
+
             protected override void Parse()
             {
                 if (!AdvanceToken(T.IDENTIFIER)) return;
@@ -422,6 +467,12 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly RuleDefinitionRule RuleDefinition = new RuleDefinitionRule();
         public class RuleDefinitionRule : GrammarParseRule
         {
+            public class RuleDefinitionNode : AstNode
+            {
+                public RuleExpressionsRule.RuleExpressionsNode RuleExpressions => GetNode<RuleExpressionsRule.RuleExpressionsNode>(0);
+                public ITerminalParseNode OP_OR => GetTerminal(1, T.SEMI);
+            }
+
             protected override void Parse()
             {
                 if (!Parse(RuleExpressions)) return;
@@ -434,10 +485,21 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly RuleExpressionsRule RuleExpressions = new RuleExpressionsRule();
         public class RuleExpressionsRule : GrammarParseRule
         {
+            public class RuleExpressionsNode : AstNode
+            {
+                public IReadOnlyList<RuleExpressionItem> RuleExpressions => GetNodes<RuleExpressionItem>(0);
+            }
+
+            public class RuleExpressionItem : AstNode
+            {
+                public ITerminalParseNode OP_OR => GetTerminal(0, T.OP_OR);
+                public RuleExpressionRule.RuleExpressionNode RuleExpression => GetNode<RuleExpressionRule.RuleExpressionNode>(1);
+            }
+
             protected override void Parse()
             {
                 // given at least one rule expression, we accept this as a list
-                if (!Parse(RuleExpression)) { return; }
+                if (!Parse(RapidBnfGrammar.RuleExpression)) { return; }
 
                 Accept();
 
@@ -446,7 +508,7 @@ namespace RapidPliant.Parsing.Earley.HandRolled
                     if (AdvanceToken(T.OP_OR)) continue;
 
                     // given at least one rule expression, we accept this as a list
-                    if (!Parse(RuleExpression)) break;
+                    if (!Parse(RapidBnfGrammar.RuleExpression)) break;
                 }
             }
         }
@@ -454,6 +516,13 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly RuleExpressionRule RuleExpression = new RuleExpressionRule();
         public class RuleExpressionRule : GrammarParseRule
         {
+            public class RuleExpressionNode : AstNode
+            {
+                public RegexExpressionRule.RegexExpresssionNode RegexExpression => GetNode<RegexExpressionRule.RegexExpresssionNode>(0);
+                public RefExpressionRule.RefExpressionNode RefExpression => GetNode<RefExpressionRule.RefExpressionNode>(0);
+                public SpellingExpressionRule.SpellingExpressionNode SpellingExpression => GetNode<SpellingExpressionRule.SpellingExpressionNode>(0);
+            }
+
             protected override void Parse()
             {
                 // parse an expression
@@ -466,18 +535,20 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly RefExpressionRule RefExpression = new RefExpressionRule();
         public class RefExpressionRule : GrammarParseRule
         {
+            public class RefExpressionNode : AstNode
+            {
+                public ITerminalParseNode IDENTIFIER_0 { get; set; }
+                public ITerminalParseNode SLASH_0 { get; set; }
+                public ITerminalParseNode IDENTIFIER_1 { get; set; }
+                public ITerminalParseNode SLASH_1 { get; set; }
+            }
+
             protected override void Parse()
             {
                 /*if(AdvanceToken(T.IDENTIFIER))
                     Accept();*/
 
                 if (!AdvanceToken(T.IDENTIFIER)) return;
-
-                if (!AdvanceToken(T.SLASH)) return;
-
-                if (!AdvanceToken(T.IDENTIFIER)) return;
-
-                if (!AdvanceToken(T.SLASH)) return;
 
                 Accept();
             }
@@ -486,15 +557,27 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly RegexExpressionRule RegexExpression = new RegexExpressionRule();
         public class RegexExpressionRule : GrammarParseRule
         {
+            public class RegexExpresssionNode : AstNode
+            {
+                public ITerminalParseNode IDENTIFIER_0 { get; set; }
+                public ITerminalParseNode SLASH_0 { get; set; }
+                public ITerminalParseNode IDENTIFIER_1 { get; set; }
+                public ITerminalParseNode SLASH_1 { get; set; }
+            }
+
             protected override void Parse()
             {
-                if (!AdvanceToken(T.IDENTIFIER)) return;
-
                 if (!AdvanceToken(T.SLASH)) return;
 
-                if (!AdvanceToken(T.IDENTIFIER)) return;
+                // keep eating until a slash
+                //var start = TokenLocation;
+                //SkipUntilToken(T.SLASH);
+                //var end = TokenLocation;
 
-                if (!AdvanceToken(T.IDENTIFIER)) return;
+                // parse regex grammar as a sub range
+                //RegexGrammar.Parse(Context.New(new RangeBufferTokenStream(start, end)));
+
+                //if (!Parse(RegexGrammar.Regex, until: T.SLASH)) return;
 
                 if (!AdvanceToken(T.SLASH)) return;
 
@@ -505,9 +588,13 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         public static readonly SpellingExpressionRule SpellingExpression = new SpellingExpressionRule();
         public class SpellingExpressionRule : GrammarParseRule
         {
+            public class SpellingExpressionNode : AstNode
+            {
+            }
+
             protected override void Parse()
             {
-                if(AdvanceToken(T.IDENTIFIER))
+                if(AdvanceToken(T.CHAR_STRING_LITERAL))
                     Accept();
             }
         }

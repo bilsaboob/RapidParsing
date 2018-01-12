@@ -38,14 +38,27 @@ namespace RapidPliant.Lexing.Pattern.Regex
 	            ExprOptions options = null;
                 if (c.IsEscaped)
                 {
-                    //Just consume as a normal character!?
-                    termExpr = CreateTerminalExpr(c);
+                    // try creating a character class
+                    var charClassExpr = TryCreateCharClassExpr(c);
+                    if (charClassExpr != null)
+                    {
+                        options = ParseOptions(c);
+                        if (charClassExpr.Options == null)
+                            charClassExpr.Options = options;
 
-	                options = ParseOptions(c);
-	                if (termExpr.Options == null)
-		                termExpr.Options = options;
-					
-                    c.AddExpr(termExpr);
+                        c.AddExpr(charClassExpr);
+                    }
+                    else
+                    {
+                        // create a normal term as fallback
+                        termExpr = CreateTerminalExpr(c);
+
+                        options = ParseOptions(c);
+                        if (termExpr.Options == null)
+                            termExpr.Options = options;
+
+                        c.AddExpr(termExpr);
+                    }
                     continue;
                 }
 
@@ -104,6 +117,23 @@ namespace RapidPliant.Lexing.Pattern.Regex
 
                 c.AddExpr(termExpr);
             }
+        }
+
+        private RegexCharClassExpr TryCreateCharClassExpr(RegexParseContext c)
+        {
+            switch (c.Char)
+            {
+                case 's':
+                case 'd':
+                case 'w':
+                case 'D':
+                case 'S':
+                case 'W':
+                case '.':
+                    return new RegexCharClassExpr(c.AcceptChar().ToString());
+            }
+
+            return null;
         }
 
         private RegexExpr ParseBlock(RegexParseContext c)

@@ -13,7 +13,7 @@ namespace RapidPliant.Common.Symbols
             new Interval('_', '_')
         };
 
-        private const string ToStringValue = @"\s";
+        private const string ToStringValue = @"\w";
 
         private static readonly int _hashCode = ToStringValue.GetHashCode();
 

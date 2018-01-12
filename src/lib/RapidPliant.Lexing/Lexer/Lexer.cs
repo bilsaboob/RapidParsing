@@ -207,7 +207,7 @@ namespace RapidPliant.Lexing.Lexer
             _canContinue = true;
 
             // return the diff as a bad token
-            return new Token(startIndex, startLine, startCol, _index - startIndex - 1, null) {IsBadToken = true};
+            return new Token(startIndex-1, startLine, startCol, _index - startIndex, null) {IsBadToken = true};
         }
         
         #region State
@@ -268,5 +268,14 @@ namespace RapidPliant.Lexing.Lexer
         public object TokenType { get; set; }
 
         public bool IsBadToken { get; internal set; }
+    }
+
+    public static class TokenExtensions
+    {
+        public static TextRange Range(this IToken token)
+        {
+            var index = token.Index;
+            return new TextRange(index, index + token.Length);
+        }
     }
 }
