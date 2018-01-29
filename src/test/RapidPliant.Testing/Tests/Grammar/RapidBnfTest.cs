@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Lexing.Lexer;
 using RapidPliant.Lexing.Lexer.Builder;
+using RapidPliant.Lexing.Pattern.Regex;
 using RapidPliant.Lexing.Text;
 using RapidPliant.Parsing.Earley.HandRolled;
 using RapidPliant.Test;
@@ -16,7 +18,7 @@ namespace RapidPliant.Testing.Tests.Grammar
     {
         protected override void Test()
         {
-            var input = new StringBuffer(grammarInputText);
+            var input = new StringBuffer(bigInputText);
             var lexer = RapidBnfGrammar.CreateLexer();
             lexer.Init(input);
             
@@ -38,14 +40,14 @@ namespace RapidPliant.Testing.Tests.Grammar
 
             for (var i = 0; i < count; ++i)
             {
+                sw.Start();
+
                 lexer.Init(input);
-                //var tokens = new LexerTokenStream(lexer);
+                tokens = new BufferTokenStream(new LexerTokenStream(lexer).ReadAllTokens());
                 tokens.Reset();
                 var context = new ParseContext(tokens);
 
                 //TestAst(context);
-
-                sw.Start();                
                 
                 if (!RapidBnfGrammar.ParseGrammar(context))
                 {
@@ -115,17 +117,18 @@ namespace RapidPliant.Testing.Tests.Grammar
 
         #region input 
         private static readonly string grammarInputText = @"
-RuleA = RuleB | 'some' RuleC
+RuleA = 132.5345 RuleB | 'some' RuleC
 RuleB = 'test'
 RuleC = RuleA
 ";
         #endregion
 
         #region big input
+        /*
+         * RuleA = RuleB / RuleY / RuleZ RuleI +++ RuleJ;
+        RuleA = RuleB | RuleC | RuleC | RuleD ++ | RuleX;
+         */
         private static readonly string bigInputText = @"
-RuleA = RuleB / RuleY / RuleZ RuleI +++ RuleJ;
-RuleA = RuleB | RuleC | RuleC | RuleD ++ | RuleX;
-RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;

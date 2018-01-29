@@ -72,43 +72,62 @@ namespace RapidPliant.Lexing.Lexer.Builder
     {
         public static DfaLexerBuilder Identifier(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|[0-9])*", tag, name);
+            b.Pattern("[a-zA-Z_][a-zA-Z_0-9]*", tag, name);
             return b;
         }
 
         public static DfaLexerBuilder IntegerLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([0-9])+", tag, name);
+            b.Pattern("[0-9]+", tag, name);
+            return b;
+        }
+
+        public static DfaLexerBuilder DecimalNumberLiteral(this DfaLexerBuilder b, object tag, string name = null)
+        {
+            b.Pattern("[0-9]+\\.[0-9]+", tag, name);
+            return b;
+        }
+
+        public static DfaLexerBuilder IntegerOrDecimalNumberLiteral(this DfaLexerBuilder b, object tag, string name = null)
+        {
+            b.Pattern("[0-9]+(\\.[0-9]*)?", tag, name);
             return b;
         }
 
         public static DfaLexerBuilder BoolLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([0-9])+", tag, name);
+            b.Pattern("true|false", tag, name);
             return b;
         }
 
         public static DfaLexerBuilder StringLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("\"(\\.)*\"", tag, name);
+            b.Pattern("\"[.^\"]*\"", tag, name);
             return b;
         }
 
         public static DfaLexerBuilder CharStringLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("'\\.*'", tag, name);
+            b.Pattern("'[.^']*'", tag, name);
             return b;
         }
 
         public static DfaLexerBuilder CharLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("'(\\.)'", tag, name);
+            // either a char but not a "\", or an escaped value "\x"
+            b.Pattern("'[.^\\]|[\\.]'", tag, name);
             return b;
         }
 
         public static DfaLexerBuilder False(this DfaLexerBuilder b, object tag, string name = null)
         {
-            b.Pattern("([0-9])+", tag, name);
+            b.Pattern("false", tag, name);
+            return b;
+        }
+
+        public static DfaLexerBuilder True(this DfaLexerBuilder b, object tag, string name = null)
+        {
+            b.Pattern("true", tag, name);
             return b;
         }
     }

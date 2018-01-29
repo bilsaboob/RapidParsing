@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Common.Expression;
+using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Pattern
 {
@@ -43,5 +44,10 @@ namespace RapidPliant.Lexing.Pattern
     {
         char FromChar { get; }
         char ToChar { get; }
+    }
+
+    public interface IPatternCharSetExpr : IPatternTerminalExpr
+    {
+        CharSet Chars { get; }
     }
 }

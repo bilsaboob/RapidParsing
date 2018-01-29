@@ -45,6 +45,7 @@
     <Compile Include="Collections\ArrayEnumerator.cs" />
     <Compile Include="Collections\ProcessOnceQueue.cs" />
     <Compile Include="Collections\UniqueList.cs" />
+    <Compile Include="Util\CharSet.cs" />
     <Compile Include="Util\EqualsExtensions.cs" />
     <Compile Include="Util\HashCode.cs" />
     <Compile Include="Util\Interval.cs" />

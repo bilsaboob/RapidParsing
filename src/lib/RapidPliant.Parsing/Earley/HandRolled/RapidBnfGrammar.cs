@@ -357,6 +357,8 @@ namespace RapidPliant.Parsing.Earley.HandRolled
 
             public static RbnfTokenType CHAR_STRING_LITERAL = new RbnfTokenType(id++, "CharStringLiteral");
 
+            public static RbnfTokenType NUMBER = new RbnfTokenType(id++, "Number");
+
             public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(id++, "=");
 
             public static readonly RbnfTokenType OP_OR = new RbnfTokenType(id++, "|");
@@ -370,9 +372,10 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         {
             var b = new DfaLexerBuilder();
 
+            b.StringLiteral(T.STRING_LITERAL);
             b.CharStringLiteral(T.CHAR_STRING_LITERAL);
+            b.IntegerOrDecimalNumberLiteral(T.NUMBER);
             b.Identifier(T.IDENTIFIER);
-            //b.IntegerLiteral(T.CHAR_STRING_LITERAL);
 
             // Finish with overrides - the keywords and finally symbols
             //b.Pattern("public", null, "PUBLIC");
@@ -385,7 +388,7 @@ namespace RapidPliant.Parsing.Earley.HandRolled
             b.Pattern("\\|", T.OP_OR);
             b.Pattern(";", T.SEMI);
             b.Pattern("/", T.SLASH);
-
+            
             var lexer = b.CreateLexer();
             return lexer;
         }

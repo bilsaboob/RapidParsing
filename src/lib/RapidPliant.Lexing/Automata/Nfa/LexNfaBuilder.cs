@@ -3,6 +3,7 @@ using RapidPliant.Automata.Nfa;
 using RapidPliant.Common.Expression;
 using RapidPliant.Common.Symbols;
 using RapidPliant.Lexing.Pattern;
+using RapidPliant.Util;
 
 namespace RapidPliant.Lexing.Automata.Nfa
 {
@@ -32,9 +33,15 @@ namespace RapidPliant.Lexing.Automata.Nfa
                 return NfaForCharClass(charClassExpr.CharClass, expr);
             }
 
+            var charSetExpr = expr as IPatternCharSetExpr;
+            if (charSetExpr != null)
+            {
+                return NfaForCharSet(charSetExpr.Chars, expr);
+            }
+
             throw new Exception($"Unhandled leaf expression '{expr.ToString()}' of type '{expr.GetType().Name}'!");
         }
-
+        
         #region Factory overrides
 
         protected override INfaTransition CreateNullTransition(INfaState fromState, INfaState toState, IExpr forExpression)
@@ -89,6 +96,12 @@ namespace RapidPliant.Lexing.Automata.Nfa
             if (negate)
                 terminal = new NegationTerminal(terminal);
 
+            return NfaForTerminal(terminal, expr);
+        }
+
+        public virtual INfa NfaForCharSet(CharSet chars, IExpr expr)
+        {
+            BaseTerminal terminal = new CharacterSetTerminal(chars);
             return NfaForTerminal(terminal, expr);
         }
 

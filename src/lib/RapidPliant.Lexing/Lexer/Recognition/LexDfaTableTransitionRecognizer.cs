@@ -100,7 +100,7 @@ namespace RapidPliant.Lexing.Lexer
         private void BuildCharToLookupTable(Dictionary<int, Interval> intervalsByIntervalLookupIndex)
         {
             //For now only use the max char value
-            var maxCharValue = 257;
+            var maxCharValue = char.MaxValue;
             var charToLookupTable = new int[maxCharValue];
 
             //Now map each character from the intervals into the lookup table - note that the interval must be non overlapping!
@@ -110,7 +110,11 @@ namespace RapidPliant.Lexing.Lexer
                 var interval = p.Value;
 
                 //Iterate the characters for the interval
-                for (var ch = interval.Min; ch <= interval.Max; ++ch)
+                var max = (int)interval.Max;
+                if (max >= char.MaxValue)
+                    max = char.MaxValue - 1;
+
+                for (var ch = interval.Min; ch <= max; ++ch)
                 {
                     charToLookupTable[ch] = intervalLookupIndex;
                 }
