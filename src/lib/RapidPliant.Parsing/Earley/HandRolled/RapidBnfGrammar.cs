@@ -511,7 +511,7 @@ namespace RapidPliant.Parsing.Earley.HandRolled
                     if (AdvanceToken(T.OP_OR)) continue;
 
                     // given at least one rule expression, we accept this as a list
-                    if (!Parse(RapidBnfGrammar.RuleExpression)) break;
+                    if (!Parse(RuleExpression)) break;
                 }
             }
         }

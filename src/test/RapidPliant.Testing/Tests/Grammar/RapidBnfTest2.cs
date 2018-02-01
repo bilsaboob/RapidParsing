@@ -1,39 +1,76 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Antlr4.Runtime;
+using RapidPliant.Lexing.Lexer;
+using RapidPliant.Lexing.Lexer.Builder;
+using RapidPliant.Lexing.Pattern.Regex;
+using RapidPliant.Lexing.Text;
+using RapidPliant.Parsing.Earley.HandRolled2;
+using RapidPliant.Test;
 
-namespace AntlrTest
+namespace RapidPliant.Testing.Tests.Grammar
 {
-    public class Test
+    public class RapidBnfTest2 : TestBase
     {
-        public void RunTest()
+        protected override void Test()
         {
+            var input = new StringBuffer(bigInputText);
+            var lexer = RapidBnfGrammar.CreateLexer();
+            lexer.Init(input);
+            
             var count = 100;
             var sw = new Stopwatch();
             
+            var tokens = new BufferTokenStream(new LexerTokenStream(lexer).ReadAllTokens());
+
+            /*var badTokensCount = tokens.Tokens.Where(t => t.IsBadToken).ToList();
+            foreach (var token in badTokensCount)
+            {
+                var text = input.GetText(token.Range());
+            }
+
+            foreach (var token in tokens.Tokens)
+            {
+                var text = input.GetText(token.Range());
+            }*/
+
             for (var i = 0; i < count; ++i)
             {
-                // prep the input
-                var inputStream = new AntlrInputStream(bigInputText);
-                var lexer = new JSONLexer(inputStream);
-
                 sw.Start();
-                // lex all tokens beforehand
-                var tokens = lexer.GetAllTokens();
-                var tokenStream = new CommonTokenStream(new ListTokenSource(tokens));
-                //var tokenStream = new CommonTokenStream(lexer);
-                var parser = new JSONParser(tokenStream);
-                parser.BuildParseTree = false;
-                var result = parser.json();
+
+                lexer.Init(input);
+                tokens = new BufferTokenStream(new LexerTokenStream(lexer).ReadAllTokens());
+                tokens.Reset();
+                var context = new ParseContext(tokens);
+
+                //TestAst(context);
+                
+                if (!RapidBnfGrammar.ParseGrammar(context.Start()))
+                {
+                    // error
+                }
+                else
+                {
+                    // success
+                }
+
                 sw.Stop();
             }
 
             Console.WriteLine($"{sw.ElapsedMilliseconds / count}");
         }
+
+        #region input 
+        private static readonly string grammarInputText = @"
+RuleA = 132.5345 RuleB | 'some' RuleC
+RuleB = 'test'
+RuleC = RuleA
+";
+        #endregion
 
         #region big input
         /*
@@ -1000,6 +1037,6 @@ RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 RuleA = RuleB | RuleC | RuleC | RuleD | RuleX;
 ";
 
-        #endregion
+#endregion
     }
 }
