@@ -12,10 +12,10 @@ using RapidPliant.Lexing.Lexer.Builder;
 
 namespace RapidPliant.Parsing.Earley.HandRolled2
 {
-    public class RbnfTokenType : TokenType
+    public class RbnfTokenType : TokenType<RbnfTokenType>
     {
-        public RbnfTokenType(int id, string name)
-            : base(id, name)
+        public RbnfTokenType(int id, string name, TokenCategory category = null)
+            : base(id, name, category)
         {
         }
     }
@@ -110,7 +110,24 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
         }
 
         #region token helpers
+        private TokenType _tt;
         public object TT => Token?.TokenType;
+        public TokenType _TT
+        {
+            get
+            {
+                if (_tt == null)
+                {
+                    var tt = TT;
+                    if (tt != null)
+                    {
+                        _tt = tt as TokenType;
+                    }
+                }
+
+                return _tt;
+            }
+        }
         public IToken Token => _state.Tokens.Token;
         public ITokenStream Tokens => _state.Tokens;
 
@@ -136,6 +153,7 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             }
 
             var token = Token;
+            _tt = null;
             if (token != null && token.IsBadToken)
             {
                 // we have encountered a bad token
@@ -150,24 +168,101 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
 
         public bool AdvanceToken(TokenType tt, bool isOptional = false)
         {
-            if (!TokenIs(tt))
+            var match = TokenIs(tt);
+            if (!match)
             {
+                // if the expected token type is not an ignore token but the current token is one... we can skip all ignore tokens and try again
+                if (!IsIgnore(tt))
+                {
+                    // skip over any ignore tokens
+                    if (IsIgnore(_TT))
+                    {
+                        return SkipIgnoresAdvanceToken(tt, isOptional);
+                    }
+                }
+
                 if (!isOptional)
                 {
                     Expected(tt);
                     return false;
                 }
-                else
-                {
-                    return true;
-                }
+
+                return true;
             }
             else
             {
                 AdvanceToken();
+                return true;
             }
+        }
 
-            return true;
+        private bool SkipIgnoresAdvanceToken(TokenType tt, bool isOptional = false)
+        {
+            var isIgnoreToken = IsIgnore(_TT);
+            if (isIgnoreToken)
+            {
+                var skippedCount = 0;
+                var beforeSkipState = Tokens.GetState();
+                var advancedPastIngores = false;
+
+                // keep skipping over ignore tokens
+                while (isIgnoreToken)
+                {
+                    // skip over the ignore
+                    advancedPastIngores = AdvanceToken();
+                    if (!advancedPastIngores)
+                        break;
+                    
+                    skippedCount++;
+
+                    isIgnoreToken = IsIgnore(_TT);
+                }
+
+                // if we have skipped any, we can attempt a match
+                if (advancedPastIngores)
+                {
+                    //now try to match the token again, we should not be on any ignore token
+                    var match = TokenIs(tt);
+                    if (match)
+                    {
+                        // if we now have a match, we can safely accept it and continue
+                        AdvanceToken();
+                        return true;
+                    }
+                    else
+                    {
+                        // we still have no match, so perhaps we need to restore, if we have skipped any
+                        if (skippedCount > 0)
+                        {
+                            //restore to before we started skipping
+                            Tokens.Reset(beforeSkipState);
+                        }
+
+                        if (!isOptional)
+                        {
+                            Expected(tt);
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        private bool IsIgnore(TokenType tt)
+        {
+            if (tt == null) return false;
+
+            if (tt.Ignored)
+                return true;
+
+            if (tt.Category != null && tt.Category.Ignored)
+                return true;
+
+            return false;
         }
 
         public bool AdvanceTokenUntil(TokenType tt)
@@ -253,41 +348,53 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
 
     public partial class RapidBnfGrammar
     {
+        public static class TC
+        {
+            public static readonly TokenCategory WHITESPACE = new TokenCategory("Whitespace", true);
+            public static readonly TokenCategory SEPARATOR = new TokenCategory("Separator", false);
+            public static readonly TokenCategory COMMENT = new TokenCategory("Comment", true);
+            public static readonly TokenCategory IDENTIFIER = new TokenCategory("Identifier", false);
+            public static readonly TokenCategory OPERATOR = new TokenCategory("Operator", false);
+            public static readonly TokenCategory LITERAL = new TokenCategory("Literal", false);
+        }
+        
         public static class T
         {
             public static int id = 1;
 
-            public static readonly RbnfTokenType BLOCK_COMMENT = new RbnfTokenType(id++, "/*...*/");
+            public static readonly RbnfTokenType WHITESPACE = new RbnfTokenType(id++, "WS", TC.WHITESPACE);
 
-            public static readonly RbnfTokenType LINE_COMMENT = new RbnfTokenType(id++, "//...");
+            public static readonly RbnfTokenType BLOCK_COMMENT = new RbnfTokenType(id++, "/*...*/", TC.COMMENT);
 
-            public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(id++, "Identifier");
+            public static readonly RbnfTokenType LINE_COMMENT = new RbnfTokenType(id++, "//...", TC.COMMENT);
 
-            public static readonly RbnfTokenType STRING_LITERAL = new RbnfTokenType(id++, "StringLiteral");
+            public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(id++, "Identifier", TC.IDENTIFIER);
 
-            public static readonly RbnfTokenType CHAR_STRING_LITERAL = new RbnfTokenType(id++, "CharStringLiteral");
+            public static readonly RbnfTokenType STRING_LITERAL = new RbnfTokenType(id++, "StringLiteral", TC.LITERAL);
 
-            public static readonly RbnfTokenType NUMBER = new RbnfTokenType(id++, "Number");
+            public static readonly RbnfTokenType CHAR_STRING_LITERAL = new RbnfTokenType(id++, "CharStringLiteral", TC.LITERAL);
 
-            public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(id++, "=");
+            public static readonly RbnfTokenType NUMBER = new RbnfTokenType(id++, "Number", TC.LITERAL);
 
-            public static readonly RbnfTokenType OP_OR = new RbnfTokenType(id++, "|");
+            public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(id++, "=", TC.OPERATOR);
+
+            public static readonly RbnfTokenType OP_OR = new RbnfTokenType(id++, "|", TC.OPERATOR);
             
-            public static readonly RbnfTokenType SEMI = new RbnfTokenType(id++, ";");
+            public static readonly RbnfTokenType SEMI = new RbnfTokenType(id++, ";", TC.SEPARATOR);
 
-            public static readonly RbnfTokenType REGEX_LITERAL = new RbnfTokenType(id++, "/.../");
+            public static readonly RbnfTokenType REGEX_LITERAL = new RbnfTokenType(id++, "/.../", TC.LITERAL);
 
-            public static readonly RbnfTokenType LP = new RbnfTokenType(id++, "(");
+            public static readonly RbnfTokenType LP = new RbnfTokenType(id++, "(", TC.OPERATOR);
 
-            public static readonly RbnfTokenType RP = new RbnfTokenType(id++, ")");
+            public static readonly RbnfTokenType RP = new RbnfTokenType(id++, ")", TC.OPERATOR);
 
-            public static readonly RbnfTokenType STAR = new RbnfTokenType(id++, "*");
+            public static readonly RbnfTokenType STAR = new RbnfTokenType(id++, "*", TC.OPERATOR);
 
-            public static readonly RbnfTokenType PLUS = new RbnfTokenType(id++, "+");
+            public static readonly RbnfTokenType PLUS = new RbnfTokenType(id++, "+", TC.OPERATOR);
 
-            public static readonly RbnfTokenType QUESTION = new RbnfTokenType(id++, "?");
+            public static readonly RbnfTokenType QUESTION = new RbnfTokenType(id++, "?", TC.OPERATOR);
 
-            public static readonly RbnfTokenType DOT = new RbnfTokenType(id++, ".");
+            public static readonly RbnfTokenType DOT = new RbnfTokenType(id++, ".", TC.OPERATOR);
         }
 
         public static Lexer CreateLexer()
@@ -319,8 +426,32 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             b.Pattern("\\?", T.QUESTION);
             b.Pattern("\\.", T.DOT);
 
+            // mark ignored token types
+            Ignore(T.LINE_COMMENT, T.BLOCK_COMMENT, T.WHITESPACE);
+
+            // mark ignored token categories
+            Ignore(TC.WHITESPACE, TC.COMMENT);
+
             var lexer = b.CreateLexer();
             return lexer;
+        }
+
+        private static void Ignore(params TokenType[] tokenTypes)
+        {
+            // mark each of the token types to be ignored
+            foreach (var tt in tokenTypes)
+            {
+                tt.Ignore();
+            }
+        }
+
+        private static void Ignore(params TokenCategory[] tokenCategories)
+        {
+            // mark each of the token categories
+            foreach (var c in tokenCategories)
+            {
+                c.Ignore();
+            }
         }
     }
 

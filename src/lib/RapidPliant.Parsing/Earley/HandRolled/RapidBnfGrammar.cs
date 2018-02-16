@@ -11,7 +11,7 @@ using RapidPliant.Parsing.ParseTree;
 
 namespace RapidPliant.Parsing.Earley.HandRolled
 {
-    public class RbnfTokenType : TokenType
+    public class RbnfTokenType : TokenType<RbnfTokenType>
     {
         public RbnfTokenType(int id, string name)
             : base(id, name)

@@ -12,13 +12,12 @@ namespace RapidPliant.Lexing.Lexer.Builder
 {
     public class DfaLexerBuilder
     {
-        private RapidRegex _regex;
+        private static RapidRegex _regex = new RapidRegex();
 
         private List<RegexExpr> _lexExpressions;
-
+        
         public DfaLexerBuilder()
         {
-            _regex = new RapidRegex();
             _lexExpressions = new List<RegexExpr>();
         }
 

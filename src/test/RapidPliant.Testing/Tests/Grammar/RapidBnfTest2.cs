@@ -18,9 +18,11 @@ namespace RapidPliant.Testing.Tests.Grammar
     {
         protected override void Test()
         {
-            var input = new StringBuffer(rbnfGrammarInputText);
+            var input = new StringBuffer(bigInputText);
             var lexer = RapidBnfGrammar.CreateLexer();
             lexer.Init(input);
+
+            //var txt = rbnfGrammarInputText.Substring(462, 20);
             
             var count = 10;
             var sw = new Stopwatch();
@@ -110,6 +112,15 @@ RuleA = (group one)?. | (group two)* /a test | some/ .4 /another (testing here)/
 ";
 
         private static readonly string rbnfGrammarInputText = @"
+RuleExpression
+	= (
+	  SpellingExpr
+	| RegexExpr
+	| GroupExpr
+	| RefExpr
+	) ExprOp? PinOp?
+	;
+
 //RapidBnf grammar
 
 //LEXING
@@ -133,7 +144,7 @@ TopDeclaration
 	;
 	
 ImportStatement
-	= 'import' id
+	= 'import'.1 id
 	;
 	
 RuleStatement
@@ -146,15 +157,6 @@ RuleDeclaration
 	
 RuleExpressions
 	= (RuleExpression '|'?)+
-	;
-	
-RuleExpression
-	= (
-	| SpellingExpr
-	| RegexExpr
-	| GroupExpr
-	| RefExpr
-	) ExprOp? PinOp?
 	;
 	
 ExprOp

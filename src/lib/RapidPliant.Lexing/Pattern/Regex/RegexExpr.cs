@@ -18,7 +18,7 @@ namespace RapidPliant.Lexing.Pattern.Regex
             : base(isAlteration, isProduction)
         {
         }
-
+        
         protected override RegexExpr CreateAlterationExpr()
         {
             return new RegexExpr(true, false);
