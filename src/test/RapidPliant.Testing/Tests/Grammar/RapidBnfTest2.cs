@@ -112,6 +112,13 @@ RuleA = (group one)?. | (group two)* /a test | some/ .4 /another (testing here)/
         private static readonly string rbnfGrammarInputText = @"
 //RapidBnf grammar
 
+//LEXING
+id = /[a-zA-Z][a-zA-Z0-9_]*/;
+spellingLiteral = /'[.^']'/;
+regexLiteral = /'[.^']'/;
+
+
+//PARSING
 File 
 	= TopDeclarations?
 	;
