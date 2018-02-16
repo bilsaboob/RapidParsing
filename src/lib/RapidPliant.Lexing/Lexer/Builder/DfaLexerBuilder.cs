@@ -112,6 +112,52 @@ namespace RapidPliant.Lexing.Lexer.Builder
             return b;
         }
 
+        public static DfaLexerBuilder BlockComment(this DfaLexerBuilder b, object tag, string name = null)
+        {
+            b.Pattern("/\\*[.^/]*\\*/", tag, name);
+            return b;
+        }
+
+        public static DfaLexerBuilder LineComment(this DfaLexerBuilder b, object tag, string name = null)
+        {
+            b.Pattern("//[.^\n]*", tag, name);
+            return b;
+        }
+
+        public static DfaLexerBuilder RangeLiteral(this DfaLexerBuilder b, string start, string end, object tag, string name = null)
+        {
+            var pattern = $"{start}"; // open pattern
+
+            // don't allow the sequence of "start"
+            pattern += "(";
+            var isEscaped = false;
+            foreach (var c in end)
+            {
+                if (c == '\\')
+                {
+                    isEscaped = true;
+                    continue;
+                }
+
+                pattern += $"[.^";
+                if (isEscaped)
+                    pattern += "\\";
+                pattern += $"{c}]?";
+
+                isEscaped = false;
+            }
+            pattern += ")*";
+
+            pattern += $"{end}"; // finish pattern
+            b.Pattern(pattern, tag, name);
+            return b;
+        }
+
+        private static bool ShouldEscape(char c)
+        {
+            return c == '*' || c == '+';
+        }
+
         public static DfaLexerBuilder CharLiteral(this DfaLexerBuilder b, object tag, string name = null)
         {
             // either a char but not a "\", or an escaped value "\x"

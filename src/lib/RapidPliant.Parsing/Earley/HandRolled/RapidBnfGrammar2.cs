@@ -148,17 +148,37 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return true;
         }
 
-        public bool AdvanceToken(TokenType tt)
+        public bool AdvanceToken(TokenType tt, bool isOptional = false)
         {
             if (!TokenIs(tt))
             {
-                Expected(tt);
-                return false;
+                if (!isOptional)
+                {
+                    Expected(tt);
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
             }
             else
             {
                 AdvanceToken();
             }
+
+            return true;
+        }
+
+        public bool AdvanceTokenUntil(TokenType tt)
+        {
+            while (!TokenIs(tt))
+            {
+                if (!AdvanceToken())
+                    return false;
+            }
+
+            AdvanceToken();
 
             return true;
         }
@@ -237,6 +257,10 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
         {
             public static int id = 1;
 
+            public static readonly RbnfTokenType BLOCK_COMMENT = new RbnfTokenType(id++, "/*...*/");
+
+            public static readonly RbnfTokenType LINE_COMMENT = new RbnfTokenType(id++, "//...");
+
             public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(id++, "Identifier");
 
             public static readonly RbnfTokenType STRING_LITERAL = new RbnfTokenType(id++, "StringLiteral");
@@ -248,10 +272,22 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(id++, "=");
 
             public static readonly RbnfTokenType OP_OR = new RbnfTokenType(id++, "|");
-
+            
             public static readonly RbnfTokenType SEMI = new RbnfTokenType(id++, ";");
 
-            public static readonly RbnfTokenType SLASH = new RbnfTokenType(id++, "/");
+            public static readonly RbnfTokenType REGEX_LITERAL = new RbnfTokenType(id++, "/.../");
+
+            public static readonly RbnfTokenType LP = new RbnfTokenType(id++, "(");
+
+            public static readonly RbnfTokenType RP = new RbnfTokenType(id++, ")");
+
+            public static readonly RbnfTokenType STAR = new RbnfTokenType(id++, "*");
+
+            public static readonly RbnfTokenType PLUS = new RbnfTokenType(id++, "+");
+
+            public static readonly RbnfTokenType QUESTION = new RbnfTokenType(id++, "?");
+
+            public static readonly RbnfTokenType DOT = new RbnfTokenType(id++, ".");
         }
 
         public static Lexer CreateLexer()
@@ -263,6 +299,12 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             b.CharStringLiteral(T.CHAR_STRING_LITERAL);
             b.IntegerOrDecimalNumberLiteral(T.NUMBER);
 
+            //Note that "similar" must start with "shortest match" and end with "longest match"
+            // /.../ is shorter than /*...*/ ... and hence must be before, or the longest match will never hit
+            b.RangeLiteral("/", "/", T.REGEX_LITERAL);
+            b.BlockComment(T.BLOCK_COMMENT);
+            b.LineComment(T.LINE_COMMENT);
+
             // identifiers
             b.Identifier(T.IDENTIFIER);
 
@@ -270,7 +312,12 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             b.Pattern("=", T.OP_EQUALS);
             b.Pattern("\\|", T.OP_OR);
             b.Pattern(";", T.SEMI);
-            b.Pattern("/", T.SLASH);
+            b.Pattern("\\(", T.LP);
+            b.Pattern("\\)", T.RP);
+            b.Pattern("\\*", T.STAR);
+            b.Pattern("\\+", T.PLUS);
+            b.Pattern("\\?", T.QUESTION);
+            b.Pattern("\\.", T.DOT);
 
             var lexer = b.CreateLexer();
             return lexer;
@@ -328,6 +375,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             public static readonly RuleType RULE_EXPRESSIONS = new RuleType(id++, "RuleExpressions");
             public static readonly RuleType RULE_EXPRESSION = new RuleType(id++, "RuleExpression");
             public static readonly RuleType REGEX_EXPRESSION = new RuleType(id++, "RegexExpression");
+            public static readonly RuleType GROUP_EXPRESSION = new RuleType(id++, "GroupExpression");
+            public static readonly RuleType RULE_EXPRESSION_BNF_OP = new RuleType(id++, "RuleExpressionBnfOp");
+            public static readonly RuleType RULE_EXPRESSION_PIN_OP = new RuleType(id++, "RuleExpressionPinOp");
             public static readonly RuleType REF_EXPRESSION = new RuleType(id++, "RefExpression");
             public static readonly RuleType SPELLING_EXPRESSION = new RuleType(id++, "SpellingExpression");
         }
@@ -406,13 +456,11 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
 
             try
             {
-                {
-                    if (!c.AdvanceToken(T.IDENTIFIER)) goto Exit;
-                    if (!c.AdvanceToken(T.OP_EQUALS)) goto Exit;
-                    c.Pin();
-                    if (!ParseRuleDefinition(c.New())) goto Exit;
-                    c.Accept();
-                }
+                if (!c.AdvanceToken(T.IDENTIFIER)) goto Exit;
+                if (!c.AdvanceToken(T.OP_EQUALS)) goto Exit;
+                c.Pin();
+                if (!ParseRuleDefinition(c.New())) goto Exit;
+                c.Accept();
             }
             catch (Exception ex)
             {
@@ -478,9 +526,52 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
 
             try
             {
-                if (ParseRegexExpression(c.New())) { c.Accept(); goto Exit; }
-                if (ParseRefExpression(c.New())) { c.Accept(); goto Exit; }
-                if (ParseSpellingExpression(c.New())) { c.Accept(); goto Exit; }
+                if (ParseRefExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                if (ParseSpellingExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                if (ParseRegexExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                if (ParseGroupExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                goto Exit;
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            // rule expression has been parsed... now try parsing the rule expression operator and pin operator
+            ExitSuccess:
+            ParseRuleEexpressionOperator(c.New());
+            ParseRulePinOperator(c.New());
+
+            Exit:
+            return c.Exit();
+        }
+
+        private static bool ParseRulePinOperator(ParseContext c)
+        {
+            c.Enter(R.RULE_EXPRESSION_PIN_OP);
+
+            try
+            {
+                if (c.AdvanceToken(T.DOT)) c.Accept();
+
+                // optionally advance over a number too
+                c.AdvanceToken(T.NUMBER, true);
             }
             catch (Exception ex)
             {
@@ -490,20 +581,69 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             Exit:
             return c.Exit();
         }
-        
+
+        private static bool ParseRuleEexpressionOperator(ParseContext c)
+        {
+            c.Enter(R.RULE_EXPRESSION_BNF_OP);
+
+            try
+            {
+                if (c.AdvanceToken(T.STAR))
+                {
+                    c.Accept();
+                    goto Exit;
+                }
+
+                if (c.AdvanceToken(T.QUESTION))
+                {
+                    c.Accept();
+                    goto Exit;
+                }
+
+                if (c.AdvanceToken(T.PLUS))
+                {
+                    c.Accept();
+                    goto Exit;
+                }
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
+        private static bool ParseGroupExpression(ParseContext c)
+        {
+            c.Enter(R.GROUP_EXPRESSION);
+
+            try
+            {
+                if (!c.AdvanceToken(T.LP)) goto Exit;
+                if (!ParseRuleExpressions(c.New())) goto Exit;
+                if (!c.AdvanceToken(T.RP)) goto Exit;
+                
+                c.Accept();
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
         private static bool ParseRegexExpression(ParseContext c)
         {
             c.Enter(R.REGEX_EXPRESSION);
 
             try
             {
-                if (!c.AdvanceToken(T.SLASH)) goto Exit;
-
-                // keep eating until another slash... it's our regex expression tokens
-                // now use the Regex parser with the tokens we just consumed
-
-                if (!c.AdvanceToken(T.SLASH)) goto Exit;
-
+                if (!c.AdvanceToken(T.REGEX_LITERAL)) goto Exit;
+                
                 c.Accept();
             }
             catch (Exception ex)

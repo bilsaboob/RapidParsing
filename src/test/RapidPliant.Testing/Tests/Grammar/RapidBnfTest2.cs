@@ -18,11 +18,11 @@ namespace RapidPliant.Testing.Tests.Grammar
     {
         protected override void Test()
         {
-            var input = new StringBuffer(bigInputText);
+            var input = new StringBuffer(rbnfGrammarInputText);
             var lexer = RapidBnfGrammar.CreateLexer();
             lexer.Init(input);
             
-            var count = 100;
+            var count = 10;
             var sw = new Stopwatch();
             
             var tokens = new BufferTokenStream(new LexerTokenStream(lexer).ReadAllTokens());
@@ -62,13 +62,117 @@ namespace RapidPliant.Testing.Tests.Grammar
             }
 
             Console.WriteLine($"{sw.ElapsedMilliseconds / count}");
+
+            while (true)
+            {
+                sw.Restart();
+
+                lexer.Init(input);
+                tokens = new BufferTokenStream(new LexerTokenStream(lexer).ReadAllTokens());
+                tokens.Reset();
+                var context = new ParseContext(tokens);
+
+                //TestAst(context);
+
+                if (!RapidBnfGrammar.ParseGrammar(context.Start()))
+                {
+                    // error
+                }
+                else
+                {
+                    // success
+                }
+
+                sw.Stop();
+                
+                Console.WriteLine($"{sw.ElapsedMilliseconds}");
+
+                if(Console.ReadLine() != "")
+                    break;
+            }
+
+            
         }
 
         #region input 
+        //        private static readonly string grammarInputText = @"
+        //RuleA = 132.5345 RuleB | 'some' RuleC /a test | some/ /another (testing here)/;
+        //RuleB = 'test';
+        //RuleC = RuleA;
+        //";
+
         private static readonly string grammarInputText = @"
-RuleA = 132.5345 RuleB | 'some' RuleC
-RuleB = 'test'
-RuleC = RuleA
+//This is a line comment
+/* this is a 
+multi line 
+cool pattern */
+RuleA = (group one)?. | (group two)* /a test | some/ .4 /another (testing here)/;
+";
+
+        private static readonly string rbnfGrammarInputText = @"
+//RapidBnf grammar
+
+File 
+	= TopDeclarations?
+	;
+	
+TopDeclarations
+	= TopDeclaration+
+	;
+	
+TopDeclaration
+	= ImportStatement
+	| RuleStatement
+	;
+	
+ImportStatement
+	= 'import' id
+	;
+	
+RuleStatement
+	= id '=' RuleDeclaration
+	;
+	
+RuleDeclaration
+	= RuleExpressions?
+	;
+	
+RuleExpressions
+	= (RuleExpression '|'?)+
+	;
+	
+RuleExpression
+	= (
+	| SpellingExpr
+	| RegexExpr
+	| GroupExpr
+	| RefExpr
+	) ExprOp? PinOp?
+	;
+	
+ExprOp
+	= '*' | '?' | '+'
+	;
+	
+PinOp
+	= '.'
+	;
+	
+SpellingExpr
+	= spellingLiteral
+	;
+	
+RegexExpr
+	= regexLiteral
+	;
+	
+GroupExpr
+	= '(' RuleExpressions ')'
+	;
+	
+RefExpr
+	= id
+	;
 ";
         #endregion
 
