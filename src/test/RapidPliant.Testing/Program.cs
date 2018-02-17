@@ -13,7 +13,7 @@ namespace RapidPliant.Testing
     {
         static void Main(string[] args)
         {
-            TestRunner.Run<RapidBnfTest2>();
+            TestRunner.Run<RapidBnfTest>();
             //TestRunner.Run<RapidBnfTest>();
             //TestRunner.Run<RegexPatternTest>();
             //TestRunner.Run<NonOverlappingSetTest>();

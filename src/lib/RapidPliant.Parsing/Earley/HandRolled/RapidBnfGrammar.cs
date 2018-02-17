@@ -1,24 +1,25 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
 using System.Linq;
-using System.Resources;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using RapidPliant.Common.Symbols;
 using RapidPliant.Lexing.Lexer;
 using RapidPliant.Lexing.Lexer.Builder;
-using RapidPliant.Parsing.ParseTree;
 
-namespace RapidPliant.Parsing.Earley.HandRolled
+namespace RapidPliant.Parsing.Earley.HandRolled2
 {
     public class RbnfTokenType : TokenType<RbnfTokenType>
     {
-        public RbnfTokenType(int id, string name)
-            : base(id, name)
+        public RbnfTokenType(int id, string name, TokenCategory category = null)
+            : base(id, name, category)
         {
         }
     }
-    
+
     public class RuleType : IGrammarElement
     {
         public RuleType(int id, string name)
@@ -36,571 +37,841 @@ namespace RapidPliant.Parsing.Earley.HandRolled
         }
     }
 
-    public partial class ParseContext
+    public class ParseContext
     {
-        public ParseNode ParseRoot { get; set; }
-        public AstNode AstRoot { get; set; }
-    }
-
-    public static class RbnfParseContextExtensions
-    {
-        public static RapidBnfGrammar.GrammarRule.GrammarNode RbnfGrammarNode(this ParseContext context)
-        {
-            return context.AstRoot.GetNode<RapidBnfGrammar.GrammarRule.GrammarNode>(0);
-        }
-    }
-    
-    public partial class ParseContext
-    {
-        private Stack<ParseFrame> _frames;
-        private ITokenStream _tokens;
+        private ParseState _state;
+        private ParseContext _parent;
+        private RuleType _ruleType;
         private bool _advancedAny;
+        private object _initialTokenState;
 
+        [DebuggerStepThrough]
         public ParseContext(ITokenStream tokens)
+            : this(new ParseState(tokens, 0))
         {
-            _frames = new Stack<ParseFrame>();
-            _tokens = tokens;
         }
 
-        public ParseFrame Frame { get; private set; }
+        [DebuggerStepThrough]
+        public ParseContext(ParseState state)
+        {
+            _state = state;
+        }
 
-        public object TT
+        [DebuggerStepThrough]
+        private ParseContext(ParseState state, ParseContext parent)
+            : this(state)
+        {
+            _parent = parent;
+        }
+        
+        public bool HasParsed { get; protected set; }
+        public bool HasPinned { get; protected set; }
+
+        public bool IsAccepted { get; protected set; }
+
+        public int IndentationAtEnter { get; protected set; }
+
+        [DebuggerStepThrough]
+        public ParseContext New()
+        {
+            return new ParseContext(_state, this);
+        }
+
+        public void Enter(RuleType ruleType = null)
+        {
+            _ruleType = ruleType;
+
+            // cache the token state
+            _initialTokenState = _state.Tokens.GetState();
+        }
+        
+        public bool Exit(bool accept)
+        {
+            if (accept) IsAccepted = true;
+            return Exit();
+        }
+        
+        public bool Exit()
+        {
+            var isAccepted = IsAccepted;
+
+            // reset the tokens state back to what it was at the beginning
+            if (!isAccepted)
+            {
+                Tokens.Reset(_initialTokenState);
+            }
+
+            return isAccepted;
+        }
+
+        public void ResetTokens()
+        {
+            Tokens.Reset(_initialTokenState);
+        }
+
+        #region token helpers
+        private TokenType _tt;
+        public object TT => Token?.TokenType;
+        public TokenType _TT
         {
             get
             {
-                if (!_advancedAny) AdvanceToken();
-                return _tokens.Token?.TokenType;
+                if (_tt == null)
+                {
+                    var tt = TT;
+                    if (tt != null)
+                    {
+                        _tt = tt as TokenType;
+                    }
+                }
+
+                return _tt;
             }
         }
+        public IToken Token => _state.Tokens.Token;
+        public ITokenStream Tokens => _state.Tokens;
 
-        public bool IsAtEnd => _tokens.IsAtEnd;
+        [DebuggerStepThrough]
+        public ParseContext Start()
+        {
+            // start the parsing... ensures that the tokens state is started!
+            if (!Tokens.IsAtEnd && Tokens.Token == null)
+                Tokens.MoveNext();
 
-        public void AdvanceToken()
+            return this;
+        }
+
+        public bool AdvanceToken()
         {
             // can't advance if we are at end
-            if(IsAtEnd) return;
+            if (IsAtEnd) return false;
 
-            if (!_tokens.MoveNext())
+            if (!Tokens.MoveNext())
             {
                 // failed to go to any next one?
                 throw new InvalidOperationException("Failed to move to next token");
             }
 
-            var token = _tokens.Token;
+            var token = Token;
+            _tt = null;
             if (token != null && token.IsBadToken)
             {
                 // we have encountered a bad token
                 BadToken(token);
                 // but continue, simply move to the next again
-                AdvanceToken();
-                return;
+                return AdvanceToken();
             }
 
             _advancedAny = true;
+            return true;
         }
 
-        private void BadToken(IToken token)
+        public bool AdvanceToken(TokenType tt, bool isOptional = false)
         {
-            // bad token encountered... log this...
-        }
-
-        public void Expected(TokenType tt)
-        {
-            // logs the expected token type at the current location in this current frame
-            Frame.Expected(tt);
-        }
-
-        public void Expected(RuleType rt)
-        {
-            //TODO: should not use string... costly to pass around... better a calculated enum
-            // logs the expected rule type at the curren location in this current frame
-            Frame.Expected(rt);
-        }
-
-        public void PushFrame(ParseRule rule)
-        {
-            if(Frame != null)
-                _frames.Push(Frame);
-
-            Frame = new ParseFrame();
-            Frame.Rule = rule;
-            Frame.TokenState = _tokens.GetState();
-        }
-
-        public void PopFrame(bool resetTokens)
-        {
-            if (Frame == null)
-                throw new InvalidOperationException("No frame on stack");
-
-            // when resetting state, use the state when entered the frame
-            var tokenStateWhenEntered = Frame.TokenState;
-
-            if (_frames.Count == 0)
+            var match = TokenIs(tt);
+            if (!match)
             {
-                // reset empty frame
-                Frame = null;
-            }
-            else
-            {
-                Frame = _frames.Pop();
-            }
-
-            // continue from the previous token state
-            if (resetTokens)
-            {
-                _tokens.Reset(tokenStateWhenEntered);
-            }
-        }
-
-        public class ParseFrame
-        {
-            private List<IGrammarElement> _expectations;
-
-            public ParseFrame()
-            {
-            }
-
-            public object TokenState { get; set; }
-            public ParseRule Rule { get; set; }
-
-            public IEnumerable<IGrammarElement> Expectations => _expectations;
-
-            public void Expected(IGrammarElement elem)
-            {
-                if (_expectations == null)
+                // if the expected token type is not an ignore token but the current token is one... we can skip all ignore tokens and try again
+                if (!IsIgnore(tt))
                 {
-                    _expectations = new List<IGrammarElement>();
+                    // skip over any ignore tokens
+                    if (IsIgnore(_TT))
+                    {
+                        return SkipIgnoresAdvanceToken(tt, isOptional);
+                    }
                 }
 
-                _expectations.Add(elem);
-            }
-        }
-    }
+                if (!isOptional)
+                {
+                    Expected(tt);
+                    return false;
+                }
 
-    public class RuleContext
-    {
-        public RuleType Type { get; set; }
-    }
-
-    public class ParseRule : RuleContext
-    {
-        public bool Parse(ParseContext context)
-        {
-            Enter(context);
-            try
-            {
-                Parse();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-            finally
-            {
-                Exit();
-            }
-
-            return IsAccepted;
-        }
-
-        private bool _isAccepted;
-
-        public ParseRule()
-        {
-        }
-        
-        public ParseContext Context { get; set; }
-        public bool IsAccepted { get; set; }
-
-        public int IndentAtEnter { get; set; }
-
-        public bool HasParsed { get; set; }
-        public bool HasPinned { get; set; }
-
-        protected ParseContext c => Context;
-
-        public virtual void Enter(ParseContext context)
-        {
-            Context = context;
-
-            HasParsed = false;
-            HasPinned = false;
-            _isAccepted = false;
-
-            Context.PushFrame(this);
-        }
-
-        protected virtual void Parse()
-        {
-            // override to parse
-        }
-
-        protected void Accept()
-        {
-            _isAccepted = true;
-        }
-
-        protected void Pin()
-        {
-            HasPinned = true;
-        }
-
-        public void Exit()
-        {
-            IsAccepted = HasPinned || _isAccepted;
-            var resetTokens = !IsAccepted;
-            Context.PopFrame(resetTokens);
-        }
-
-        #region helper utils
-        public bool IsAtEnd => Context.IsAtEnd;
-
-        protected bool AdvanceToken(TokenType tt)
-        {
-            if (!TokenIs(tt))
-            {
-                Context.Expected(tt);
-                return false;
+                return true;
             }
             else
             {
-                Context.AdvanceToken();
+                AdvanceToken();
+                return true;
             }
-
-            return true;
         }
 
-        protected bool AdvanceAnyToken(TokenType tt1, TokenType tt2)
+        private bool SkipIgnoresAdvanceToken(TokenType tt, bool isOptional = false)
         {
-            // one of the following should be advanced
-            if (AdvanceToken(tt1)) return true;
-            if (AdvanceToken(tt2)) return true;
+            var isIgnoreToken = IsIgnore(_TT);
+            if (isIgnoreToken)
+            {
+                var skippedCount = 0;
+                var beforeSkipState = Tokens.GetState();
+                var advancedPastIngores = false;
+
+                // keep skipping over ignore tokens
+                while (isIgnoreToken)
+                {
+                    // skip over the ignore
+                    advancedPastIngores = AdvanceToken();
+                    if (!advancedPastIngores)
+                        break;
+                    
+                    skippedCount++;
+
+                    isIgnoreToken = IsIgnore(_TT);
+                }
+
+                // if we have skipped any, we can attempt a match
+                if (advancedPastIngores)
+                {
+                    //now try to match the token again, we should not be on any ignore token
+                    var match = TokenIs(tt);
+                    if (match)
+                    {
+                        // if we now have a match, we can safely accept it and continue
+                        AdvanceToken();
+                        return true;
+                    }
+                    else
+                    {
+                        // we still have no match, so perhaps we need to restore, if we have skipped any
+                        if (skippedCount > 0)
+                        {
+                            //restore to before we started skipping
+                            Tokens.Reset(beforeSkipState);
+                        }
+
+                        if (!isOptional)
+                        {
+                            Expected(tt);
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        private bool IsIgnore(TokenType tt)
+        {
+            if (tt == null) return false;
+
+            if (tt.Ignored)
+                return true;
+
+            if (tt.Category != null && tt.Category.Ignored)
+                return true;
 
             return false;
         }
 
+        public bool AdvanceTokenUntil(TokenType tt)
+        {
+            while (!TokenIs(tt))
+            {
+                if (!AdvanceToken())
+                    return false;
+            }
+
+            AdvanceToken();
+
+            return true;
+        }
+        
         protected bool TokenIs(TokenType tt)
         {
-            return Context.TT == tt;
+            return TT == tt;
         }
 
-        protected bool TokenIsAny(params TokenType[] tt)
+        protected bool TokenIsAny(params TokenType[] tts)
         {
             return false;
         }
-        #endregion
-    }
 
-    public class GrammarParseRule : ParseRule
-    {
-        public GrammarParseRule()
+        #endregion
+
+        #region state helpers
+        public bool IsAtEnd => _state.Tokens?.IsAtEnd ?? true;
+
+        public ParseContext Accept()
         {
+            IsAccepted = true;
+            return this;
         }
 
-        #region Parse helpers
-        protected bool Parse(ParseRule rule)
+        public ParseContext Pin()
         {
-            if (!rule.Parse(Context))
+            HasPinned = true;
+            return this;
+        }
+        
+        #endregion
+
+        #region errors
+        public void Exception(Exception ex)
+        {
+            // exception during parsing...
+        }
+
+        public ParseContext BadToken(IToken token)
+        {
+            // bad token encountered... log this...
+            return this;
+        }
+
+        public ParseContext Error(string message)
+        {
+            //There was en error!
+            return this;
+        }
+
+        public ParseContext Expected(TokenType tt)
+        {
+            return this;
+        }
+        #endregion
+
+        #region state
+        public class ParseState
+        {
+            public ParseState(ITokenStream tokens, int index)
             {
-                // log expectation 
-                Context.Expected(rule.Type);
-                return false;
+                Tokens = tokens;
+                Index = index;
             }
 
-            return true;
+            public int Index { get; private set; }
+            public ITokenStream Tokens { get; private set; }
         }
         #endregion
-
-        #region Recovery helpers
-        protected void ContinueWithParentOf(ParseRule rule)
-        {
-            // unwind the stack until the parent of the specified rule and continue with that
-        }
-
-        protected bool SkipUntilParsed(ParseRule rule, int startAtIndent, bool continueWithParent = true)
-        {
-            // skip until we have an indentation of "startAtIndent"
-            
-            // now try parsing the given rule
-
-            // if failed... try finding the next location with the given indentation => thus on a newline...
-
-            // continue until successful
-            ContinueWithParentOf(rule);
-
-            return false;
-        }
-
-        protected void SkipUntilParsed(ParseRule rule, bool continueWithParent = true)
-        {
-            // skip until... expected rule ... then unwind the stack and continue with the parent of that rule
-            ContinueWithParentOf(rule);
-        }
-        #endregion
-
     }
 
-    public static class RapidBnfGrammar
+    public partial class RapidBnfGrammar
     {
-        public static bool ParseGrammar(ParseContext context)
+        public static class TC
         {
-            return Grammar.Parse(context);
+            public static readonly TokenCategory WHITESPACE = new TokenCategory("Whitespace", true);
+            public static readonly TokenCategory SEPARATOR = new TokenCategory("Separator", false);
+            public static readonly TokenCategory COMMENT = new TokenCategory("Comment", true);
+            public static readonly TokenCategory IDENTIFIER = new TokenCategory("Identifier", false);
+            public static readonly TokenCategory OPERATOR = new TokenCategory("Operator", false);
+            public static readonly TokenCategory LITERAL = new TokenCategory("Literal", false);
         }
         
         public static class T
         {
             public static int id = 1;
 
-            public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(id++, "Identifier");
+            public static readonly RbnfTokenType WHITESPACE = new RbnfTokenType(id++, "WS", TC.WHITESPACE);
+
+            public static readonly RbnfTokenType BLOCK_COMMENT = new RbnfTokenType(id++, "/*...*/", TC.COMMENT);
+
+            public static readonly RbnfTokenType LINE_COMMENT = new RbnfTokenType(id++, "//...", TC.COMMENT);
+
+            public static readonly RbnfTokenType IDENTIFIER = new RbnfTokenType(id++, "Identifier", TC.IDENTIFIER);
+
+            public static readonly RbnfTokenType STRING_LITERAL = new RbnfTokenType(id++, "StringLiteral", TC.LITERAL);
+
+            public static readonly RbnfTokenType CHAR_STRING_LITERAL = new RbnfTokenType(id++, "CharStringLiteral", TC.LITERAL);
+
+            public static readonly RbnfTokenType NUMBER = new RbnfTokenType(id++, "Number", TC.LITERAL);
+
+            public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(id++, "=", TC.OPERATOR);
+
+            public static readonly RbnfTokenType OP_OR = new RbnfTokenType(id++, "|", TC.OPERATOR);
             
-            public static RbnfTokenType STRING_LITERAL = new RbnfTokenType(id++, "StringLiteral");
+            public static readonly RbnfTokenType SEMI = new RbnfTokenType(id++, ";", TC.SEPARATOR);
 
-            public static RbnfTokenType CHAR_STRING_LITERAL = new RbnfTokenType(id++, "CharStringLiteral");
+            public static readonly RbnfTokenType REGEX_LITERAL = new RbnfTokenType(id++, "/.../", TC.LITERAL);
 
-            public static RbnfTokenType NUMBER = new RbnfTokenType(id++, "Number");
+            public static readonly RbnfTokenType LP = new RbnfTokenType(id++, "(", TC.OPERATOR);
 
-            public static readonly RbnfTokenType OP_EQUALS = new RbnfTokenType(id++, "=");
+            public static readonly RbnfTokenType RP = new RbnfTokenType(id++, ")", TC.OPERATOR);
 
-            public static readonly RbnfTokenType OP_OR = new RbnfTokenType(id++, "|");
+            public static readonly RbnfTokenType STAR = new RbnfTokenType(id++, "*", TC.OPERATOR);
 
-            public static readonly RbnfTokenType SEMI = new RbnfTokenType(id++, ";");
+            public static readonly RbnfTokenType PLUS = new RbnfTokenType(id++, "+", TC.OPERATOR);
 
-            public static readonly RbnfTokenType SLASH = new RbnfTokenType(id++, "/");
+            public static readonly RbnfTokenType QUESTION = new RbnfTokenType(id++, "?", TC.OPERATOR);
+
+            public static readonly RbnfTokenType DOT = new RbnfTokenType(id++, ".", TC.OPERATOR);
         }
 
         public static Lexer CreateLexer()
         {
             var b = new DfaLexerBuilder();
 
+            // literals
             b.StringLiteral(T.STRING_LITERAL);
             b.CharStringLiteral(T.CHAR_STRING_LITERAL);
             b.IntegerOrDecimalNumberLiteral(T.NUMBER);
+
+            //Note that "similar" must start with "shortest match" and end with "longest match"
+            // /.../ is shorter than /*...*/ ... and hence must be before, or the longest match will never hit
+            b.RangeLiteral("/", "/", T.REGEX_LITERAL);
+            b.BlockComment(T.BLOCK_COMMENT);
+            b.LineComment(T.LINE_COMMENT);
+
+            // identifiers
             b.Identifier(T.IDENTIFIER);
 
-            // Finish with overrides - the keywords and finally symbols
-            //b.Pattern("public", null, "PUBLIC");
-            //b.Pattern("static", null, "STATIC");
-
-            //b.Pattern("{", null, "LB");
-            //b.Pattern("}", null, "RB");
-
+            // symbols
             b.Pattern("=", T.OP_EQUALS);
             b.Pattern("\\|", T.OP_OR);
             b.Pattern(";", T.SEMI);
-            b.Pattern("/", T.SLASH);
-            
+            b.Pattern("\\(", T.LP);
+            b.Pattern("\\)", T.RP);
+            b.Pattern("\\*", T.STAR);
+            b.Pattern("\\+", T.PLUS);
+            b.Pattern("\\?", T.QUESTION);
+            b.Pattern("\\.", T.DOT);
+
+            // mark ignored token types
+            Ignore(T.LINE_COMMENT, T.BLOCK_COMMENT, T.WHITESPACE);
+
+            // mark ignored token categories
+            Ignore(TC.WHITESPACE, TC.COMMENT);
+
             var lexer = b.CreateLexer();
             return lexer;
         }
 
-        public static readonly GrammarRule Grammar = new GrammarRule();
-        public class GrammarRule : GrammarParseRule
+        private static void Ignore(params TokenType[] tokenTypes)
         {
-            public class GrammarNode : AstNode
+            // mark each of the token types to be ignored
+            foreach (var tt in tokenTypes)
             {
-                public TopStatementsRule.TopStatementsNode TopStatements => GetNode<TopStatementsRule.TopStatementsNode>(0);
-            }
-
-            protected override void Parse()
-            {
-                if(Parse(TopStatements)) { Accept(); }
+                tt.Ignore();
             }
         }
 
-        public static readonly TopStatementsRule TopStatements = new TopStatementsRule();
-        public class TopStatementsRule : GrammarParseRule
+        private static void Ignore(params TokenCategory[] tokenCategories)
         {
-            public class TopStatementsNode : AstNode
+            // mark each of the token categories
+            foreach (var c in tokenCategories)
             {
-                public IReadOnlyList<TopDeclarationRule.TopDeclarationNode> TopDeclarations => GetNodes<TopDeclarationRule.TopDeclarationNode>(0);
+                c.Ignore();
             }
+        }
+    }
 
-            protected override void Parse()
+    public partial class RapidBnfGrammar
+    {
+        private static bool SkipUntilParsed(ParseContext c, Func<ParseContext, bool> parser)
+        {
+            try
             {
-                while (!IsAtEnd)
+                while (true)
                 {
-                    if(!Parse(TopDeclaration))
+                    if(!c.AdvanceToken()) break;
+
+                    // no rule type... but enter a "fake context" for the recovery logic...
+                    c.Enter();
+
+                    // try parsing until the expected rule... and break at that
+                    if (parser(c.New()))
                     {
-                        // we try to recover by going to the next possible top declaration, that starts on a new line on the same indentation level
-                        if (SkipUntilParsed(TopDeclaration, IndentAtEnter)) { Accept(); }
-                        return;
+                        c.Accept();
+                        break;
                     }
                 }
-
-                Accept();
             }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            if (c.Exit())
+            {
+                // always reset the tokens if successfully recovered
+                c.ResetTokens();
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    public partial class RapidBnfGrammar
+    {
+        public static class R
+        {
+            public static int id = 1;
+
+            public static readonly RuleType GRAMMAR = new RuleType(id++, "Grammar");
+            public static readonly RuleType TOP_STATEMENTS = new RuleType(id++, "TopStatements");
+            public static readonly RuleType TOP_DECLARATION = new RuleType(id++, "TopDeclaration");
+            public static readonly RuleType RULE_DECLARATION = new RuleType(id++, "RuleDeclaration");
+            public static readonly RuleType RULE_DEFINITION = new RuleType(id++, "RuleDefinition");
+            public static readonly RuleType RULE_EXPRESSIONS = new RuleType(id++, "RuleExpressions");
+            public static readonly RuleType RULE_EXPRESSION = new RuleType(id++, "RuleExpression");
+            public static readonly RuleType REGEX_EXPRESSION = new RuleType(id++, "RegexExpression");
+            public static readonly RuleType GROUP_EXPRESSION = new RuleType(id++, "GroupExpression");
+            public static readonly RuleType RULE_EXPRESSION_BNF_OP = new RuleType(id++, "RuleExpressionBnfOp");
+            public static readonly RuleType RULE_EXPRESSION_PIN_OP = new RuleType(id++, "RuleExpressionPinOp");
+            public static readonly RuleType REF_EXPRESSION = new RuleType(id++, "RefExpression");
+            public static readonly RuleType SPELLING_EXPRESSION = new RuleType(id++, "SpellingExpression");
+        }
+        
+        public static bool Parse(ParseContext c)
+        {
+            return ParseGrammar(c);
         }
 
-        public static readonly TopDeclarationRule TopDeclaration = new TopDeclarationRule();
-        public class TopDeclarationRule : GrammarParseRule
+        public class Grammar
         {
-            public class TopDeclarationNode : AstNode
-            {
-                public RuleDeclarationRule.RuleDeclarationNode RuleDeclaration => GetNode<RuleDeclarationRule.RuleDeclarationNode>(0);
-            }
-
-            protected override void Parse()
-            {
-                if (Parse(RuleDeclaration)) { Accept();}
-            }
         }
 
-        public static readonly RuleDeclarationRule RuleDeclaration = new RuleDeclarationRule();
-        public class RuleDeclarationRule : GrammarParseRule
+        public static bool ParseGrammar(ParseContext c)
         {
-            public class RuleDeclarationNode : AstNode
+            c.Enter(R.GRAMMAR);
+
+            try
             {
-                public ITerminalParseNode IDENTIFIER => GetTerminal(0, T.IDENTIFIER);
-
-                public ITerminalParseNode OP_EQUALS => GetTerminal(1, T.IDENTIFIER);
-
-                public RuleDefinitionRule.RuleDefinitionNode RuleDefinition => GetNode<RuleDefinitionRule.RuleDefinitionNode>(2);
+                if(ParseTopStatements(c.New())) { c.Accept(); }
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
             }
 
-            protected override void Parse()
-            {
-                if (!AdvanceToken(T.IDENTIFIER)) return;
-                if (!AdvanceToken(T.OP_EQUALS)) return;
-                Pin();
-                if (!Parse(RuleDefinition)) return;
-                Accept();
-            }
+            Exit:
+            return c.Exit();
         }
 
-        public static readonly RuleDefinitionRule RuleDefinition = new RuleDefinitionRule();
-        public class RuleDefinitionRule : GrammarParseRule
+        public class TopStatements
         {
-            public class RuleDefinitionNode : AstNode
+        }
+
+        public static bool ParseTopStatements(ParseContext c)
+        {
+            c.Enter(R.TOP_STATEMENTS);
+
+            try
             {
-                public RuleExpressionsRule.RuleExpressionsNode RuleExpressions => GetNode<RuleExpressionsRule.RuleExpressionsNode>(0);
-                public ITerminalParseNode OP_OR => GetTerminal(1, T.SEMI);
+                while (!c.IsAtEnd)
+                {
+                    if(ParseTopDeclaration(c.New())) { c.Accept(); }
+                    else
+                    {
+                        // we try to recover by going to the next possible top declaration, that starts on a new line on the same indentation level
+                        if (!SkipUntilParsed(c, ParseTopDeclaration))
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
             }
 
-            protected override void Parse()
+            Exit:
+            return c.Exit();
+        }
+
+        public class TopDeclaration
+        {
+        }
+        
+        public static bool ParseTopDeclaration(ParseContext c)
+        {
+            c.Enter(R.TOP_DECLARATION);
+
+            try
             {
-                if (!Parse(RuleExpressions)) return;
+                if (!ParseRuleDeclaration(c.New())) goto Exit;
+                c.Accept();
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
+        public class RuleDeclaration
+        {
+        }
+
+        public static bool ParseRuleDeclaration(ParseContext c)
+        {
+            c.Enter(R.RULE_DECLARATION);
+
+            try
+            {
+                if (!c.AdvanceToken(T.IDENTIFIER)) goto Exit;
+                if (!c.AdvanceToken(T.OP_EQUALS)) goto Exit;
+                c.Pin();
+                if (!ParseRuleDefinition(c.New())) goto Exit;
+                c.Accept();
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
+        public class RuleDefinition
+        {
+        }
+
+        public static bool ParseRuleDefinition(ParseContext c)
+        {
+            c.Enter(R.RULE_DEFINITION);
+
+            try
+            {
+                if (!ParseRuleExpressions(c.New())) goto Exit;
 
                 // accept if definition ends with semicolon
-                if(AdvanceToken(T.SEMI)) { Accept(); }
+                if (!c.AdvanceToken(T.SEMI)) goto Exit;
+                c.Accept();
             }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
         }
 
-        public static readonly RuleExpressionsRule RuleExpressions = new RuleExpressionsRule();
-        public class RuleExpressionsRule : GrammarParseRule
+        public class RuleExpressions
         {
-            public class RuleExpressionsNode : AstNode
-            {
-                public IReadOnlyList<RuleExpressionItem> RuleExpressions => GetNodes<RuleExpressionItem>(0);
-            }
+        }
 
-            public class RuleExpressionItem : AstNode
-            {
-                public ITerminalParseNode OP_OR => GetTerminal(0, T.OP_OR);
-                public RuleExpressionRule.RuleExpressionNode RuleExpression => GetNode<RuleExpressionRule.RuleExpressionNode>(1);
-            }
+        public static bool ParseRuleExpressions(ParseContext c)
+        {
+            c.Enter(R.RULE_EXPRESSIONS);
 
-            protected override void Parse()
+            try
             {
                 // given at least one rule expression, we accept this as a list
-                if (!Parse(RapidBnfGrammar.RuleExpression)) { return; }
+                if (!ParseRuleExpression(c.New())) goto Exit;
 
-                Accept();
+                c.Accept();
 
                 while (true)
                 {
-                    if (AdvanceToken(T.OP_OR)) continue;
+                    if (c.AdvanceToken(T.OP_OR)) continue;
 
                     // given at least one rule expression, we accept this as a list
-                    if (!Parse(RuleExpression)) break;
+                    if (!ParseRuleExpression(c.New())) break;
                 }
             }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
         }
 
-        public static readonly RuleExpressionRule RuleExpression = new RuleExpressionRule();
-        public class RuleExpressionRule : GrammarParseRule
+        public class RuleExpression
         {
-            public class RuleExpressionNode : AstNode
-            {
-                public RegexExpressionRule.RegexExpresssionNode RegexExpression => GetNode<RegexExpressionRule.RegexExpresssionNode>(0);
-                public RefExpressionRule.RefExpressionNode RefExpression => GetNode<RefExpressionRule.RefExpressionNode>(0);
-                public SpellingExpressionRule.SpellingExpressionNode SpellingExpression => GetNode<SpellingExpressionRule.SpellingExpressionNode>(0);
-            }
-
-            protected override void Parse()
-            {
-                // parse an expression
-                if (Parse(RegexExpression)) { Accept(); return; }
-                if (Parse(RefExpression)) { Accept(); return; }
-                if (Parse(SpellingExpression)) { Accept(); return; }
-            }
         }
 
-        public static readonly RefExpressionRule RefExpression = new RefExpressionRule();
-        public class RefExpressionRule : GrammarParseRule
+        private static bool ParseRuleExpression(ParseContext c)
         {
-            public class RefExpressionNode : AstNode
+            c.Enter(R.RULE_EXPRESSION);
+
+            try
             {
-                public ITerminalParseNode IDENTIFIER_0 { get; set; }
-                public ITerminalParseNode SLASH_0 { get; set; }
-                public ITerminalParseNode IDENTIFIER_1 { get; set; }
-                public ITerminalParseNode SLASH_1 { get; set; }
+                if (ParseRefExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                if (ParseSpellingExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                if (ParseRegexExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                if (ParseGroupExpression(c.New()))
+                {
+                    c.Accept(); goto ExitSuccess;
+                }
+
+                goto Exit;
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
             }
 
-            protected override void Parse()
-            {
-                /*if(AdvanceToken(T.IDENTIFIER))
-                    Accept();*/
+            // rule expression has been parsed... now try parsing the rule expression operator and pin operator
+            ExitSuccess:
+            ParseRuleEexpressionOperator(c.New());
+            ParseRulePinOperator(c.New());
 
-                if (!AdvanceToken(T.IDENTIFIER)) return;
-
-                Accept();
-            }
+            Exit:
+            return c.Exit();
         }
 
-        public static readonly RegexExpressionRule RegexExpression = new RegexExpressionRule();
-        public class RegexExpressionRule : GrammarParseRule
+        public class RuleExpressionPinOperator
         {
-            public class RegexExpresssionNode : AstNode
-            {
-                public ITerminalParseNode IDENTIFIER_0 { get; set; }
-                public ITerminalParseNode SLASH_0 { get; set; }
-                public ITerminalParseNode IDENTIFIER_1 { get; set; }
-                public ITerminalParseNode SLASH_1 { get; set; }
-            }
-
-            protected override void Parse()
-            {
-                if (!AdvanceToken(T.SLASH)) return;
-
-                // keep eating until a slash
-                //var start = TokenLocation;
-                //SkipUntilToken(T.SLASH);
-                //var end = TokenLocation;
-
-                // parse regex grammar as a sub range
-                //RegexGrammar.Parse(Context.New(new RangeBufferTokenStream(start, end)));
-
-                //if (!Parse(RegexGrammar.Regex, until: T.SLASH)) return;
-
-                if (!AdvanceToken(T.SLASH)) return;
-
-                Accept();
-            }
         }
 
-        public static readonly SpellingExpressionRule SpellingExpression = new SpellingExpressionRule();
-        public class SpellingExpressionRule : GrammarParseRule
+        private static bool ParseRulePinOperator(ParseContext c)
         {
-            public class SpellingExpressionNode : AstNode
+            c.Enter(R.RULE_EXPRESSION_PIN_OP);
+
+            try
             {
+                if (c.AdvanceToken(T.DOT)) c.Accept();
+
+                // optionally advance over a number too
+                c.AdvanceToken(T.NUMBER, true);
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
             }
 
-            protected override void Parse()
-            {
-                if(AdvanceToken(T.CHAR_STRING_LITERAL))
-                    Accept();
-            }
+            Exit:
+            return c.Exit();
         }
-        
+
+        public class RuleExpressionOperator
+        {
+        }
+
+        private static bool ParseRuleEexpressionOperator(ParseContext c)
+        {
+            c.Enter(R.RULE_EXPRESSION_BNF_OP);
+
+            try
+            {
+                if (c.AdvanceToken(T.STAR))
+                {
+                    c.Accept();
+                    goto Exit;
+                }
+
+                if (c.AdvanceToken(T.QUESTION))
+                {
+                    c.Accept();
+                    goto Exit;
+                }
+
+                if (c.AdvanceToken(T.PLUS))
+                {
+                    c.Accept();
+                    goto Exit;
+                }
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
+        public class GroupExpression
+        {
+        }
+
+        private static bool ParseGroupExpression(ParseContext c)
+        {
+            c.Enter(R.GROUP_EXPRESSION);
+
+            try
+            {
+                if (!c.AdvanceToken(T.LP)) goto Exit;
+                if (!ParseRuleExpressions(c.New())) goto Exit;
+                if (!c.AdvanceToken(T.RP)) goto Exit;
+                
+                c.Accept();
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
+        public class RegexExpression
+        {
+        }
+
+        private static bool ParseRegexExpression(ParseContext c)
+        {
+            c.Enter(R.REGEX_EXPRESSION);
+
+            try
+            {
+                if (!c.AdvanceToken(T.REGEX_LITERAL)) goto Exit;
+                
+                c.Accept();
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
+        public class RefExpression
+        {
+        }
+
+        private static bool ParseRefExpression(ParseContext c)
+        {
+            c.Enter(R.REF_EXPRESSION);
+
+            try
+            {
+                if (!c.AdvanceToken(T.IDENTIFIER)) goto Exit;
+                c.Accept();
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
+
+        public class SpellingExpression
+        {
+        }
+
+        private static bool ParseSpellingExpression(ParseContext c)
+        {
+            c.Enter(R.SPELLING_EXPRESSION);
+
+            try
+            {
+                if (!c.AdvanceToken(T.CHAR_STRING_LITERAL)) goto Exit;
+                c.Accept();
+            }
+            catch (Exception ex)
+            {
+                c.Exception(ex);
+            }
+
+            Exit:
+            return c.Exit();
+        }
     }
 }

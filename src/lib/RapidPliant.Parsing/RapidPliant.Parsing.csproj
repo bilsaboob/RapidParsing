@@ -50,7 +50,6 @@
     <Compile Include="Earley\EarleyGrammar.cs" />
     <Compile Include="Earley\EarleyParser.cs" />
     <Compile Include="Earley\HandRolled\RapidBnfGrammar.cs" />
-    <Compile Include="Earley\HandRolled\RapidBnfGrammar2.cs" />
     <Compile Include="Earley\IEarleyParser.cs" />
     <Compile Include="Earley\Recognition\EarleyDfaStateTransitionRecognizer.cs" />
     <Compile Include="Earley\Recognition\IEarleyRecognizer.cs" />

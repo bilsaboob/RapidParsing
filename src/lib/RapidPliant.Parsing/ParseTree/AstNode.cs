@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RapidPliant.Lexing.Lexer;
-using RapidPliant.Parsing.Earley.HandRolled;
 
 namespace RapidPliant.Parsing.ParseTree
 {

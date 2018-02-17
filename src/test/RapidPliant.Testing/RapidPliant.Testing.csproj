@@ -45,7 +45,6 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tests\Grammar\RapidBnfTest2.cs" />
     <Compile Include="Tests\Grammar\RapidBnfTest.cs" />
     <Compile Include="Tests\Grammar\SimpleGrammarTest.cs" />
     <Compile Include="Tests\Other\NonOverlappingSetTest.cs" />
