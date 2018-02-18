@@ -2,7 +2,8 @@
 using System.Diagnostics;
 using RapidPliant.Lexing.Lexer;
 using RapidPliant.Lexing.Text;
-using RapidPliant.Parsing.Earley.HandRolled2;
+using RapidPliant.Parsing.RecursiveDescent;
+using RapidPliant.Parsing.RecursiveDescent.RapidBnf;
 
 namespace RapidPliant.RapidBnf.Test.Tests.Grammar
 {

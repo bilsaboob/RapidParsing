@@ -50,8 +50,9 @@
     <Compile Include="Earley\EarleyEngine.cs" />
     <Compile Include="Earley\EarleyGrammar.cs" />
     <Compile Include="Earley\EarleyParser.cs" />
-    <Compile Include="Earley\HandRolled\RapidBnfGrammar.cs" />
-    <Compile Include="Earley\HandRolled\RapidBnfModelBuilder.cs" />
+    <Compile Include="RecursiveDescent\ParseContext.cs" />
+    <Compile Include="RecursiveDescent\RapidBnf\RapidBnfGrammar.cs" />
+    <Compile Include="RecursiveDescent\RapidBnf\RapidBnfModelBuilder.cs" />
     <Compile Include="Earley\IEarleyParser.cs" />
     <Compile Include="Earley\Recognition\EarleyDfaStateTransitionRecognizer.cs" />
     <Compile Include="Earley\Recognition\IEarleyRecognizer.cs" />
@@ -81,9 +82,7 @@
       <Name>RapidPliant</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Rule\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
