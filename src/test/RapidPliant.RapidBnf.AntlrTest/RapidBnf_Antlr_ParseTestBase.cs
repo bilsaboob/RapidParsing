@@ -4,12 +4,12 @@ using RapidPliant.RapidBnf.Test.Tests.Grammar;
 
 namespace AntlrTest
 {
-    public class RapidBnf_Antlr_ParseTestBase : RapidBnfParseTestBase
+    public abstract class RapidBnf_Antlr_ParseTestBase : RapidBnfParseTestBase
     {
         protected ParseStats Parse(string text)
         {
             var inputStream = new AntlrInputStream(text);
-            var lexer = new JSONLexer(inputStream);
+            var lexer = CreateLexer(inputStream);
             var stats = new ParseStats();
 
             Parse(lexer, stats);
@@ -20,7 +20,7 @@ namespace AntlrTest
         protected void ParseRepeated(string inputText, int repeatCount)
         {
             var inputStream = new AntlrInputStream(inputText);
-            var lexer = new JSONLexer(inputStream);
+            var lexer = CreateLexer(inputStream);
 
             var totalStats = new ParseStats();
 
@@ -35,7 +35,7 @@ namespace AntlrTest
         protected void ParseUntilUserInput(string inputText)
         {
             var inputStream = new AntlrInputStream(inputText);
-            var lexer = new JSONLexer(inputStream);
+            var lexer = CreateLexer(inputStream);
 
             while (true)
             {
@@ -50,7 +50,7 @@ namespace AntlrTest
             }
         }
         
-        protected void Parse(JSONLexer lexer, ParseStats stats)
+        protected virtual void Parse(Lexer lexer, ParseStats stats)
         {
             stats.Start();
 
@@ -62,12 +62,18 @@ namespace AntlrTest
             stats.Lexed();
 
             //var tokenStream = new CommonTokenStream(lexer);
-            var parser = new JSONParser(tokenStream);
+            var parser = CreateParser(tokenStream);
             parser.BuildParseTree = false;
-            var result = parser.json();
+            var result = Parse(parser);
 
             stats.Parsed();
             stats.End();
         }
+
+        protected abstract Lexer CreateLexer(AntlrInputStream inputStream);
+
+        protected abstract Parser CreateParser(CommonTokenStream tokenStream);
+
+        protected abstract object Parse(Parser parser);
     }
 }

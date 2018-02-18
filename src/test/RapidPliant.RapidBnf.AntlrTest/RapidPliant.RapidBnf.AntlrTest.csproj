@@ -45,22 +45,31 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="JSONBaseListener.cs" />
-    <Compile Include="JSONLexer.cs" />
-    <Compile Include="JSONListener.cs" />
-    <Compile Include="JSONParser.cs" />
+    <Compile Include="JSON\JSONBaseListener.cs" />
+    <Compile Include="JSON\JSONLexer.cs" />
+    <Compile Include="JSON\JSONListener.cs" />
+    <Compile Include="JSON\JSONParser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RapidBnf_Antlr_Test.cs" />
     <Compile Include="RapidBnf_Antlr_ParseTestBase.cs" />
+    <Compile Include="RapidSharp_Antlr_Test.cs" />
+    <Compile Include="RSHARP\RSHARPLexer.cs" />
+    <Compile Include="RSHARP\RSHARPParser.cs" />
+    <Compile Include="RSHARP\RSHARPParserBaseListener.cs" />
+    <Compile Include="RSHARP\RSHARPParserListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="JSON.interp" />
-    <None Include="JSON.tokens" />
-    <None Include="JSONLexer.interp" />
-    <None Include="JSONLexer.tokens" />
+    <None Include="JSON\JSON.interp" />
+    <None Include="JSON\JSON.tokens" />
+    <None Include="JSON\JSONLexer.interp" />
+    <None Include="JSON\JSONLexer.tokens" />
     <None Include="packages.config" />
+    <None Include="RSHARP\RSHARPLexer.interp" />
+    <None Include="RSHARP\RSHARPLexer.tokens" />
+    <None Include="RSHARP\RSHARPParser.interp" />
+    <None Include="RSHARP\RSHARPParser.tokens" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RapidPliant.RapidBnf.Test\RapidPliant.RapidBnf.Test.csproj">
@@ -72,5 +81,6 @@
       <Name>RapidPliant.Test</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
