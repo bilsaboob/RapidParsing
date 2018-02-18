@@ -16,23 +16,23 @@ namespace AntlrTest
 
         protected override void Test()
         {
-            ParseRepeated(Text_Rbnf_1000_Lines, 100);
+            ParseRepeated(Text_Rbnf_1000_Lines, 1);
             ParseUntilUserInput(Text_Rbnf_1000_Lines);
         }
 
         protected override Lexer CreateLexer(AntlrInputStream inputStream)
         {
-            return new JSONLexer(inputStream);
+            return new RBNFLexer(inputStream);
         }
 
         protected override Parser CreateParser(CommonTokenStream tokenStream)
         {
-            return new JSONParser(tokenStream);
+            return new RBNFParser(tokenStream);
         }
 
         protected override object Parse(Parser parser)
         {
-            return ((JSONParser)parser).json();
+            return ((RBNFParser)parser).document();
         }
     }
 }

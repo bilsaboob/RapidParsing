@@ -12,9 +12,9 @@ namespace AntlrTest
     {
         static void Main(string[] args)
         {
-            //TestRunner.Run<RapidBnf_Antlr_Test>();
+            TestRunner.Run<RapidBnf_Antlr_Test>();
 
-            TestRunner.Run<RapidSharp_Antlr_Test>();
+            //TestRunner.Run<RapidSharp_Antlr_Test>();
         }
     }
 }
