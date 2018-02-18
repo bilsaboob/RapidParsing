@@ -9,11 +9,12 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>RapidPliant.App.GrammarDebugger</RootNamespace>
     <AssemblyName>RapidPliant.App.GrammarDebugger</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -128,9 +129,9 @@
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
       <Name>RapidPliant</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\test\RapidPliant.Testing\RapidPliant.Testing.csproj">
+    <ProjectReference Include="..\..\test\RapidPliant.RapidBnf.Test\RapidPliant.RapidBnf.Test.csproj">
       <Project>{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}</Project>
-      <Name>RapidPliant.Testing</Name>
+      <Name>RapidPliant.RapidBnf.Test</Name>
     </ProjectReference>
     <ProjectReference Include="..\RapidPliant.App\RapidPliant.App.csproj">
       <Project>{407370F0-641D-4649-BFEF-BDF63EF15493}</Project>

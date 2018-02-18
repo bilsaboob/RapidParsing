@@ -1,0 +1,70 @@
+﻿//RapidBnf grammar
+
+//LEXING
+id = /[a-zA-Z][a-zA-Z0-9_]*/;
+spellingLiteral = /'[.^']'/;
+regexLiteral = /'[.^']'/;
+
+
+//PARSING
+File 
+	= TopDeclarations?
+	;
+	
+TopDeclarations
+	= TopDeclaration+
+	;
+	
+TopDeclaration
+	= ImportStatement
+	| RuleStatement
+	;
+	
+ImportStatement
+	= 'import'.1 id
+	;
+	
+RuleStatement
+	= id '=' RuleDeclaration
+	;
+	
+RuleDeclaration
+	= RuleExpressions?
+	;
+	
+RuleExpressions
+	= (RuleExpression '|'?)+
+	;
+
+RuleExpression
+	= (
+	  SpellingExpr
+	| RegexExpr
+	| GroupExpr
+	| RefExpr
+	) ExprOp? PinOp?
+	;
+	
+ExprOp
+	= '*' | '?' | '+'
+	;
+	
+PinOp
+	= '.'
+	;
+	
+SpellingExpr
+	= spellingLiteral
+	;
+	
+RegexExpr
+	= regexLiteral
+	;
+	
+GroupExpr
+	= '(' RuleExpressions ')'
+	;
+	
+RefExpr
+	= id
+	;

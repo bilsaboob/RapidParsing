@@ -57,10 +57,10 @@ namespace RapidPliant.Lexing.Lexer.Builder
 
         protected DfaGraph CreateLexDfa(IEnumerable<RegexExpr> expressions)
         {
-            var nfa = LexNfaAutomata.BuildNfa(expressions);
+            var nfa = new LexNfaAutomata().CreateNfaForExpressions(expressions);
             var nfaGraph = nfa.ToNfaGraph();
 
-            var dfa = LexDfaAutomata.BuildDfa(nfaGraph);
+            var dfa = new LexDfaAutomata().CreateNfaForNfaGraph(nfaGraph);
             return dfa.ToDfaGraph();
         }
 

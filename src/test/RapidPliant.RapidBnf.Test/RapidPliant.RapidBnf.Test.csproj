@@ -4,16 +4,18 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{93848C30-BC99-4DA2-8388-1B29124A3311}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{3F76FCC2-D9C9-4ACF-93EF-A85A5BB1C7FF}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidPliant.Parsing</RootNamespace>
-    <AssemblyName>RapidPliant.Parsing</AssemblyName>
+    <RootNamespace>RapidPliant.RapidBnf.Test</RootNamespace>
+    <AssemblyName>RapidPliant.RapidBnf.Test</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,6 +25,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -41,48 +44,64 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Automata\Dfa\EarleyDfa.cs" />
-    <Compile Include="Automata\Dfa\EarleyDfaAutomata.cs" />
-    <Compile Include="Automata\Dfa\EarleyDfaBuilder.cs" />
-    <Compile Include="Automata\Nfa\EarleyNfa.cs" />
-    <Compile Include="Automata\Nfa\EarleyNfaAutomata.cs" />
-    <Compile Include="Automata\Nfa\EarleyNfaBuilder.cs" />
-    <Compile Include="Earley\EarleyEngine.cs" />
-    <Compile Include="Earley\EarleyGrammar.cs" />
-    <Compile Include="Earley\EarleyParser.cs" />
-    <Compile Include="Earley\HandRolled\RapidBnfGrammar.cs" />
-    <Compile Include="Earley\HandRolled\RapidBnfModelBuilder.cs" />
-    <Compile Include="Earley\IEarleyParser.cs" />
-    <Compile Include="Earley\Recognition\EarleyDfaStateTransitionRecognizer.cs" />
-    <Compile Include="Earley\Recognition\IEarleyRecognizer.cs" />
-    <Compile Include="Earley\Token.cs" />
-    <Compile Include="ParseTree\AstNode.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tests\Grammar\RapidBnf\RapidBnfParseTestBase.cs" />
+    <Compile Include="Tests\Grammar\RapidBnf\RapidBnf_Handrolled_ParseTestBase.cs" />
+    <Compile Include="Tests\Grammar\RapidBnf\RapidBnf_Handrolled_Test.cs" />
+    <Compile Include="Tests\Grammar\Simple\SimpleGrammarTest.cs" />
+    <Compile Include="Tests\Other\NonOverlappingSetTest.cs" />
+    <Compile Include="Tests\Lexing\RegexPatternTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RapidPliant.Automata\RapidPliant.Automata.csproj">
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\RapidPliant.Automata\RapidPliant.Automata.csproj">
       <Project>{7eeca369-1dc9-41d3-955e-a6e03ee87c67}</Project>
       <Name>RapidPliant.Automata</Name>
     </ProjectReference>
-    <ProjectReference Include="..\RapidPliant.Common\RapidPliant.Common.csproj">
-      <Project>{f71fa673-6338-40b9-b917-d056591e266e}</Project>
+    <ProjectReference Include="..\..\lib\RapidPliant.Common\RapidPliant.Common.csproj">
+      <Project>{F71FA673-6338-40B9-B917-D056591E266E}</Project>
       <Name>RapidPliant.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
+    <ProjectReference Include="..\..\lib\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
       <Project>{D045878A-7813-4480-9DC5-2A37C60346E2}</Project>
       <Name>RapidPliant.Grammar</Name>
     </ProjectReference>
-    <ProjectReference Include="..\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
+    <ProjectReference Include="..\..\lib\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
       <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
       <Name>RapidPliant.Lexing</Name>
     </ProjectReference>
-    <ProjectReference Include="..\RapidPliant\RapidPliant.csproj">
+    <ProjectReference Include="..\..\lib\RapidPliant.Parsing\RapidPliant.Parsing.csproj">
+      <Project>{93848C30-BC99-4DA2-8388-1B29124A3311}</Project>
+      <Name>RapidPliant.Parsing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant\RapidPliant.csproj">
       <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
       <Name>RapidPliant</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.Test\RapidPliant.Test.csproj">
+      <Project>{03c30a96-8629-4b21-9e7a-5cadd4c189f6}</Project>
+      <Name>RapidPliant.Test</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Rule\" />
+    <Content Include="testfiles\RapidBnf\1000_lines.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="testfiles\RapidBnf\RbnfGrammar.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="testfiles\test_300.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="testfiles\test_10000.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="testfiles\test_1000.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

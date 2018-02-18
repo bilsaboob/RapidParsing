@@ -8,7 +8,7 @@ using Microsoft.Msagl.Drawing;
 using RapidPliant.App.ViewModels;
 using RapidPliant.Grammar;
 using RapidPliant.Parsing.Earley;
-using RapidPliant.Testing.Tests.Grammar;
+using RapidPliant.RapidBnf.Test.Tests.Grammar;
 using RapidPliant.WPF.Mvx;
 
 namespace RapidPliant.App.GrammarDebugger.ViewModels

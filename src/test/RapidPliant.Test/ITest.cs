@@ -2,6 +2,8 @@
 {
     public interface ITest
     {
-        bool Run();
+        void Setup(bool benchmark = false);
+
+        bool Run(bool benchmark = false);
     }
 }

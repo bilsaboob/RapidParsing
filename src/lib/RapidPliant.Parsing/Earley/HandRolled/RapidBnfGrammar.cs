@@ -492,6 +492,14 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
         }
     }
 
+    public interface IParseNode
+    {
+    }
+
+    public class ParseNode : IParseNode
+    {
+    }
+
     public partial class RapidBnfGrammar
     {
         public static class R
@@ -518,8 +526,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return ParseGrammar(c);
         }
 
-        public class Grammar
+        public class Grammar : ParseNode
         {
+            public TopStatements TopStatements => null;
         }
 
         public static bool ParseGrammar(ParseContext c)
@@ -539,8 +548,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class TopStatements
+        public class TopStatements : ParseNode
         {
+            public IList<TopDeclaration> TopDeclarations => null;
         }
 
         public static bool ParseTopStatements(ParseContext c)
@@ -571,8 +581,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class TopDeclaration
+        public class TopDeclaration : ParseNode
         {
+            public RuleDeclaration RuleDeclaration => null;
         }
         
         public static bool ParseTopDeclaration(ParseContext c)
@@ -593,8 +604,19 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RuleDeclaration
+        public class RuleDeclaration : ParseNode
         {
+            public IToken IDENTIFIER { get; set; }
+            public IToken OP_EQUALS { get; set; }
+            public RuleDefinition RuleDefinition { get; set; }
+
+            // build the rule declaration node given a parse context
+            public void Build(ParseContext c)
+            {
+                /*IDENTIFIER = c.ParseNodes.Get(0);
+                OP_EQUALS = c.ParseNodes.Get(1);
+                RuleDefinition = c.ParseNodes.Get<RuleDefinition>(2);*/
+            }
         }
 
         public static bool ParseRuleDeclaration(ParseContext c)
@@ -618,8 +640,10 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RuleDefinition
+        public class RuleDefinition : ParseNode
         {
+            public RuleExpressions RuleExpressions => null;
+            public IToken SEMI => null;
         }
 
         public static bool ParseRuleDefinition(ParseContext c)
@@ -643,8 +667,15 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RuleExpressions
+        public class RuleExpressions : ParseNode
         {
+            public IList<Node> Expressions => null;
+
+            public class Node : ParseNode
+            {
+                public RuleExpression RuleExpression => null;
+                public IToken OP_OR => null;
+            }
         }
 
         public static bool ParseRuleExpressions(ParseContext c)
@@ -675,8 +706,14 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RuleExpression
+        public class RuleExpression : ParseNode
         {
+            public RefExpression RefExpression => null;
+            public RegexExpression RegexExpression => null;
+            public SpellingExpression SpellingExpression => null;
+            public GroupExpression GroupExpression => null;
+            public RuleExpressionPinOperator PinOp => null;
+            public RuleExpressionOperator BnfOp => null;
         }
 
         private static bool ParseRuleExpression(ParseContext c)
@@ -721,8 +758,10 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RuleExpressionPinOperator
+        public class RuleExpressionPinOperator : ParseNode
         {
+            public IToken DOT => null;
+            public IToken NUMBER => null;
         }
 
         private static bool ParseRulePinOperator(ParseContext c)
@@ -745,8 +784,11 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RuleExpressionOperator
+        public class RuleExpressionOperator : ParseNode
         {
+            public IToken STAR => null;
+            public IToken QUESTION => null;
+            public IToken PLUS => null;
         }
 
         private static bool ParseRuleEexpressionOperator(ParseContext c)
@@ -782,8 +824,11 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class GroupExpression
+        public class GroupExpression : ParseNode
         {
+            public IToken LP => null;
+            public RuleExpressions RuleExpressions => null;
+            public IToken RP => null;
         }
 
         private static bool ParseGroupExpression(ParseContext c)
@@ -807,8 +852,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RegexExpression
+        public class RegexExpression : ParseNode
         {
+            public IToken REGEX_LITERAL => null;
         }
 
         private static bool ParseRegexExpression(ParseContext c)
@@ -830,8 +876,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class RefExpression
+        public class RefExpression : ParseNode
         {
+            public IToken IDENTIFIER => null;
         }
 
         private static bool ParseRefExpression(ParseContext c)
@@ -852,8 +899,9 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
             return c.Exit();
         }
 
-        public class SpellingExpression
+        public class SpellingExpression : ParseNode
         {
+            public IToken CHAR_STRING_LITERAL => null;
         }
 
         private static bool ParseSpellingExpression(ParseContext c)
@@ -875,3 +923,4 @@ namespace RapidPliant.Parsing.Earley.HandRolled2
         }
     }
 }
+

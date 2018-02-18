@@ -1,19 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{03C30A96-8629-4B21-9E7A-5CADD4C189F6}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{30DB9B4C-EE0E-469B-B122-DE15A98FD351}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RapidPliant.Test</RootNamespace>
-    <AssemblyName>RapidPliant.Test</AssemblyName>
+    <RootNamespace>RapidPliant.RapidBnf.Test.Benchmarks</RootNamespace>
+    <AssemblyName>RapidPliant.RapidBnf.Test.Benchmarks</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,12 +25,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>
+    </StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BenchmarkDotNet, Version=0.10.12.0, Culture=neutral, PublicKeyToken=aa0ca2f9092cefc4, processorArchitecture=MSIL">
@@ -134,21 +141,61 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ITest.cs" />
-    <Compile Include="TestBenchmark.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestBase.cs" />
-    <Compile Include="TestRunner.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\RapidPliant.Automata\RapidPliant.Automata.csproj">
+      <Project>{7eeca369-1dc9-41d3-955e-a6e03ee87c67}</Project>
+      <Name>RapidPliant.Automata</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Common\RapidPliant.Common.csproj">
+      <Project>{f71fa673-6338-40b9-b917-d056591e266e}</Project>
+      <Name>RapidPliant.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Grammar\RapidPliant.Grammar.csproj">
+      <Project>{D045878A-7813-4480-9DC5-2A37C60346E2}</Project>
+      <Name>RapidPliant.Grammar</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Lexing\RapidPliant.Lexing.csproj">
+      <Project>{2edcd183-d72c-4de9-a0da-f5b6a6fb9c0b}</Project>
+      <Name>RapidPliant.Lexing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant.Parsing\RapidPliant.Parsing.csproj">
+      <Project>{93848c30-bc99-4da2-8388-1b29124a3311}</Project>
+      <Name>RapidPliant.Parsing</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\lib\RapidPliant\RapidPliant.csproj">
+      <Project>{e716be7e-d064-4991-92d5-a7fe36a6c899}</Project>
+      <Name>RapidPliant</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.RapidBnf.AntlrTest\RapidPliant.RapidBnf.AntlrTest.csproj">
+      <Project>{ce7f1648-c428-46d3-b0f8-8304d5f89dc6}</Project>
+      <Name>RapidPliant.RapidBnf.AntlrTest</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.Test\RapidPliant.Test.csproj">
+      <Project>{03c30a96-8629-4b21-9e7a-5cadd4c189f6}</Project>
+      <Name>RapidPliant.Test</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RapidPliant.RapidBnf.Test\RapidPliant.RapidBnf.Test.csproj">
+      <Project>{3f76fcc2-d9c9-4acf-93ef-a85a5bb1c7ff}</Project>
+      <Name>RapidPliant.RapidBnf.Test</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\..\..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="..\..\..\packages\Microsoft.CodeAnalysis.Analyzers.1.1.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
 </Project>

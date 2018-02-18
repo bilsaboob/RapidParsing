@@ -8,10 +8,11 @@ namespace RapidPliant.Test
 {
     public static class TestRunner
     {
-        public static void Run<TTest>(bool debug = false)
+        public static void Run<TTest>()
             where TTest : ITest, new()
         {
             var test = new TTest();
+            test.Setup();
             test.Run();
 
             Console.Read();
