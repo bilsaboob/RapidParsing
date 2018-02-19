@@ -55,71 +55,78 @@ namespace RapidPliant.Parsing.RecursiveDescent
 
     public class ParseNodeListPool
     {
+        private static object _syncObj = new object();
         private static readonly Queue<List<IParseNode>> _lists = new Queue<List<IParseNode>>();
         private static int _next = -1;
 
         public static List<IParseNode> Get()
         {
-            /*if (_next == -1 || _lists.Count == 0)
+            lock (_syncObj)
             {
-                return new List<ParseNode>();
-            }
-            else
-            {
-                var list = _lists[_next];
-                if(list == null)
-                    return new List<ParseNode>();
-
-                _lists[_next] = null;
-                _next--;
-                
-                if (list.Count != 0)
+                /*if (_next == -1 || _lists.Count == 0)
                 {
-                    list.Clear();
+                    return new List<ParseNode>();
                 }
+                else
+                {
+                    var list = _lists[_next];
+                    if(list == null)
+                        return new List<ParseNode>();
+    
+                    _lists[_next] = null;
+                    _next--;
+                    
+                    if (list.Count != 0)
+                    {
+                        list.Clear();
+                    }
+    
+                    return list;
+                }*/
 
-                return list;
-            }*/
-
-            if (_lists.Count == 0)
-            {
-                return new List<IParseNode>();
-            }
-            else
-            {
-                return _lists.Dequeue();
+                if (_lists.Count == 0)
+                {
+                    return new List<IParseNode>();
+                }
+                else
+                {
+                    return _lists.Dequeue();
+                }
             }
         }
 
         public static void FreeAndClear(List<IParseNode> list)
         {
-            if(list == null) return;
-
-            list.Clear();
-
-            /*var next = _next + 1;
-            if (next == 0)
+            lock (_syncObj)
             {
-                _lists.Add(list);
-                _next = 0;
-                return;
-            }
+                if (list == null) return;
 
-            if (next == _lists.Count)
-            {
-                _lists.Add(list);
-                ++_next;
-                return;
-            }
+                list.Clear();
 
-            while (_next >= _lists.Count)
-            {
-                _lists.Add(null);
-            }
+                /*var next = _next + 1;
+                if (next == 0)
+                {
+                    _lists.Add(list);
+                    _next = 0;
+                    return;
+                }
+    
+                if (next == _lists.Count)
+                {
+                    _lists.Add(list);
+                    ++_next;
+                    return;
+                }
+    
+                while (_next >= _lists.Count)
+                {
+                    _lists.Add(null);
+                }
+    
+                _lists[++_next] = list;*/
 
-            _lists[++_next] = list;*/
-            
-            _lists.Enqueue(list);
+                _lists.Enqueue(list);
+            }
         }
     }
 
@@ -130,7 +137,8 @@ namespace RapidPliant.Parsing.RecursiveDescent
 
         public ParseTree()
         {
-            _nodes = ParseNodeListPool.Get();
+            //_nodes = ParseNodeListPool.Get();
+            _nodes = new List<IParseNode>();
         }
 
         public int Count => _nodes.Count;
@@ -162,11 +170,17 @@ namespace RapidPliant.Parsing.RecursiveDescent
             Dispose(true);
         }
 
+        ~ParseTree()
+        {
+            Dispose(false);
+        }
+
         private void Dispose(bool disposing)
         {
             if (_nodes != null)
             {
-                ParseNodeListPool.FreeAndClear(_nodes);
+                //ParseNodeListPool.FreeAndClear(_nodes);
+                _nodes = null;
             }
         }
     }
