@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 using RapidPliant.Test;
 
 namespace RapidPliant.RapidBnf.Test.Tests.Grammar {
@@ -21,6 +23,40 @@ namespace RapidPliant.RapidBnf.Test.Tests.Grammar {
         protected void PrintStats(ParseStats stats, int count = 1)
         {
             Console.WriteLine(stats.Print(count));
+        }
+
+        protected void WithDisabledGarbageCollection(int allocSize, Action action)
+        {
+
+            var oldMode = GCSettings.LatencyMode;
+
+            // Make sure we can always go to the catch block, 
+            // so we can set the latency mode back to `oldMode`
+            RuntimeHelpers.PrepareConstrainedRegions();
+
+            var isInNoGc = false;
+            try
+            {
+                GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+
+                isInNoGc = GC.TryStartNoGCRegion(allocSize);
+
+                action();
+
+                // Generation 2 garbage collection is now
+                // deferred, except in extremely low-memory situations
+            }
+            finally
+            {
+                if (isInNoGc)
+                {
+                    GC.EndNoGCRegion();
+                }
+                // ALWAYS set the latency mode back
+                GCSettings.LatencyMode = oldMode;
+
+                GarbageCollect();
+            }
         }
 
         protected class ParseStats

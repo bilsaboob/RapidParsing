@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 using RapidPliant.Lexing.Lexer;
 using RapidPliant.Lexing.Text;
 using RapidPliant.Parsing.RecursiveDescent;
@@ -30,11 +32,13 @@ namespace RapidPliant.RapidBnf.Test.Tests.Grammar
             for (var i = 0; i < repeatCount; ++i)
             {
                 Parse(lexer, input, totalStats);
+
+                GarbageCollect();
             }
 
             PrintStats(totalStats, repeatCount);
         }
-
+        
         protected void ParseUntilUserInput(string inputText)
         {
             var input = new StringBuffer(inputText);
@@ -44,15 +48,17 @@ namespace RapidPliant.RapidBnf.Test.Tests.Grammar
             {
                 var stats = new ParseStats();
 
-                Parse(lexer, input, stats);
+                WithDisabledGarbageCollection(1000 * 10000, () => {
+                    Parse(lexer, input, stats);
 
-                PrintStats(stats);
+                    PrintStats(stats);
+                });
 
                 if (Console.ReadLine() != "")
                     break;
             }
         }
-        
+
         protected ParseStats Parse(Lexer lexer, IBuffer input, ParseStats stats)
         {
             stats.Start();
@@ -66,13 +72,20 @@ namespace RapidPliant.RapidBnf.Test.Tests.Grammar
             // prep the parsing context
             var context = new ParseContext(tokens);
 
-            if (!RapidBnfGrammar.ParseGrammar(context.Start()))
+            var success = RapidBnfGrammar.ParseGrammar(context.Start());
+            if (success)
             {
-                // error
+                //Console.WriteLine("Success");
+                // success
+                var parseTree = context.ParseTree;
+                var parseNode = context.ParseNode;
+                var nodesCount = parseTree.Count;
+                parseTree.Dispose();
             }
             else
             {
-                // success
+                //Console.WriteLine("Error");
+                // error
             }
 
             stats.Parsed();

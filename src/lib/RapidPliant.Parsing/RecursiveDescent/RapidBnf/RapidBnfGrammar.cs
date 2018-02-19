@@ -183,19 +183,122 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
         {
             public static int id = 1;
 
-            public static readonly RuleType GRAMMAR = new RuleType(id++, "Grammar");
-            public static readonly RuleType TOP_STATEMENTS = new RuleType(id++, "TopStatements");
-            public static readonly RuleType TOP_DECLARATION = new RuleType(id++, "TopDeclaration");
-            public static readonly RuleType RULE_DECLARATION = new RuleType(id++, "RuleDeclaration");
-            public static readonly RuleType RULE_DEFINITION = new RuleType(id++, "RuleDefinition");
-            public static readonly RuleType RULE_EXPRESSIONS = new RuleType(id++, "RuleExpressions");
-            public static readonly RuleType RULE_EXPRESSION = new RuleType(id++, "RuleExpression");
-            public static readonly RuleType REGEX_EXPRESSION = new RuleType(id++, "RegexExpression");
-            public static readonly RuleType GROUP_EXPRESSION = new RuleType(id++, "GroupExpression");
-            public static readonly RuleType RULE_EXPRESSION_BNF_OP = new RuleType(id++, "RuleExpressionBnfOp");
-            public static readonly RuleType RULE_EXPRESSION_PIN_OP = new RuleType(id++, "RuleExpressionPinOp");
-            public static readonly RuleType REF_EXPRESSION = new RuleType(id++, "RefExpression");
-            public static readonly RuleType SPELLING_EXPRESSION = new RuleType(id++, "SpellingExpression");
+            public class GrammarRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "Grammar";
+                public GrammarRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new Grammar();
+            }
+            public static readonly GrammarRuleType GRAMMAR = new GrammarRuleType();
+
+            public class TopStatementsRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "TopStatements";
+                public TopStatementsRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new TopStatements();
+            }
+            public static readonly TopStatementsRuleType TOP_STATEMENTS = new TopStatementsRuleType();
+
+            public class TopDeclarationRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "TopDeclaration";
+                public TopDeclarationRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new TopDeclaration();
+            }
+            public static readonly TopDeclarationRuleType TOP_DECLARATION = new TopDeclarationRuleType();
+
+            public class RuleDeclarationRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RuleDeclaration";
+                public RuleDeclarationRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RuleDeclaration();
+            }
+            public static readonly RuleDeclarationRuleType RULE_DECLARATION = new RuleDeclarationRuleType();
+
+            public class RuleDefinitionRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RuleDefinition";
+                public RuleDefinitionRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RuleDefinition();
+            }
+            public static readonly RuleDefinitionRuleType RULE_DEFINITION = new RuleDefinitionRuleType();
+
+            public class RuleExpressionsRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RuleExpressions";
+                public RuleExpressionsRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RuleExpressions();
+            }
+            public static readonly RuleExpressionsRuleType RULE_EXPRESSIONS = new RuleExpressionsRuleType();
+
+            public class RuleExpressionRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RuleExpression";
+                public RuleExpressionRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RuleExpression();
+            }
+            public static readonly RuleExpressionRuleType RULE_EXPRESSION = new RuleExpressionRuleType();
+
+            public class RegexExpressionRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RegexExpression";
+                public RegexExpressionRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RegexExpression();
+            }
+            public static readonly RegexExpressionRuleType REGEX_EXPRESSION = new RegexExpressionRuleType();
+
+            public class GroupExpressionRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "GroupExpression";
+                public GroupExpressionRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new GroupExpression();
+            }
+            public static readonly GroupExpressionRuleType GROUP_EXPRESSION = new GroupExpressionRuleType();
+
+            public class RuleExpressionBnfOpRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RuleExpressionBnfOp";
+                public RuleExpressionBnfOpRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RuleExpressionOperator();
+            }
+            public static readonly RuleExpressionBnfOpRuleType RULE_EXPRESSION_BNF_OP = new RuleExpressionBnfOpRuleType();
+
+            public class RuleExpressionPinOpRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RuleExpressionPinOp";
+                public RuleExpressionPinOpRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RuleExpressionPinOperator();
+            }
+            public static readonly RuleExpressionPinOpRuleType RULE_EXPRESSION_PIN_OP = new RuleExpressionPinOpRuleType();
+
+            public class RefExpressionRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "RefExpression";
+                public RefExpressionRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new RefExpression();
+            }
+            public static readonly RefExpressionRuleType REF_EXPRESSION = new RefExpressionRuleType();
+
+            public class SpellingExpressionRuleType : RuleType
+            {
+                public static readonly int ID = id++;
+                public static readonly string NAME = "SpellingExpression";
+                public SpellingExpressionRuleType() : base(ID, NAME) { }
+                public override ParseNode CreateNode() => new SpellingExpression();
+            }
+            public static readonly SpellingExpressionRuleType SPELLING_EXPRESSION = new SpellingExpressionRuleType();
         }
         
         public static bool Parse(ParseContext c)
@@ -203,9 +306,11 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return ParseGrammar(c);
         }
 
-        public class Grammar : ParseNode
+        public class Grammar : ParseRuleNode
         {
-            public TopStatements TopStatements => null;
+            public Grammar() : base(R.GRAMMAR) {}
+            
+            public TopStatements TopStatements => GetChild(0) as TopStatements;
         }
 
         public static bool ParseGrammar(ParseContext c)
@@ -225,9 +330,11 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class TopStatements : ParseNode
+        public class TopStatements : ParseRuleNode
         {
-            public IList<TopDeclaration> TopDeclarations => null;
+            public TopStatements() : base(R.TOP_STATEMENTS) { }
+
+            public IList<TopDeclaration> TopDeclarations => (GetChild(0) as ParseListNode<TopDeclaration>)?.AsList();
         }
 
         public static bool ParseTopStatements(ParseContext c)
@@ -258,8 +365,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class TopDeclaration : ParseNode
+        public class TopDeclaration : ParseRuleNode
         {
+            public TopDeclaration() : base(R.TOP_DECLARATION) { }
+
             public RuleDeclaration RuleDeclaration => null;
         }
         
@@ -281,19 +390,13 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RuleDeclaration : ParseNode
+        public class RuleDeclaration : ParseRuleNode
         {
+            public RuleDeclaration() : base(R.RULE_DECLARATION) { }
+
             public IToken IDENTIFIER { get; set; }
             public IToken OP_EQUALS { get; set; }
             public RuleDefinition RuleDefinition { get; set; }
-
-            // build the rule declaration node given a parse context
-            public void Build(ParseContext c)
-            {
-                /*IDENTIFIER = c.ParseNodes.Get(0);
-                OP_EQUALS = c.ParseNodes.Get(1);
-                RuleDefinition = c.ParseNodes.Get<RuleDefinition>(2);*/
-            }
         }
 
         public static bool ParseRuleDeclaration(ParseContext c)
@@ -317,8 +420,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RuleDefinition : ParseNode
+        public class RuleDefinition : ParseRuleNode
         {
+            public RuleDefinition() : base(R.RULE_DEFINITION) { }
+
             public RuleExpressions RuleExpressions => null;
             public IToken SEMI => null;
         }
@@ -344,11 +449,13 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RuleExpressions : ParseNode
+        public class RuleExpressions : ParseRuleNode
         {
+            public RuleExpressions() : base(R.RULE_EXPRESSIONS) { }
+
             public IList<Node> Expressions => null;
 
-            public class Node : ParseNode
+            public class Node : AstNode
             {
                 public RuleExpression RuleExpression => null;
                 public IToken OP_OR => null;
@@ -383,8 +490,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RuleExpression : ParseNode
+        public class RuleExpression : ParseRuleNode
         {
+            public RuleExpression() : base(R.RULE_EXPRESSION) { }
+
             public RefExpression RefExpression => null;
             public RegexExpression RegexExpression => null;
             public SpellingExpression SpellingExpression => null;
@@ -435,8 +544,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RuleExpressionPinOperator : ParseNode
+        public class RuleExpressionPinOperator : ParseRuleNode
         {
+            public RuleExpressionPinOperator() : base(R.RULE_EXPRESSION_PIN_OP) { }
+
             public IToken DOT => null;
             public IToken NUMBER => null;
         }
@@ -461,8 +572,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RuleExpressionOperator : ParseNode
+        public class RuleExpressionOperator : ParseRuleNode
         {
+            public RuleExpressionOperator() : base(R.RULE_EXPRESSION_BNF_OP) { }
+            
             public IToken STAR => null;
             public IToken QUESTION => null;
             public IToken PLUS => null;
@@ -501,8 +614,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class GroupExpression : ParseNode
+        public class GroupExpression : ParseRuleNode
         {
+            public GroupExpression() : base(R.GROUP_EXPRESSION) { }
+
             public IToken LP => null;
             public RuleExpressions RuleExpressions => null;
             public IToken RP => null;
@@ -529,8 +644,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RegexExpression : ParseNode
+        public class RegexExpression : ParseRuleNode
         {
+            public RegexExpression() : base(R.REGEX_EXPRESSION) { }
+
             public IToken REGEX_LITERAL => null;
         }
 
@@ -553,8 +670,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class RefExpression : ParseNode
+        public class RefExpression : ParseRuleNode
         {
+            public RefExpression() : base(R.REF_EXPRESSION) { }
+
             public IToken IDENTIFIER => null;
         }
 
@@ -576,8 +695,10 @@ namespace RapidPliant.Parsing.RecursiveDescent.RapidBnf
             return c.Exit();
         }
 
-        public class SpellingExpression : ParseNode
+        public class SpellingExpression : ParseRuleNode
         {
+            public SpellingExpression() : base(R.SPELLING_EXPRESSION) { }
+
             public IToken CHAR_STRING_LITERAL => null;
         }
 

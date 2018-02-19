@@ -40,11 +40,13 @@ namespace AntlrTest
             while (true)
             {
                 var stats = new ParseStats();
+                
+                WithDisabledGarbageCollection(1000 * 10000, () => {
+                    Parse(lexer, stats);
 
-                Parse(lexer, stats);
-
-                PrintStats(stats);
-
+                    PrintStats(stats);
+                });
+                
                 if (Console.ReadLine() != "")
                     break;
             }

@@ -171,6 +171,11 @@ namespace RapidPliant.Util
         {
             return Reusable.For<List<T>>().GetAndClear(items);
         }
+
+        public static void ClearAndFree(List<T> list)
+        {
+            Reusable.For<List<T>>().ClearAndFree(list);
+        }
     }
 
     public static class ObjectPoolExtensions

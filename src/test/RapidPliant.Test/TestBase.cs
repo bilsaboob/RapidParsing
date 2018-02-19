@@ -72,5 +72,11 @@ namespace RapidPliant.Test
         {
             return File.ReadAllText(Path.Combine(TestFilesPath, name));
         }
+
+        protected void GarbageCollect()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
     }
 }

@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using RapidPliant.Lexing.Lexer;
+using RapidPliant.Util;
 
 namespace RapidPliant.Parsing.RecursiveDescent
 {
@@ -19,6 +22,153 @@ namespace RapidPliant.Parsing.RecursiveDescent
         {
             return $"{Id}:{Name}";
         }
+
+        public virtual ParseNode CreateNode()
+        {
+            return null;
+        }
+    }
+
+    public interface IAstNode
+    {
+        IToken GetToken(int index, TokenType tokenType = null);
+    }
+
+    public class AstNode : IAstNode
+    {
+        public AstNode()
+        {
+        }
+
+        public AstNode(IParseNode node)
+        {
+            ParseNode = node;
+        }
+
+        public IParseNode ParseNode { get; protected set; }
+
+        public IToken GetToken(int index, TokenType tokenType = null)
+        {
+            return null;
+        }
+    }
+
+    public class ParseNodeListPool
+    {
+        private static readonly Queue<List<IParseNode>> _lists = new Queue<List<IParseNode>>();
+        private static int _next = -1;
+
+        public static List<IParseNode> Get()
+        {
+            /*if (_next == -1 || _lists.Count == 0)
+            {
+                return new List<ParseNode>();
+            }
+            else
+            {
+                var list = _lists[_next];
+                if(list == null)
+                    return new List<ParseNode>();
+
+                _lists[_next] = null;
+                _next--;
+                
+                if (list.Count != 0)
+                {
+                    list.Clear();
+                }
+
+                return list;
+            }*/
+
+            if (_lists.Count == 0)
+            {
+                return new List<IParseNode>();
+            }
+            else
+            {
+                return _lists.Dequeue();
+            }
+        }
+
+        public static void FreeAndClear(List<IParseNode> list)
+        {
+            if(list == null) return;
+
+            list.Clear();
+
+            /*var next = _next + 1;
+            if (next == 0)
+            {
+                _lists.Add(list);
+                _next = 0;
+                return;
+            }
+
+            if (next == _lists.Count)
+            {
+                _lists.Add(list);
+                ++_next;
+                return;
+            }
+
+            while (_next >= _lists.Count)
+            {
+                _lists.Add(null);
+            }
+
+            _lists[++_next] = list;*/
+            
+            _lists.Enqueue(list);
+        }
+    }
+
+    public class ParseTree : IDisposable
+    {
+        private List<IParseNode> _nodes;
+        internal int _index;
+
+        public ParseTree()
+        {
+            _nodes = ParseNodeListPool.Get();
+        }
+
+        public int Count => _nodes.Count;
+
+        internal int AddParseNode(IParseNode child)
+        {
+            var index = _index;
+            if (index == _nodes.Count)
+            {
+                _nodes.Add(child);
+                ++_index;
+            }
+            else
+            {
+                _nodes[index] = child;
+                ++_index;
+            }
+
+            return index;
+        }
+
+        public IParseNode GetParseNode(int offset)
+        {
+            return _nodes[offset];
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_nodes != null)
+            {
+                ParseNodeListPool.FreeAndClear(_nodes);
+            }
+        }
     }
 
     public interface IParseNode
@@ -27,19 +177,80 @@ namespace RapidPliant.Parsing.RecursiveDescent
 
     public class ParseNode : IParseNode
     {
+        private ParseTree _tree;
+        private int _index;
+        
+        public IParseNode GetChild(int index)
+        {
+            var childIndex = _index + index;
+            return _tree.GetParseNode(childIndex);
+        }
+
+        public virtual void AddChild(ParseNode node)
+        {
+            // insert at the child index
+            node._index = _tree.AddParseNode(node);
+            node._tree = _tree;
+        }
+
+        public void RemoveChild(ParseNode parseNode)
+        {
+            // reset to before the child... we don't support removal in the "middle"
+            var offset = parseNode._index - _index;
+            _tree._index = _index + offset;
+        }
+
+        public void BindTree(ParseTree parseTree)
+        {
+            _tree = parseTree;
+            _index = _tree.AddParseNode(this);
+        }
+    }
+
+    public class ParseRuleNode : ParseNode
+    {
+        public ParseRuleNode(RuleType ruleType)
+        {
+            RuleType = ruleType;
+        }
+
+        public RuleType RuleType { get; protected set; }
+    }
+
+    public class ParseTokenNode : ParseNode
+    {
+        public ParseTokenNode(IToken token)
+        {
+            Token = token;
+        }
+        
+        public IToken Token { get; protected set; }
+    }
+
+    public class ParseListNode<T> : ParseNode
+        where T: ParseNode, new()
+    {
+        public List<T> AsList()
+        {
+            return null;
+        }
     }
 
     public class ParseContext
     {
-        private ParseState _state;
         private ParseContext _parent;
+        private ParseNode _parseNode;
+
+        private ParseState _state;
         private RuleType _ruleType;
         private bool _advancedAny;
         private object _initialTokenState;
 
+        private bool _buildParseTree = true;
+
         [DebuggerStepThrough]
         public ParseContext(ITokenStream tokens)
-            : this(new ParseState(tokens, 0))
+            : this(new ParseState(new ParseTree(), tokens, 0))
         {
         }
 
@@ -63,6 +274,10 @@ namespace RapidPliant.Parsing.RecursiveDescent
 
         public int IndentationAtEnter { get; protected set; }
 
+        public ParseNode ParseNode => _parseNode;
+
+        public ParseTree ParseTree => _state.ParseTree;
+
         [DebuggerStepThrough]
         public ParseContext New()
         {
@@ -72,6 +287,26 @@ namespace RapidPliant.Parsing.RecursiveDescent
         public void Enter(RuleType ruleType = null)
         {
             _ruleType = ruleType;
+
+            // prepare the parse node for this
+            if (_ruleType != null)
+            {
+                _parseNode = _ruleType.CreateNode();
+
+                // add as a parse node
+                if (_buildParseTree && _parseNode != null)
+                {
+                    if (_parent == null)
+                    {
+                        _parseNode.BindTree(_state.ParseTree);
+                    }
+                    else
+                    {
+                        // add this parse node to the parent
+                        _parent?._parseNode?.AddChild(_parseNode);
+                    }
+                }
+            }
 
             // cache the token state
             _initialTokenState = _state.Tokens.GetState();
@@ -93,6 +328,17 @@ namespace RapidPliant.Parsing.RecursiveDescent
                 Tokens.Reset(_initialTokenState);
             }
 
+            // add as a parse node
+            if (_buildParseTree)
+            {
+                // rollback the added node if not accepted
+                if (!isAccepted)
+                {
+                    // add this parse node to the parent
+                    _parent?._parseNode?.RemoveChild(_parseNode);
+                }
+            }
+            
             return isAccepted;
         }
 
@@ -133,7 +379,7 @@ namespace RapidPliant.Parsing.RecursiveDescent
             return this;
         }
 
-        public bool AdvanceToken()
+        public bool AdvanceToken(bool consume = true)
         {
             // can't advance if we are at end
             if (IsAtEnd) return false;
@@ -151,7 +397,13 @@ namespace RapidPliant.Parsing.RecursiveDescent
                 // we have encountered a bad token
                 BadToken(token);
                 // but continue, simply move to the next again
-                return AdvanceToken();
+                return AdvanceToken(consume);
+            }
+
+            // if we should consume the token, add to the parse tree
+            if (consume && _buildParseTree)
+            {
+                _parseNode?.AddChild(new ParseTokenNode(token));
             }
 
             _advancedAny = true;
@@ -200,8 +452,8 @@ namespace RapidPliant.Parsing.RecursiveDescent
                 // keep skipping over ignore tokens
                 while (isIgnoreToken)
                 {
-                    // skip over the ignore
-                    advancedPastIngores = AdvanceToken();
+                    // skip over the ignore, don't consume the token
+                    advancedPastIngores = AdvanceToken(false);
                     if (!advancedPastIngores)
                         break;
                     
@@ -284,7 +536,7 @@ namespace RapidPliant.Parsing.RecursiveDescent
 
         #region state helpers
         public bool IsAtEnd => _state.Tokens?.IsAtEnd ?? true;
-
+        
         public ParseContext Accept()
         {
             IsAccepted = true;
@@ -326,12 +578,14 @@ namespace RapidPliant.Parsing.RecursiveDescent
         #region state
         public class ParseState
         {
-            public ParseState(ITokenStream tokens, int index)
+            public ParseState(ParseTree parseTree, ITokenStream tokens, int index)
             {
+                ParseTree = parseTree;
                 Tokens = tokens;
                 Index = index;
             }
 
+            public ParseTree ParseTree { get; private set; }
             public int Index { get; private set; }
             public ITokenStream Tokens { get; private set; }
         }
